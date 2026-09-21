@@ -12,6 +12,11 @@ import {
   Edit2,
   Trash2,
   Inbox,
+  FileText,
+  Play,
+  Link2,
+  CheckSquare,
+  Timer,
 } from 'lucide-react';
 
 interface TaskCardProps {
@@ -24,6 +29,9 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
   const categories = useFlowStore((s) => s.categories);
   const toggleTaskCompletion = useFlowStore((s) => s.toggleTaskCompletion);
   const openTaskModal = useFlowStore((s) => s.openTaskModal);
+  const openTaskDetail = useFlowStore((s) => s.openTaskDetail);
+  const startPomodoro = useFlowStore((s) => s.startPomodoro);
+  const setActiveView = useFlowStore((s) => s.setActiveView);
   const deleteTask = useFlowStore((s) => s.deleteTask);
   const moveTaskToBacklog = useFlowStore((s) => s.moveTaskToBacklog);
 
@@ -37,6 +45,11 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
   const log = logs[key];
   const isCompleted = !!log?.completed;
   const completedAt = log?.completedAt;
+  const timeSpentMinutes = log?.timeSpentMinutes || 0;
+
+  const checklist = task.checklist || [];
+  const completedChecklistItems = checklist.filter((i) => i.completed).length;
+  const attachments = task.attachments || [];
 
   const handleCheck = () => {
     if (!isCompleted) {
@@ -164,8 +177,10 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
               )}
             </div>
 
-            {/* Title */}
+            {/* Title (Clicável para abrir página de especificações RF-6) */}
             <h4
+              onClick={() => openTaskDetail(task.id)}
+              title="Clique para abrir especificações, links e sub-tarefas (RF-6)"
               style={{
                 fontSize: '15px',
                 fontWeight: 700,
@@ -173,10 +188,80 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
                 textDecoration: isCompleted ? 'line-through' : 'none',
                 letterSpacing: '-0.01em',
                 marginBottom: '4px',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
               }}
             >
-              {task.title}
+              <span>{task.title}</span>
             </h4>
+
+            {/* Badges de Especificações / Sub-tarefas / Links (RF-6) */}
+            {(checklist.length > 0 || attachments.length > 0 || timeSpentMinutes > 0 || task.richContent) && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '6px' }}>
+                {checklist.length > 0 && (
+                  <span
+                    onClick={() => openTaskDetail(task.id)}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      padding: '1px 6px',
+                      borderRadius: '4px',
+                      background: completedChecklistItems === checklist.length ? 'var(--success-bg)' : 'var(--bg-elevated)',
+                      color: completedChecklistItems === checklist.length ? 'var(--success)' : 'var(--text-secondary)',
+                      fontSize: '10px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <CheckSquare size={10} />
+                    <span>{completedChecklistItems}/{checklist.length} passos</span>
+                  </span>
+                )}
+
+                {attachments.length > 0 && (
+                  <span
+                    onClick={() => openTaskDetail(task.id)}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      padding: '1px 6px',
+                      borderRadius: '4px',
+                      background: 'var(--bg-elevated)',
+                      color: 'var(--text-secondary)',
+                      fontSize: '10px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <Link2 size={10} />
+                    <span>{attachments.length} links</span>
+                  </span>
+                )}
+
+                {timeSpentMinutes > 0 && (
+                  <span
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      padding: '1px 6px',
+                      borderRadius: '4px',
+                      background: 'rgba(99, 102, 241, 0.1)',
+                      color: 'var(--accent-primary)',
+                      fontSize: '10px',
+                      fontWeight: 700,
+                    }}
+                  >
+                    <Timer size={10} />
+                    <span>{timeSpentMinutes}m foco</span>
+                  </span>
+                )}
+              </div>
+            )}
 
             {/* Description */}
             <p
@@ -244,6 +329,51 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
 
         {/* Right Actions */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          {/* Focar com Pomodoro (RF-7 / RF-13) */}
+          <button
+            onClick={() => {
+              startPomodoro(task.id);
+              setActiveView('pomodoro');
+            }}
+            title="Iniciar Pomodoro nesta tarefa"
+            style={{
+              width: '30px',
+              height: '30px',
+              borderRadius: '8px',
+              border: 'none',
+              background: 'rgba(99, 102, 241, 0.12)',
+              color: 'var(--accent-primary)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              transition: 'all 200ms',
+            }}
+          >
+            <Play size={12} fill="currentColor" />
+          </button>
+
+          {/* Ver Especificações & Checklist (RF-6) */}
+          <button
+            onClick={() => openTaskDetail(task.id)}
+            title="Especificações, Checklist e Links da tarefa"
+            style={{
+              width: '30px',
+              height: '30px',
+              borderRadius: '8px',
+              border: 'none',
+              background: 'var(--bg-elevated)',
+              color: 'var(--text-secondary)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              transition: 'all 200ms',
+            }}
+          >
+            <FileText size={13} />
+          </button>
+
           {!isCompleted && (
             <button
               onClick={() => {

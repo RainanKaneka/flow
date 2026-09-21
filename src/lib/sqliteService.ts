@@ -1,8 +1,8 @@
-import { Task, TaskLog, BacklogItem, RoutineType, Category } from '../types/routine';
+import { Task, TaskLog, BacklogItem, RoutineType, Category, Note } from '../types/routine';
 
 export const SQLITE_SCHEMA = `
 -- ============================================
--- FLOW ROUTINE DATABASE SCHEMA (SQLite v3)
+-- FLOW ROUTINE DATABASE SCHEMA (SQLite v3 - Universal)
 -- ============================================
 
 CREATE TABLE IF NOT EXISTS routine_types (
@@ -34,6 +34,9 @@ CREATE TABLE IF NOT EXISTS tasks (
     tags TEXT, -- JSON array string
     notes TEXT,
     is_custom INTEGER DEFAULT 0,
+    rich_content TEXT, -- RF-6 especificações internas
+    attachments TEXT, -- JSON array de links/arquivos
+    checklist TEXT, -- JSON array de sub-tarefas
     FOREIGN KEY(routine_type_id) REFERENCES routine_types(id) ON DELETE CASCADE,
     FOREIGN KEY(category_id) REFERENCES categories(id) ON DELETE CASCADE
 );
@@ -44,7 +47,7 @@ CREATE TABLE IF NOT EXISTS task_completions (
     date TEXT NOT NULL, -- YYYY-MM-DD
     completed INTEGER DEFAULT 1,
     completed_at TEXT, -- HH:mm:ss
-    time_spent_minutes INTEGER,
+    time_spent_minutes INTEGER DEFAULT 0,
     FOREIGN KEY(task_id) REFERENCES tasks(id) ON DELETE CASCADE
 );
 
@@ -61,6 +64,16 @@ CREATE TABLE IF NOT EXISTS backlog (
     FOREIGN KEY(category_id) REFERENCES categories(id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS notes (
+    id TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    content TEXT NOT NULL,
+    tags TEXT, -- JSON array
+    color TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
 CREATE INDEX IF NOT EXISTS idx_completions_date ON task_completions(date);
 CREATE INDEX IF NOT EXISTS idx_completions_task ON task_completions(task_id);
 `;
@@ -73,7 +86,8 @@ export function generateSqlDump(
   categories: Category[],
   tasks: Task[],
   logs: Record<string, TaskLog>,
-  backlog: BacklogItem[]
+  backlog: BacklogItem[],
+  notes: Note[] = []
 ): string {
   let dump = `${SQLITE_SCHEMA}\n\n-- SEED / SYNC DATA\nBEGIN TRANSACTION;\n`;
 
@@ -100,16 +114,19 @@ VALUES ('${c.id}', '${nameEsc}', '${c.color}', '${c.icon || ''}');\n`;
     const titleEsc = t.title.replace(/'/g, "''");
     const descEsc = (t.description || '').replace(/'/g, "''");
     const notesEsc = (t.notes || '').replace(/'/g, "''");
+    const richEsc = (t.richContent || '').replace(/'/g, "''");
+    const attachStr = JSON.stringify(t.attachments || []);
+    const checkStr = JSON.stringify(t.checklist || []);
 
-    dump += `INSERT OR REPLACE INTO tasks (id, title, description, start_time, end_time, routine_type_id, category_id, is_golden_rule, days_of_week, target_minutes, tags, notes, is_custom)
-VALUES ('${t.id}', '${titleEsc}', '${descEsc}', '${t.startTime}', '${t.endTime}', '${t.routineTypeId}', '${t.categoryId}', ${t.isGoldenRule ? 1 : 0}, '${daysStr}', ${t.targetMinutes}, '${tagsStr}', '${notesEsc}', ${t.isCustom ? 1 : 0});\n`;
+    dump += `INSERT OR REPLACE INTO tasks (id, title, description, start_time, end_time, routine_type_id, category_id, is_golden_rule, days_of_week, target_minutes, tags, notes, is_custom, rich_content, attachments, checklist)
+VALUES ('${t.id}', '${titleEsc}', '${descEsc}', '${t.startTime}', '${t.endTime}', '${t.routineTypeId}', '${t.categoryId}', ${t.isGoldenRule ? 1 : 0}, '${daysStr}', ${t.targetMinutes}, '${tagsStr}', '${notesEsc}', ${t.isCustom ? 1 : 0}, '${richEsc}', '${attachStr}', '${checkStr}');\n`;
   }
 
   // Completions
   for (const log of Object.values(logs)) {
-    if (!log.completed) continue;
+    if (!log.completed && (!log.timeSpentMinutes || log.timeSpentMinutes <= 0)) continue;
     dump += `INSERT OR REPLACE INTO task_completions (id, task_id, date, completed, completed_at, time_spent_minutes)
-VALUES ('${log.id}', '${log.taskId}', '${log.date}', 1, '${log.completedAt || ''}', ${log.timeSpentMinutes || 0});\n`;
+VALUES ('${log.id}', '${log.taskId}', '${log.date}', ${log.completed ? 1 : 0}, '${log.completedAt || ''}', ${log.timeSpentMinutes || 0});\n`;
   }
 
   // Backlog
@@ -121,6 +138,16 @@ VALUES ('${log.id}', '${log.taskId}', '${log.date}', 1, '${log.completedAt || ''
 
     dump += `INSERT OR REPLACE INTO backlog (id, title, description, category_id, target_minutes, tags, notes, created_at, original_task_id)
 VALUES ('${b.id}', '${titleEsc}', '${descEsc}', '${b.categoryId}', ${b.targetMinutes}, '${tagsStr}', '${notesEsc}', '${b.createdAt}', '${b.originalTaskId || ''}');\n`;
+  }
+
+  // Notes
+  for (const n of notes) {
+    const titleEsc = n.title.replace(/'/g, "''");
+    const contentEsc = n.content.replace(/'/g, "''");
+    const tagsStr = JSON.stringify(n.tags || []);
+
+    dump += `INSERT OR REPLACE INTO notes (id, title, content, tags, color, created_at, updated_at)
+VALUES ('${n.id}', '${titleEsc}', '${contentEsc}', '${tagsStr}', '${n.color || '#6366F1'}', '${n.createdAt}', '${n.updatedAt}');\n`;
   }
 
   dump += `COMMIT;\n`;

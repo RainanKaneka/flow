@@ -1,4 +1,4 @@
-export type AppView = 'routine' | 'dashboard' | 'backlog';
+export type AppView = 'routine' | 'dashboard' | 'backlog' | 'pomodoro' | 'notes';
 
 export interface RoutineType {
   id: string;
@@ -15,6 +15,19 @@ export interface Category {
   icon?: string;
 }
 
+export interface TaskAttachment {
+  id: string;
+  title: string;
+  url: string;
+  type?: 'link' | 'file' | 'doc';
+}
+
+export interface TaskChecklistItem {
+  id: string;
+  title: string;
+  completed: boolean;
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -29,6 +42,11 @@ export interface Task {
   tags: string[];
   notes?: string;
   isCustom?: boolean;
+  
+  // Épico 2: Especificações internas & Rich Text (RF-6, RF-17)
+  richContent?: string;
+  attachments?: TaskAttachment[];
+  checklist?: TaskChecklistItem[];
 }
 
 export interface TaskLog {
@@ -52,6 +70,29 @@ export interface BacklogItem {
   originalTaskId?: string;
 }
 
+// Bloco de Notas Livre (RF-8, RF-14)
+export interface Note {
+  id: string;
+  title: string;
+  content: string;
+  tags: string[];
+  color?: string;
+  createdAt: string; // ISO string
+  updatedAt: string; // ISO string
+}
+
+// Pomodoro Vinculado (RF-7, RF-13)
+export type PomodoroMode = 'focus' | 'shortBreak' | 'longBreak';
+
+export interface PomodoroState {
+  isActive: boolean;
+  timeLeftSeconds: number;
+  totalDurationSeconds: number;
+  mode: PomodoroMode;
+  linkedTaskId: string | null;
+  completedSessions: number;
+}
+
 export interface FlowState {
   activeView: AppView;
   selectedDate: string; // YYYY-MM-DD
@@ -70,12 +111,21 @@ export interface FlowState {
   logs: Record<string, TaskLog>; // key: `${date}_${taskId}`
   backlog: BacklogItem[];
   
+  // Bloco de Notas (RF-8)
+  notes: Note[];
+  
+  // Pomodoro (RF-7, RF-13)
+  pomodoro: PomodoroState;
+
   // Modais de Controle
   isTaskModalOpen: boolean;
   editingTask: Task | null;
   promoteBacklogModalItem: BacklogItem | null;
   isManageRoutinesModalOpen: boolean;
   isManageCategoriesModalOpen: boolean;
+  
+  // Modal de Especificações / Página Interna da Tarefa (RF-6)
+  selectedTaskIdForDetail: string | null;
 }
 
 export interface FlowActions {
@@ -107,12 +157,47 @@ export interface FlowActions {
   openTaskModal: (task?: Task | null) => void;
   closeTaskModal: () => void;
   
+  // Detalhes / Página Interna da Tarefa (RF-6, RF-17)
+  openTaskDetail: (taskId: string) => void;
+  closeTaskDetail: () => void;
+  updateTaskSpecifications: (
+    taskId: string,
+    updates: {
+      richContent?: string;
+      attachments?: TaskAttachment[];
+      checklist?: TaskChecklistItem[];
+    }
+  ) => void;
+  toggleChecklistItem: (taskId: string, itemId: string) => void;
+
   // Backlog
   moveTaskToBacklog: (taskId: string, targetDate?: string) => void;
   addBacklogItem: (item: Omit<BacklogItem, 'id' | 'createdAt'>) => void;
   deleteBacklogItem: (id: string) => void;
   openPromoteBacklogModal: (item: BacklogItem | null) => void;
   promoteBacklogToTask: (backlogId: string, startTime: string, endTime: string, routineTypeId?: string) => void;
+
+  // Bloco de Notas (RF-8, RF-14)
+  addNote: (note: Omit<Note, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  updateNote: (id: string, updates: Partial<Omit<Note, 'id' | 'createdAt'>>) => void;
+  deleteNote: (id: string) => void;
+  convertNoteToTask: (
+    noteId: string,
+    startTime: string,
+    endTime: string,
+    routineTypeId?: string,
+    categoryId?: string
+  ) => void;
+
+  // Pomodoro (RF-7, RF-13)
+  startPomodoro: (linkedTaskId?: string) => void;
+  pausePomodoro: () => void;
+  resetPomodoro: (newDurationSeconds?: number) => void;
+  setPomodoroMode: (mode: PomodoroMode, durationSeconds?: number) => void;
+  setPomodoroDuration: (seconds: number) => void;
+  linkTaskToPomodoro: (taskId: string | null) => void;
+  tickPomodoro: () => void;
+  finishPomodoroSession: () => void;
 }
 
 export type FlowStore = FlowState & FlowActions;

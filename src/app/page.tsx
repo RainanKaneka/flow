@@ -1,14 +1,17 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import { useFlowStore } from '../store/useFlowStore';
 import { Header } from '../components/Header';
 import { DailyStatsBar } from '../components/DailyStatsBar';
 import { CategoryFilter } from '../components/CategoryFilter';
 import { TaskCard } from '../components/TaskCard';
 import { TaskModal } from '../components/TaskModal';
+import { TaskDetailModal } from '../components/TaskDetailModal';
 import { DashboardView } from '../components/DashboardView';
 import { BacklogView } from '../components/BacklogView';
+import { PomodoroView } from '../components/PomodoroView';
+import { NotepadView } from '../components/NotepadView';
 import { ManageRoutinesModal } from '../components/ManageRoutinesModal';
 import { ManageCategoriesModal } from '../components/ManageCategoriesModal';
 import { Sparkles, Compass, RefreshCw } from 'lucide-react';
@@ -21,6 +24,17 @@ export default function Home() {
   const selectedDate = useFlowStore((s) => s.selectedDate);
   const activeCategoryId = useFlowStore((s) => s.activeCategoryIdFilter);
   const resetToTemplate = useFlowStore((s) => s.resetToTemplate);
+  const tickPomodoro = useFlowStore((s) => s.tickPomodoro);
+  const isPomodoroActive = useFlowStore((s) => s.pomodoro.isActive);
+
+  // Background ticker para Pomodoro ativo (RF-7 / RF-13)
+  useEffect(() => {
+    if (!isPomodoroActive) return;
+    const interval = setInterval(() => {
+      tickPomodoro();
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [isPomodoroActive, tickPomodoro]);
 
   const currentRoutineType =
     routineTypes.find((rt) => rt.id === selectedRoutineTypeId) || routineTypes[0];
@@ -57,6 +71,10 @@ export default function Home() {
         {activeView === 'dashboard' && <DashboardView />}
 
         {activeView === 'backlog' && <BacklogView />}
+
+        {activeView === 'pomodoro' && <PomodoroView />}
+
+        {activeView === 'notes' && <NotepadView />}
 
         {activeView === 'routine' && (
           <>
@@ -206,6 +224,7 @@ export default function Home() {
 
       {/* Modais Globais de Controle */}
       <TaskModal />
+      <TaskDetailModal />
       <ManageRoutinesModal />
       <ManageCategoriesModal />
     </div>

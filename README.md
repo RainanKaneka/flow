@@ -2,13 +2,14 @@
 
 # Flow
 
-**Personal Routine & High-Performance Desktop App**
+**Personal Routine, Habit Architecture & High-Performance Desktop App**
 
-A minimalist personal productivity desktop application engineered to conquer daily routines through progressive levels (Easy, Medium, Hard), real-time habit tracking, and deep work focus.
+A minimalist personal productivity desktop application engineered to conquer daily routines through progressive levels, customizable routines, relational SQLite tracking, task checklists, integrated Pomodoro timer, and a creative scratchpad.
 
-[![Next.js](https://img.shields.io/badge/Next.js-15.2-black?style=flat-square&logo=next.js)](https://nextjs.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-15.5-black?style=flat-square&logo=next.js)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19.0-61dafb?style=flat-square&logo=react)](https://react.dev/)
 [![Tauri](https://img.shields.io/badge/Tauri-v2-FFC131?style=flat-square&logo=tauri)](https://v2.tauri.app/)
+[![SQLite](https://img.shields.io/badge/Storage-SQLite%203-003B57?style=flat-square&logo=sqlite)](https://sqlite.org/)
 [![Zustand](https://img.shields.io/badge/State-Zustand-443e38?style=flat-square)](https://zustand.docs.pmnd.rs/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178C6?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
 
@@ -18,50 +19,66 @@ A minimalist personal productivity desktop application engineered to conquer dai
 
 ## Overview
 
-**Flow** is designed around a core behavioral philosophy: *sustainable momentum through progressive habit adaptation*. Instead of jumping straight from inertia into an exhausting schedule, the app provides a progressive 3-tier routine system that ensures consistency before scaling effort.
+**Flow** is designed around a core behavioral philosophy: *sustainable momentum through progressive habit adaptation*. Instead of jumping straight into an overwhelming schedule, Flow empowers users with customizable routine types (e.g. progressive levels, study tracks, work schedules), flexible category tagging, subtask checklists, and deep work focus.
 
 > [!NOTE]
-> Flow was built following high-end agency design principles, featuring nested *Double-Bezel (Doppelrand)* architecture, haptic physics transitions (`cubic-bezier(0.32, 0.72, 0, 1)`), synthesized Web Audio feedback, and Notion-inspired soft surfaces.
+> Flow was built following high-end agency design principles, featuring nested *Double-Bezel (Doppelrand)* architecture, haptic physics transitions (`cubic-bezier(0.32, 0.72, 0, 1)`), Tibetan singing bowl sound synthesis via Web Audio API, and Notion-inspired soft ceramic surfaces.
 
 ---
 
 ## Key Features
 
-- **Progressive Routine Levels**: Seamlessly toggle between **Easy** (anti-desistance foundation), **Medium** (habit consolidation), and **Hard** (high performance) with preloaded schedule blocks.
-- **Golden Rules Enforcement**: Special highlight and priority tracking for non-negotiable anchor habits (e.g. zero phone in bed upon waking, immediate inertia-breaking post-lunch).
-- **Dual Timing Tracking**: Real-time comparison between estimated schedule windows and actual completion timestamps (`Done at 15:08`).
-- **Interactive Daily Feedback**: Dynamic daily consistency scoring (Epic Day 100%, Good Progress, Recovery Mode) with haptic progress bar.
-- **Category Matrix**: Quick filtering by functional domains (*Coding, Health & Sleep, Relationship, Routine, College, Creative/RPG, Leisure*).
-- **Haptic Audio Synthesis**: Pure browser-native Web Audio API micro-sounds on task check and uncheck without external media asset dependencies.
-- **Double-Bezel Aesthetics**: Machine-cut nested visual architecture with OLED Dark and Soft Cream/Ceramic themes.
-- **Desktop Ready**: Configured for lightweight native distribution via Tauri v2.
+### ⏱️ Pomodoro Timer & Deep Focus (RF-7 & RF-13)
+- **Zero-Dependency Audio Synthesis**: Pleasant Tibetan singing bowl chime with multi-harmonic frequencies (528 Hz / 1056 Hz with 2.8s natural decay) upon session completion.
+- **Task Linking**: Directly tie any active routine task to the Pomodoro timer.
+- **Automated Time Accounting**: Completed focus sessions automatically log accumulated focus minutes directly into the task's historical tracking.
+- **Flexible Modes & Controls**: Toggle between 25m Focus, 5m Short Break, and 15m Long Break with +/- 5m fine-tuning and global background execution.
+
+### 📋 Task Specifications & Subtask Checklist (RF-6)
+- **Deep Specifications Modal**: Click any task card to inspect rich guidance, step-by-step instructions, and target minutes.
+- **Interactive Checklists**: Break down complex tasks into atomic subtasks with progress tracking.
+- **Reference Materials & Links**: Attach external links (Notion, GitHub, docs, study videos) directly to the task.
+
+### 📝 Freeform Notepad & Task Conversion (RF-8 & RF-14)
+- **Notion-Inspired Board**: Fast, distraction-free scratchpad for brainstorming, project drafting, and daily journaling.
+- **Color & Tag Classification**: Organize thoughts with custom color chips and tags.
+- **One-Click Routine Conversion**: Convert any raw idea or drafted note directly into a scheduled routine task with customized start and end times.
+
+### 🎯 Dynamic Routine Types & Custom Categories (Universal App)
+- **Customizable Routine Types**: Create, rename, edit, or delete routine types (defaulting to Easy, Medium, Hard, or personal schedules).
+- **Custom Categories**: Define custom category names, badge colors, and icons.
+- **Golden Rules (Regras de Ouro)**: Non-negotiable daily anchor habits (e.g. out of bed without screens, focused study blocks).
+
+### 📥 Pending Backlog Pool (RF-12)
+- **Unscheduled Task Reservoir**: Store tasks that couldn't be completed on a given day or ideas that need future scheduling.
+- **One-Click Pull to Today**: Drag or pull tasks from the backlog directly into the active daily schedule.
+
+### 📊 Relational SQLite & Analytics Dashboard (RF-16)
+- **Relational Integrity**: Complete SQLite 3 schema (`routine_types`, `categories`, `tasks`, `task_logs`, `notes`, `backlog_items`).
+- **Performance Analytics**: Real-time streak tracking, weekly adherence score, total focus hours, and 7-day adherence charts.
+- **One-Click SQL Backup Export**: Export full relational schema and data into standard `.sql` dump files anytime.
 
 ---
 
-## Routine Architecture
+## Application Architecture
 
 ```mermaid
 graph TD
-    A[Level: Easy] -->|2 weeks consistency| B[Level: Medium]
-    B -->|3-4 weeks consistency| C[Level: Hard]
+    User([User]) --> Header[Navigation Header & Pomodoro Bar]
+    Header --> RoutineView[Routine View: Stream, Filters & Daily Stats]
+    Header --> PomodoroView[Pomodoro View: Timer & Task Linking]
+    Header --> NotepadView[Notepad View: Scratchpad & Task Conversion]
+    Header --> BacklogView[Backlog View: Pending Items Pool]
+    Header --> DashboardView[Dashboard View: Metrics, Charts & SQL Export]
+
+    RoutineView --> TaskDetailModal[Task Detail: Checklist & Material Links]
+    RoutineView --> TaskModal[Task Creation & Edit Modal]
     
-    subgraph Level: Easy [Anti-Desistance Foundation]
-        E1[Wake up at 10:30 without screens in bed]
-        E2[Break afternoon inertia: No bed after lunch call]
-        E3[45 min timed deep programming session]
-    end
-    
-    subgraph Level: Medium [Habit Consolidation]
-        M1[Wake up at 09:30 + 10 min exercise]
-        M2[Outdoor healthy breakfast + 1h30 code focus]
-        M3[Rotational creative blocks: Pixel-Art, RPG Lore, Career]
-    end
-    
-    subgraph Level: Hard [High Performance]
-        H1[Wake up at 09:00 + 15 min calisthenics]
-        H2[2h15 Deep Work in software & game dev]
-        H3[Dedicated daily art studio + 8h30 guaranteed sleep]
-    end
+    PomodoroView -->|Logs Focus Time| SQLite[(SQLite Relational Engine)]
+    NotepadView -->|Converts Note| SQLite
+    TaskDetailModal -->|Persists Checklist & Links| SQLite
+    RoutineView -->|Check-in & Timings| SQLite
+    BacklogView -->|Schedules Task| SQLite
 ```
 
 ---
@@ -70,13 +87,14 @@ graph TD
 
 | Layer | Technology | Purpose |
 |---|---|---|
-| **Framework** | Next.js 15 (App Router) | Static export and optimized render pipeline |
-| **UI Library** | React 19 + Vanilla CSS | Maximum stylistic control with custom design tokens |
-| **Desktop Shell** | Tauri v2 | Cross-platform lightweight native packaging |
-| **State Management** | Zustand (v5) + persist | Reactive state with atomic selectors and JSON persistence |
-| **Icons & Micro-UI** | Lucide React | Precision line icons |
-| **Typography** | Plus Jakarta Sans & Space Grotesk | Modern grotesque and clean sans-serif typography |
-| **Audio Engine** | Web Audio API | Zero-latency synthesized haptic sound feedback |
+| **Framework** | Next.js 15 (App Router) | Static export and high-performance render pipeline |
+| **UI Library** | React 19 + Vanilla CSS | Strict Double-Bezel architecture and custom design tokens |
+| **Desktop Shell** | Tauri v2 | Lightweight native packaging (<15MB executable) |
+| **Database Engine** | SQLite 3 (`sql.js` / WebAssembly) | Zero-overhead relational persistence with `.sql` exports |
+| **State Management** | Zustand (v5) + persist | Reactive atomic store with localStorage & SQLite sync |
+| **Icons** | Lucide React | Precision geometric icons |
+| **Typography** | Plus Jakarta Sans & Space Grotesk | Modern grotesque and clean monospace typography |
+| **Audio Engine** | Web Audio API | Zero-latency synthesized haptic sounds & singing bowl chime |
 
 ---
 
@@ -87,7 +105,7 @@ graph TD
 - [Node.js](https://nodejs.org/) (v18.0 or later, recommended v20+)
 - npm (v9.0 or later)
 
-### Installation
+### Installation & Run
 
 1. Clone the repository:
    ```bash
@@ -100,12 +118,12 @@ graph TD
    npm install
    ```
 
-3. Launch the development server:
+3. Launch development server:
    ```bash
    npm run dev
    ```
 
-4. Open your browser and navigate to:
+4. Access the application in your browser:
    ```
    http://localhost:3000
    ```
@@ -118,7 +136,7 @@ To create a static production build:
 npm run build
 ```
 
-The static bundle will be exported to the `out/` directory, ready for web hosting or Tauri bundling.
+The optimized static bundle will be exported to the `out/` directory, ready for Tauri desktop bundling or web distribution.
 
 > [!TIP]
-> If you have Rust and the Tauri CLI installed, you can build the native Windows desktop binary with `npm run tauri build`.
+> To bundle the native desktop app with Tauri v2, run `npm run tauri build`.

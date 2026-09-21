@@ -1,7 +1,20 @@
 import { create } from 'zustand';
 import { persist, subscribeWithSelector } from 'zustand/middleware';
-import { FlowStore, Task, RoutineType, Category, AppView, BacklogItem } from '../types/routine';
+import {
+  FlowStore,
+  Task,
+  RoutineType,
+  Category,
+  AppView,
+  BacklogItem,
+  Note,
+  PomodoroState,
+  PomodoroMode,
+  TaskAttachment,
+  TaskChecklistItem,
+} from '../types/routine';
 import { DEFAULT_ROUTINE_TYPES, DEFAULT_CATEGORIES, DEFAULT_TASKS } from '../data/initialRoutine';
+import { sounds } from '../utils/audio';
 
 const getTodayDateString = (): string => {
   const today = new Date();
@@ -19,22 +32,50 @@ export const useFlowStore = create<FlowStore>()(
         activeView: 'routine',
         selectedDate: getTodayDateString(),
         theme: 'dark',
-        
+
         routineTypes: DEFAULT_ROUTINE_TYPES,
         selectedRoutineTypeId: 'easy',
-        
+
         categories: DEFAULT_CATEGORIES,
         activeCategoryIdFilter: 'all',
-        
+
         tasks: DEFAULT_TASKS,
         logs: {},
         backlog: [],
-        
+
+        // Bloco de Notas (RF-8, RF-14)
+        notes: [
+          {
+            id: 'note_welcome',
+            title: 'Boas-vindas ao seu Bloco de Notas',
+            content:
+              'Use este espaço para rascunhar ideias, listar tópicos ou preparar matérias. Quando estiver pronto, basta clicar em "Transformar em Tarefa" para agendá-la diretamente na sua rotina do dia!',
+            tags: ['dica', 'início'],
+            color: '#6366F1',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          },
+        ],
+
+        // Pomodoro (RF-7, RF-13)
+        pomodoro: {
+          isActive: false,
+          timeLeftSeconds: 25 * 60,
+          totalDurationSeconds: 25 * 60,
+          mode: 'focus',
+          linkedTaskId: null,
+          completedSessions: 0,
+        },
+
+        // Modais de Controle
         isTaskModalOpen: false,
         editingTask: null,
         promoteBacklogModalItem: null,
         isManageRoutinesModalOpen: false,
         isManageCategoriesModalOpen: false,
+
+        // Modal de Especificações / Página Interna da Tarefa (RF-6)
+        selectedTaskIdForDetail: null,
 
         // Actions: Navigation & Global
         setActiveView: (view: AppView) => {
@@ -85,7 +126,7 @@ export const useFlowStore = create<FlowStore>()(
 
         deleteRoutineType: (id: string) => {
           set((state) => {
-            if (state.routineTypes.length <= 1) return state; // Manter pelo menos 1
+            if (state.routineTypes.length <= 1) return state;
             const remaining = state.routineTypes.filter((t) => t.id !== id);
             return {
               routineTypes: remaining,
@@ -173,6 +214,7 @@ export const useFlowStore = create<FlowStore>()(
                 date,
                 completed: isCompleted,
                 completedAt: isCompleted ? timeString : undefined,
+                timeSpentMinutes: currentLog?.timeSpentMinutes || 0,
               },
             },
           }));
@@ -203,6 +245,12 @@ export const useFlowStore = create<FlowStore>()(
         deleteTask: (taskId: string) => {
           set((state) => ({
             tasks: state.tasks.filter((t) => t.id !== taskId),
+            selectedTaskIdForDetail:
+              state.selectedTaskIdForDetail === taskId ? null : state.selectedTaskIdForDetail,
+            pomodoro:
+              state.pomodoro.linkedTaskId === taskId
+                ? { ...state.pomodoro, linkedTaskId: null }
+                : state.pomodoro,
           }));
         },
 
@@ -213,6 +261,16 @@ export const useFlowStore = create<FlowStore>()(
             tasks: DEFAULT_TASKS,
             logs: {},
             backlog: [],
+            notes: [],
+            selectedTaskIdForDetail: null,
+            pomodoro: {
+              isActive: false,
+              timeLeftSeconds: 25 * 60,
+              totalDurationSeconds: 25 * 60,
+              mode: 'focus',
+              linkedTaskId: null,
+              completedSessions: 0,
+            },
           });
         },
 
@@ -222,6 +280,35 @@ export const useFlowStore = create<FlowStore>()(
 
         closeTaskModal: () => {
           set({ isTaskModalOpen: false, editingTask: null });
+        },
+
+        // Task Detail & Specifications (RF-6, RF-17)
+        openTaskDetail: (taskId: string) => {
+          set({ selectedTaskIdForDetail: taskId });
+        },
+
+        closeTaskDetail: () => {
+          set({ selectedTaskIdForDetail: null });
+        },
+
+        updateTaskSpecifications: (taskId, updates) => {
+          set((state) => ({
+            tasks: state.tasks.map((t) =>
+              t.id === taskId ? { ...t, ...updates } : t
+            ),
+          }));
+        },
+
+        toggleChecklistItem: (taskId: string, itemId: string) => {
+          set((state) => ({
+            tasks: state.tasks.map((t) => {
+              if (t.id !== taskId) return t;
+              const checklist = (t.checklist || []).map((item) =>
+                item.id === itemId ? { ...item, completed: !item.completed } : item
+              );
+              return { ...t, checklist };
+            }),
+          }));
         },
 
         // Backlog Actions
@@ -304,6 +391,220 @@ export const useFlowStore = create<FlowStore>()(
             backlog: state.backlog.filter((b) => b.id !== backlogId),
             promoteBacklogModalItem: null,
             activeView: 'routine',
+          });
+        },
+
+        // Bloco de Notas (RF-8, RF-14)
+        addNote: (noteData) => {
+          const now = new Date().toISOString();
+          const newNote: Note = {
+            ...noteData,
+            id: `note_${Date.now()}`,
+            createdAt: now,
+            updatedAt: now,
+          };
+          set((state) => ({
+            notes: [newNote, ...state.notes],
+          }));
+        },
+
+        updateNote: (id, updates) => {
+          set((state) => ({
+            notes: state.notes.map((n) =>
+              n.id === id
+                ? { ...n, ...updates, updatedAt: new Date().toISOString() }
+                : n
+            ),
+          }));
+        },
+
+        deleteNote: (id) => {
+          set((state) => ({
+            notes: state.notes.filter((n) => n.id !== id),
+          }));
+        },
+
+        convertNoteToTask: (noteId, startTime, endTime, routineTypeId, categoryId) => {
+          const state = get();
+          const note = state.notes.find((n) => n.id === noteId);
+          if (!note) return;
+
+          const targetTypeId = routineTypeId || state.selectedRoutineTypeId;
+          const targetCatId = categoryId || state.categories[0]?.id || 'focus';
+
+          const [y, m, d] = state.selectedDate.split('-').map(Number);
+          const dayOfWeek = new Date(y, m - 1, d).getDay();
+
+          const [h1, m1] = startTime.split(':').map(Number);
+          const [h2, m2] = endTime.split(':').map(Number);
+          let targetMins = (h2 * 60 + m2) - (h1 * 60 + m1);
+          if (targetMins <= 0) targetMins = 30;
+
+          const newTask: Task = {
+            id: `task_${Date.now()}`,
+            title: note.title,
+            description: note.content.slice(0, 140) + (note.content.length > 140 ? '...' : ''),
+            richContent: note.content,
+            startTime,
+            endTime,
+            routineTypeId: targetTypeId,
+            categoryId: targetCatId,
+            daysOfWeek: [dayOfWeek],
+            targetMinutes: targetMins,
+            tags: note.tags.length > 0 ? note.tags : ['Do Bloco de Notas'],
+            isCustom: true,
+          };
+
+          set({
+            tasks: [...state.tasks, newTask],
+            activeView: 'routine',
+          });
+        },
+
+        // Pomodoro (RF-7, RF-13)
+        startPomodoro: (linkedTaskId?: string) => {
+          sounds.playPomodoroStart();
+          set((state) => ({
+            pomodoro: {
+              ...state.pomodoro,
+              isActive: true,
+              linkedTaskId: linkedTaskId !== undefined ? linkedTaskId : state.pomodoro.linkedTaskId,
+            },
+          }));
+        },
+
+        pausePomodoro: () => {
+          sounds.playTick();
+          set((state) => ({
+            pomodoro: {
+              ...state.pomodoro,
+              isActive: false,
+            },
+          }));
+        },
+
+        resetPomodoro: (newDurationSeconds?: number) => {
+          sounds.playTick();
+          set((state) => {
+            const dur = newDurationSeconds || state.pomodoro.totalDurationSeconds;
+            return {
+              pomodoro: {
+                ...state.pomodoro,
+                isActive: false,
+                timeLeftSeconds: dur,
+                totalDurationSeconds: dur,
+              },
+            };
+          });
+        },
+
+        setPomodoroMode: (mode: PomodoroMode, durationSeconds?: number) => {
+          sounds.playTick();
+          let defaultSecs = 25 * 60;
+          if (mode === 'shortBreak') defaultSecs = 5 * 60;
+          if (mode === 'longBreak') defaultSecs = 15 * 60;
+          const dur = durationSeconds || defaultSecs;
+
+          set((state) => ({
+            pomodoro: {
+              ...state.pomodoro,
+              mode,
+              isActive: false,
+              totalDurationSeconds: dur,
+              timeLeftSeconds: dur,
+            },
+          }));
+        },
+
+        setPomodoroDuration: (seconds: number) => {
+          set((state) => ({
+            pomodoro: {
+              ...state.pomodoro,
+              totalDurationSeconds: seconds,
+              timeLeftSeconds: seconds,
+              isActive: false,
+            },
+          }));
+        },
+
+        linkTaskToPomodoro: (taskId: string | null) => {
+          set((state) => ({
+            pomodoro: {
+              ...state.pomodoro,
+              linkedTaskId: taskId,
+            },
+          }));
+        },
+
+        tickPomodoro: () => {
+          const state = get();
+          if (!state.pomodoro.isActive) return;
+
+          const nextSecs = state.pomodoro.timeLeftSeconds - 1;
+          if (nextSecs <= 0) {
+            get().finishPomodoroSession();
+          } else {
+            set((s) => ({
+              pomodoro: {
+                ...s.pomodoro,
+                timeLeftSeconds: nextSecs,
+              },
+            }));
+          }
+        },
+
+        finishPomodoroSession: () => {
+          sounds.playPomodoroChime();
+          const state = get();
+          const isFocus = state.pomodoro.mode === 'focus';
+          const sessionMinutes = Math.round(state.pomodoro.totalDurationSeconds / 60);
+
+          // Se vinculado a uma tarefa e modo foco, registrar tempo real focado (RF-13)
+          let updatedLogs = { ...state.logs };
+          if (isFocus && state.pomodoro.linkedTaskId) {
+            const taskId = state.pomodoro.linkedTaskId;
+            const date = state.selectedDate;
+            const key = `${date}_${taskId}`;
+            const existingLog = updatedLogs[key];
+
+            const currentMinutes = existingLog?.timeSpentMinutes || 0;
+            updatedLogs[key] = {
+              id: key,
+              taskId,
+              date,
+              completed: existingLog?.completed || false,
+              completedAt: existingLog?.completedAt,
+              timeSpentMinutes: currentMinutes + sessionMinutes,
+            };
+          }
+
+          const newCompletedSessions = isFocus
+            ? state.pomodoro.completedSessions + 1
+            : state.pomodoro.completedSessions;
+
+          // Transição automática de modo (foco -> pausa curta ou longa)
+          let nextMode: PomodoroMode = 'focus';
+          let nextDuration = 25 * 60;
+          if (isFocus) {
+            if (newCompletedSessions % 4 === 0) {
+              nextMode = 'longBreak';
+              nextDuration = 15 * 60;
+            } else {
+              nextMode = 'shortBreak';
+              nextDuration = 5 * 60;
+            }
+          }
+
+          set({
+            logs: updatedLogs,
+            pomodoro: {
+              ...state.pomodoro,
+              isActive: false,
+              mode: nextMode,
+              totalDurationSeconds: nextDuration,
+              timeLeftSeconds: nextDuration,
+              completedSessions: newCompletedSessions,
+            },
           });
         },
       }),

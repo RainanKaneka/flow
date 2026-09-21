@@ -15,6 +15,8 @@ import {
   Inbox,
   CheckCircle2,
   SlidersHorizontal,
+  Timer,
+  FileText,
 } from 'lucide-react';
 
 export const Header: React.FC = () => {
@@ -32,6 +34,12 @@ export const Header: React.FC = () => {
   const setDate = useFlowStore((s) => s.setDate);
   const openTaskModal = useFlowStore((s) => s.openTaskModal);
   const backlog = useFlowStore((s) => s.backlog);
+  const notes = useFlowStore((s) => s.notes);
+  const pomodoro = useFlowStore((s) => s.pomodoro);
+
+  const pomodoroMinutes = Math.floor(pomodoro.timeLeftSeconds / 60);
+  const pomodoroSeconds = pomodoro.timeLeftSeconds % 60;
+  const liveTimeStr = `${String(pomodoroMinutes).padStart(2, '0')}:${String(pomodoroSeconds).padStart(2, '0')}`;
 
   // Navegação de datas
   const changeDateByDays = (days: number) => {
@@ -215,11 +223,110 @@ export const Header: React.FC = () => {
                 </span>
               )}
             </button>
+            {/* Pomodoro Tab */}
+            <button
+              onClick={() => setActiveView('pomodoro')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '6px 14px',
+                borderRadius: '9999px',
+                border: 'none',
+                fontSize: '12px',
+                fontWeight: activeView === 'pomodoro' ? 700 : 500,
+                cursor: 'pointer',
+                backgroundColor: activeView === 'pomodoro' ? 'var(--bg-secondary)' : 'transparent',
+                color: activeView === 'pomodoro' ? 'var(--text-primary)' : 'var(--text-secondary)',
+                boxShadow: activeView === 'pomodoro' ? '0 2px 8px rgba(0,0,0,0.06)' : 'none',
+                transition: 'all 200ms var(--bezier-haptic)',
+              }}
+            >
+              <Timer size={13} color={pomodoro.isActive ? 'var(--accent-primary)' : undefined} />
+              <span>Pomodoro</span>
+              {pomodoro.isActive && (
+                <span
+                  style={{
+                    fontSize: '10px',
+                    padding: '1px 6px',
+                    borderRadius: '9999px',
+                    background: 'var(--accent-soft)',
+                    color: 'var(--accent-primary)',
+                    fontWeight: 700,
+                    fontFamily: 'var(--font-mono)',
+                  }}
+                >
+                  {liveTimeStr}
+                </span>
+              )}
+            </button>
+
+            {/* Bloco de Notas Tab */}
+            <button
+              onClick={() => setActiveView('notes')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '6px 14px',
+                borderRadius: '9999px',
+                border: 'none',
+                fontSize: '12px',
+                fontWeight: activeView === 'notes' ? 700 : 500,
+                cursor: 'pointer',
+                backgroundColor: activeView === 'notes' ? 'var(--bg-secondary)' : 'transparent',
+                color: activeView === 'notes' ? 'var(--text-primary)' : 'var(--text-secondary)',
+                boxShadow: activeView === 'notes' ? '0 2px 8px rgba(0,0,0,0.06)' : 'none',
+                transition: 'all 200ms var(--bezier-haptic)',
+              }}
+            >
+              <FileText size={13} />
+              <span>Notas</span>
+              {notes.length > 0 && (
+                <span
+                  style={{
+                    fontSize: '10px',
+                    padding: '1px 6px',
+                    borderRadius: '9999px',
+                    background: 'var(--bg-secondary)',
+                    color: 'var(--text-muted)',
+                    fontWeight: 700,
+                  }}
+                >
+                  {notes.length}
+                </span>
+              )}
+            </button>
           </div>
         </div>
 
         {/* Right Controls */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          {/* Mini Live Timer Pill (se o pomodoro estiver ativo e estivermos em outra aba) */}
+          {pomodoro.isActive && activeView !== 'pomodoro' && (
+            <button
+              onClick={() => setActiveView('pomodoro')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '6px 12px',
+                borderRadius: '9999px',
+                border: '1px solid rgba(99, 102, 241, 0.4)',
+                background: 'rgba(99, 102, 241, 0.12)',
+                color: 'var(--accent-primary)',
+                fontSize: '12px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                fontFamily: 'var(--font-mono)',
+              }}
+              title="Voltar ao Pomodoro ativo"
+            >
+              <Timer size={13} />
+              <span>{liveTimeStr}</span>
+            </button>
+          )}
+
           {/* Theme Toggle */}
           <button
             onClick={toggleTheme}
@@ -255,7 +362,7 @@ export const Header: React.FC = () => {
       </div>
 
       {/* Sub-bar: Visível para selecionar Tipos de Rotina e Data */}
-      {activeView !== 'backlog' && (
+      {(activeView === 'routine' || activeView === 'dashboard') && (
         <div
           style={{
             display: 'flex',
