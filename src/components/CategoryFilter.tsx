@@ -2,32 +2,13 @@
 
 import React from 'react';
 import { useFlowStore } from '../store/useFlowStore';
-import { TaskCategory } from '../types/routine';
-import {
-  Code2,
-  Heart,
-  Activity,
-  GraduationCap,
-  Sparkles,
-  Gamepad2,
-  Clock,
-  Layers,
-} from 'lucide-react';
+import { Layers, Plus, Tag } from 'lucide-react';
 
 export const CategoryFilter: React.FC = () => {
-  const activeCategory = useFlowStore((s) => s.activeCategoryFilter);
-  const setCategoryFilter = useFlowStore((s) => s.setCategoryFilter);
-
-  const categories: { id: TaskCategory | 'all'; label: string; icon: React.ReactNode }[] = [
-    { id: 'all', label: 'Todas as Áreas', icon: <Layers size={13} /> },
-    { id: 'coding', label: 'Programação', icon: <Code2 size={13} /> },
-    { id: 'health', label: 'Saúde & Sono', icon: <Activity size={13} /> },
-    { id: 'relationship', label: 'Call Namorada', icon: <Heart size={13} /> },
-    { id: 'routine', label: 'Rotina Matinal/Tarde', icon: <Clock size={13} /> },
-    { id: 'college', label: 'Faculdade', icon: <GraduationCap size={13} /> },
-    { id: 'creative', label: 'Arte & RPG', icon: <Sparkles size={13} /> },
-    { id: 'leisure', label: 'Lazer Livre', icon: <Gamepad2 size={13} /> },
-  ];
+  const categories = useFlowStore((s) => s.categories);
+  const activeCategoryId = useFlowStore((s) => s.activeCategoryIdFilter);
+  const setCategoryIdFilter = useFlowStore((s) => s.setCategoryIdFilter);
+  const openManageCategoriesModal = useFlowStore((s) => s.openManageCategoriesModal);
 
   return (
     <div
@@ -40,12 +21,38 @@ export const CategoryFilter: React.FC = () => {
         scrollbarWidth: 'none',
       }}
     >
+      {/* Botão Todas as Áreas */}
+      <button
+        onClick={() => setCategoryIdFilter('all')}
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '6px',
+          padding: '6px 14px',
+          borderRadius: '9999px',
+          fontSize: '12px',
+          fontWeight: activeCategoryId === 'all' ? 700 : 500,
+          cursor: 'pointer',
+          border: '1px solid',
+          borderColor: activeCategoryId === 'all' ? 'transparent' : 'var(--border-subtle)',
+          backgroundColor: activeCategoryId === 'all' ? 'var(--text-primary)' : 'var(--bg-secondary)',
+          color: activeCategoryId === 'all' ? 'var(--bg-primary)' : 'var(--text-secondary)',
+          transition: 'all 200ms cubic-bezier(0.32, 0.72, 0, 1)',
+          whiteSpace: 'nowrap',
+          flexShrink: 0,
+        }}
+      >
+        <Layers size={13} />
+        <span>Todas as Áreas</span>
+      </button>
+
+      {/* Categorias Dinâmicas */}
       {categories.map((cat) => {
-        const isActive = activeCategory === cat.id;
+        const isActive = activeCategoryId === cat.id;
         return (
           <button
             key={cat.id}
-            onClick={() => setCategoryFilter(cat.id)}
+            onClick={() => setCategoryIdFilter(cat.id)}
             style={{
               display: 'inline-flex',
               alignItems: 'center',
@@ -64,11 +71,43 @@ export const CategoryFilter: React.FC = () => {
               flexShrink: 0,
             }}
           >
-            {cat.icon}
-            <span>{cat.label}</span>
+            <div
+              style={{
+                width: '8px',
+                height: '8px',
+                borderRadius: '50%',
+                backgroundColor: cat.color || '#6366F1',
+              }}
+            />
+            <span>{cat.name}</span>
           </button>
         );
       })}
+
+      {/* Botão Gerenciar Categorias */}
+      <button
+        onClick={openManageCategoriesModal}
+        title="Gerenciar / Criar Categorias"
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '4px',
+          padding: '6px 12px',
+          borderRadius: '9999px',
+          fontSize: '12px',
+          fontWeight: 600,
+          cursor: 'pointer',
+          border: '1px dashed var(--border-focus)',
+          backgroundColor: 'transparent',
+          color: 'var(--accent-primary)',
+          transition: 'all 200ms cubic-bezier(0.32, 0.72, 0, 1)',
+          whiteSpace: 'nowrap',
+          flexShrink: 0,
+        }}
+      >
+        <Plus size={12} strokeWidth={2.5} />
+        <span>Gerenciar Categorias</span>
+      </button>
     </div>
   );
 };

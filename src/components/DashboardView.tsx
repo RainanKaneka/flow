@@ -30,13 +30,18 @@ export const DashboardView: React.FC = () => {
   const tasks = useFlowStore((s) => s.tasks);
   const logs = useFlowStore((s) => s.logs);
   const backlog = useFlowStore((s) => s.backlog);
-  const selectedLevel = useFlowStore((s) => s.selectedLevel);
+  const routineTypes = useFlowStore((s) => s.routineTypes);
+  const selectedRoutineTypeId = useFlowStore((s) => s.selectedRoutineTypeId);
+  const categories = useFlowStore((s) => s.categories);
   const theme = useFlowStore((s) => s.theme);
+
+  const currentRoutineType =
+    routineTypes.find((rt) => rt.id === selectedRoutineTypeId) || routineTypes[0];
 
   // Cálculos de métricas memoizados (vercel-react-best-practices)
   const metrics = useMemo(() => {
-    return calculateStreakAndMetrics(tasks, logs, selectedLevel);
-  }, [tasks, logs, selectedLevel]);
+    return calculateStreakAndMetrics(tasks, logs, selectedRoutineTypeId, categories);
+  }, [tasks, logs, selectedRoutineTypeId, categories]);
 
   // Médias dos últimos 7 dias
   const last7Days = metrics.history14Days.slice(7);
@@ -45,13 +50,18 @@ export const DashboardView: React.FC = () => {
   );
   const totalTasksCompleted = Object.values(logs).filter((l) => l.completed).length;
 
-  // Total de horas de programação focadas
-  const codingMinutes = metrics.categoryTime['coding']?.minutes || 0;
-  const codingHours = (codingMinutes / 60).toFixed(1);
+  // Total de horas focadas cumpridas
+  const totalMinutes = Object.values(logs)
+    .filter((l) => l.completed)
+    .reduce((sum, l) => {
+      const task = tasks.find((t) => t.id === l.taskId);
+      return sum + (task?.targetMinutes || 0);
+    }, 0);
+  const focusedHours = (totalMinutes / 60).toFixed(1);
 
-  // Exportar Dump SQLite
+  // Exportar Dump SQLite Relacional
   const handleExportSqlite = () => {
-    const dump = generateSqlDump(tasks, logs, backlog);
+    const dump = generateSqlDump(routineTypes, categories, tasks, logs, backlog);
     const blob = new Blob([dump], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -61,29 +71,18 @@ export const DashboardView: React.FC = () => {
     URL.revokeObjectURL(url);
   };
 
-  // Avaliação de Transição de Nível
+  // Avaliação de Consistência Dinâmica
   const getEvolutionCriterion = () => {
-    if (selectedLevel === 'easy') {
-      return {
-        target: '10 dias úteis com 45m de código e sem celular na cama',
-        progress: `${metrics.currentStreak}/10 dias`,
-        status: metrics.currentStreak >= 8 ? 'Pronto para o Nível Médio!' : 'Construindo consistência no Nível Fácil',
-        isReady: metrics.currentStreak >= 8,
-      };
-    }
-    if (selectedLevel === 'medium') {
-      return {
-        target: '3 a 4 semanas mantendo acordar 09:30 e rotação criativa',
-        progress: `${metrics.currentStreak}/20 dias`,
-        status: metrics.currentStreak >= 16 ? 'Pronto para a Alta Performance!' : 'Consolidando Nível Médio',
-        isReady: metrics.currentStreak >= 16,
-      };
-    }
     return {
-      target: 'Estado da Arte: 100% dos hábitos ativos',
+      target: currentRoutineType?.philosophy || `Manter constância no ${currentRoutineType?.name}`,
       progress: `${metrics.currentStreak} dias consecutivos`,
-      status: 'Alta Performance Ativa',
-      isReady: true,
+      status:
+        metrics.currentStreak >= 14
+          ? 'Hábito Consolidado!'
+          : metrics.currentStreak >= 7
+          ? 'Excelente Consistência!'
+          : 'Construindo Consistência Diária',
+      isReady: metrics.currentStreak >= 7,
     };
   };
 
@@ -167,12 +166,12 @@ export const DashboardView: React.FC = () => {
           </div>
         </div>
 
-        {/* Foco em Programação */}
+        {/* Tempo Focado */}
         <div className="double-bezel-outer">
           <div className="double-bezel-inner" style={{ padding: '18px 20px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
               <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>
-                Estudo de Código
+                Tempo Focado
               </span>
               <div
                 style={{
@@ -186,17 +185,17 @@ export const DashboardView: React.FC = () => {
                   justifyContent: 'center',
                 }}
               >
-                <Code2 size={18} strokeWidth={2.4} />
+                <Clock size={18} strokeWidth={2.4} />
               </div>
             </div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
               <span style={{ fontSize: '28px', fontWeight: 800, color: 'var(--text-primary)' }}>
-                {codingHours}h
+                {focusedHours}h
               </span>
               <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>acumuladas</span>
             </div>
             <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
-              Tempo dedicado a projetos e teoria
+              Tempo total dedicado a tarefas concluídas
             </p>
           </div>
         </div>
@@ -254,7 +253,7 @@ export const DashboardView: React.FC = () => {
                 Adesão Diária à Rotina (Últimos 14 Dias)
               </h3>
               <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                Porcentagem de tarefas executadas por dia no Nível {selectedLevel.toUpperCase()}
+                Porcentagem de tarefas executadas por dia em {currentRoutineType?.name}
               </p>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -367,10 +366,10 @@ export const DashboardView: React.FC = () => {
               </div>
               <div>
                 <h4 style={{ fontSize: '15px', fontWeight: 700 }}>
-                  Critério de Evolução de Nível
+                  Consistência da Rotina
                 </h4>
                 <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                  Extraído do Plano Oficial de Rotina
+                  Foco ativo: {currentRoutineType?.name}
                 </span>
               </div>
             </div>

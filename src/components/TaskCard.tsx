@@ -11,13 +11,6 @@ import {
   ShieldAlert,
   Edit2,
   Trash2,
-  Tag,
-  Code2,
-  Heart,
-  Activity,
-  GraduationCap,
-  Sparkles,
-  Gamepad2,
   Inbox,
 } from 'lucide-react';
 
@@ -28,10 +21,17 @@ interface TaskCardProps {
 export const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
   const selectedDate = useFlowStore((s) => s.selectedDate);
   const logs = useFlowStore((s) => s.logs);
+  const categories = useFlowStore((s) => s.categories);
   const toggleTaskCompletion = useFlowStore((s) => s.toggleTaskCompletion);
   const openTaskModal = useFlowStore((s) => s.openTaskModal);
   const deleteTask = useFlowStore((s) => s.deleteTask);
   const moveTaskToBacklog = useFlowStore((s) => s.moveTaskToBacklog);
+
+  const category = categories.find((c) => c.id === task.categoryId) || {
+    id: task.categoryId,
+    name: 'Geral',
+    color: '#6366F1',
+  };
 
   const key = `${selectedDate}_${task.id}`;
   const log = logs[key];
@@ -46,27 +46,6 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
     }
     toggleTaskCompletion(task.id, selectedDate);
   };
-
-  const getCategoryColor = (cat: string) => {
-    switch (cat) {
-      case 'coding':
-        return { color: '#6366F1', bg: 'rgba(99, 102, 241, 0.12)', icon: <Code2 size={12} /> };
-      case 'relationship':
-        return { color: '#F43F5E', bg: 'rgba(244, 63, 94, 0.12)', icon: <Heart size={12} /> };
-      case 'health':
-        return { color: '#10B981', bg: 'rgba(16, 185, 129, 0.12)', icon: <Activity size={12} /> };
-      case 'college':
-        return { color: '#8B5CF6', bg: 'rgba(139, 92, 246, 0.12)', icon: <GraduationCap size={12} /> };
-      case 'creative':
-        return { color: '#0EA5E9', bg: 'rgba(14, 165, 233, 0.12)', icon: <Sparkles size={12} /> };
-      case 'leisure':
-        return { color: '#EC4899', bg: 'rgba(236, 72, 153, 0.12)', icon: <Gamepad2 size={12} /> };
-      default:
-        return { color: 'var(--text-secondary)', bg: 'var(--bg-elevated)', icon: <Clock size={12} /> };
-    }
-  };
-
-  const catStyle = getCategoryColor(task.category);
 
   return (
     <div
@@ -121,22 +100,30 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
           {/* Details */}
           <div style={{ flex: 1 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '4px' }}>
-              {/* Category Pill */}
+              {/* Category Pill Dinâmica */}
               <span
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
-                  gap: '4px',
+                  gap: '5px',
                   padding: '2px 8px',
                   borderRadius: '9999px',
                   fontSize: '11px',
                   fontWeight: 600,
-                  color: catStyle.color,
-                  backgroundColor: catStyle.bg,
+                  color: category.color,
+                  backgroundColor: 'var(--bg-elevated)',
+                  border: `1px solid ${category.color}40`,
                 }}
               >
-                {catStyle.icon}
-                <span>{task.category.toUpperCase()}</span>
+                <div
+                  style={{
+                    width: '6px',
+                    height: '6px',
+                    borderRadius: '50%',
+                    backgroundColor: category.color,
+                  }}
+                />
+                <span>{category.name}</span>
               </span>
 
               {/* Golden Rule Badge */}

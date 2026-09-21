@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, subscribeWithSelector } from 'zustand/middleware';
-import { FlowStore, Task, TaskCategory, RoutineLevel, AppView, BacklogItem } from '../types/routine';
-import { INITIAL_TASKS } from '../data/initialRoutine';
+import { FlowStore, Task, RoutineType, Category, AppView, BacklogItem } from '../types/routine';
+import { DEFAULT_ROUTINE_TYPES, DEFAULT_CATEGORIES, DEFAULT_TASKS } from '../data/initialRoutine';
 
 const getTodayDateString = (): string => {
   const today = new Date();
@@ -17,43 +17,28 @@ export const useFlowStore = create<FlowStore>()(
       (set, get) => ({
         // State
         activeView: 'routine',
-        selectedLevel: 'easy',
         selectedDate: getTodayDateString(),
         theme: 'dark',
-        tasks: INITIAL_TASKS,
+        
+        routineTypes: DEFAULT_ROUTINE_TYPES,
+        selectedRoutineTypeId: 'easy',
+        
+        categories: DEFAULT_CATEGORIES,
+        activeCategoryIdFilter: 'all',
+        
+        tasks: DEFAULT_TASKS,
         logs: {},
-        backlog: [
-          {
-            id: 'bk_sample_1',
-            title: 'Configurar extensão do VS Code para Rust',
-            description: 'Instalar rust-analyzer e configurar formatação automática para projetos desktop.',
-            category: 'coding',
-            targetMinutes: 30,
-            tags: ['dev', 'rust'],
-            createdAt: new Date().toISOString(),
-          },
-          {
-            id: 'bk_sample_2',
-            title: 'Escrever introdução da facção dos Magos do RPG',
-            description: 'Definir história de origem e 3 magias principais do grimório antigo.',
-            category: 'creative',
-            targetMinutes: 45,
-            tags: ['rpg', 'lore'],
-            createdAt: new Date().toISOString(),
-          },
-        ],
-        activeCategoryFilter: 'all',
+        backlog: [],
+        
         isTaskModalOpen: false,
         editingTask: null,
         promoteBacklogModalItem: null,
+        isManageRoutinesModalOpen: false,
+        isManageCategoriesModalOpen: false,
 
-        // Actions
+        // Actions: Navigation & Global
         setActiveView: (view: AppView) => {
           set({ activeView: view });
-        },
-
-        setLevel: (level: RoutineLevel) => {
-          set({ selectedLevel: level });
         },
 
         setDate: (date: string) => {
@@ -74,6 +59,99 @@ export const useFlowStore = create<FlowStore>()(
           });
         },
 
+        // Actions: Routine Types
+        selectRoutineType: (id: string) => {
+          set({ selectedRoutineTypeId: id });
+        },
+
+        addRoutineType: (typeData) => {
+          const newType: RoutineType = {
+            ...typeData,
+            id: `type_${Date.now()}`,
+          };
+          set((state) => ({
+            routineTypes: [...state.routineTypes, newType],
+            selectedRoutineTypeId: newType.id,
+          }));
+        },
+
+        updateRoutineType: (id: string, updates: Partial<RoutineType>) => {
+          set((state) => ({
+            routineTypes: state.routineTypes.map((t) =>
+              t.id === id ? { ...t, ...updates } : t
+            ),
+          }));
+        },
+
+        deleteRoutineType: (id: string) => {
+          set((state) => {
+            if (state.routineTypes.length <= 1) return state; // Manter pelo menos 1
+            const remaining = state.routineTypes.filter((t) => t.id !== id);
+            return {
+              routineTypes: remaining,
+              selectedRoutineTypeId:
+                state.selectedRoutineTypeId === id ? remaining[0].id : state.selectedRoutineTypeId,
+              tasks: state.tasks.filter((t) => t.routineTypeId !== id),
+            };
+          });
+        },
+
+        openManageRoutinesModal: () => {
+          set({ isManageRoutinesModalOpen: true });
+        },
+
+        closeManageRoutinesModal: () => {
+          set({ isManageRoutinesModalOpen: false });
+        },
+
+        // Actions: Categories
+        setCategoryIdFilter: (categoryId: string | 'all') => {
+          set({ activeCategoryIdFilter: categoryId });
+        },
+
+        addCategory: (categoryData) => {
+          const newCat: Category = {
+            ...categoryData,
+            id: `cat_${Date.now()}`,
+          };
+          set((state) => ({
+            categories: [...state.categories, newCat],
+          }));
+        },
+
+        updateCategory: (id: string, updates: Partial<Category>) => {
+          set((state) => ({
+            categories: state.categories.map((c) =>
+              c.id === id ? { ...c, ...updates } : c
+            ),
+          }));
+        },
+
+        deleteCategory: (id: string) => {
+          set((state) => {
+            if (state.categories.length <= 1) return state;
+            const remaining = state.categories.filter((c) => c.id !== id);
+            const fallbackId = remaining[0].id;
+            return {
+              categories: remaining,
+              activeCategoryIdFilter:
+                state.activeCategoryIdFilter === id ? 'all' : state.activeCategoryIdFilter,
+              tasks: state.tasks.map((t) =>
+                t.categoryId === id ? { ...t, categoryId: fallbackId } : t
+              ),
+            };
+          });
+        },
+
+        openManageCategoriesModal: () => {
+          set({ isManageCategoriesModalOpen: true });
+        },
+
+        closeManageCategoriesModal: () => {
+          set({ isManageCategoriesModalOpen: false });
+        },
+
+        // Actions: Tasks
         toggleTaskCompletion: (taskId: string, targetDate?: string) => {
           const date = targetDate || get().selectedDate;
           const key = `${date}_${taskId}`;
@@ -110,7 +188,7 @@ export const useFlowStore = create<FlowStore>()(
             } else {
               const newTask: Task = {
                 ...taskData,
-                id: `custom_${Date.now()}`,
+                id: `task_${Date.now()}`,
                 isCustom: true,
               } as Task;
               return {
@@ -128,12 +206,14 @@ export const useFlowStore = create<FlowStore>()(
           }));
         },
 
-        resetToInitialRoutine: () => {
-          set({ tasks: INITIAL_TASKS });
-        },
-
-        setCategoryFilter: (category: TaskCategory | 'all') => {
-          set({ activeCategoryFilter: category });
+        resetToTemplate: () => {
+          set({
+            routineTypes: DEFAULT_ROUTINE_TYPES,
+            categories: DEFAULT_CATEGORIES,
+            tasks: DEFAULT_TASKS,
+            logs: {},
+            backlog: [],
+          });
         },
 
         openTaskModal: (task: Task | null = null) => {
@@ -144,7 +224,7 @@ export const useFlowStore = create<FlowStore>()(
           set({ isTaskModalOpen: false, editingTask: null });
         },
 
-        // Backlog Actions (RF-11)
+        // Backlog Actions
         moveTaskToBacklog: (taskId: string, targetDate?: string) => {
           const state = get();
           const task = state.tasks.find((t) => t.id === taskId);
@@ -157,7 +237,7 @@ export const useFlowStore = create<FlowStore>()(
             id: `bk_${Date.now()}`,
             title: task.title,
             description: task.description,
-            category: task.category,
+            categoryId: task.categoryId,
             targetMinutes: task.targetMinutes,
             tags: task.tags,
             notes: task.notes,
@@ -165,7 +245,6 @@ export const useFlowStore = create<FlowStore>()(
             originalTaskId: task.id,
           };
 
-          // Desmarcar dos logs daquele dia
           const updatedLogs = { ...state.logs };
           delete updatedLogs[key];
 
@@ -196,24 +275,23 @@ export const useFlowStore = create<FlowStore>()(
           set({ promoteBacklogModalItem: item });
         },
 
-        promoteBacklogToTask: (backlogId: string, startTime: string, endTime: string, level?: RoutineLevel) => {
+        promoteBacklogToTask: (backlogId: string, startTime: string, endTime: string, routineTypeId?: string) => {
           const state = get();
           const item = state.backlog.find((b) => b.id === backlogId);
           if (!item) return;
 
-          const targetLevel = level || state.selectedLevel;
-
+          const targetTypeId = routineTypeId || state.selectedRoutineTypeId;
           const [y, m, d] = state.selectedDate.split('-').map(Number);
           const dayOfWeek = new Date(y, m - 1, d).getDay();
 
           const newTask: Task = {
-            id: `promoted_${Date.now()}`,
+            id: `task_${Date.now()}`,
             title: item.title,
             description: item.description,
             startTime,
             endTime,
-            level: targetLevel,
-            category: item.category,
+            routineTypeId: targetTypeId,
+            categoryId: item.categoryId,
             daysOfWeek: [dayOfWeek],
             targetMinutes: item.targetMinutes,
             tags: [...item.tags, 'Do Backlog'],
@@ -230,7 +308,7 @@ export const useFlowStore = create<FlowStore>()(
         },
       }),
       {
-        name: 'flow-routine-storage-v2',
+        name: 'flow-routine-universal-v3',
       }
     )
   )

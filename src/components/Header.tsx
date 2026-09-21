@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useFlowStore } from '../store/useFlowStore';
-import { RoutineLevel, AppView } from '../types/routine';
+import { AppView } from '../types/routine';
 import {
   Sparkles,
   Sun,
@@ -11,17 +11,21 @@ import {
   ChevronLeft,
   ChevronRight,
   Calendar,
-  Layers,
   BarChart2,
   Inbox,
   CheckCircle2,
+  SlidersHorizontal,
 } from 'lucide-react';
 
 export const Header: React.FC = () => {
   const activeView = useFlowStore((s) => s.activeView);
   const setActiveView = useFlowStore((s) => s.setActiveView);
-  const selectedLevel = useFlowStore((s) => s.selectedLevel);
-  const setLevel = useFlowStore((s) => s.setLevel);
+  
+  const routineTypes = useFlowStore((s) => s.routineTypes);
+  const selectedRoutineTypeId = useFlowStore((s) => s.selectedRoutineTypeId);
+  const selectRoutineType = useFlowStore((s) => s.selectRoutineType);
+  const openManageRoutinesModal = useFlowStore((s) => s.openManageRoutinesModal);
+
   const theme = useFlowStore((s) => s.theme);
   const toggleTheme = useFlowStore((s) => s.toggleTheme);
   const selectedDate = useFlowStore((s) => s.selectedDate);
@@ -60,12 +64,6 @@ export const Header: React.FC = () => {
     });
     return `${weekday.toUpperCase()}, ${dayAndMonth}`;
   };
-
-  const levels: { id: RoutineLevel; label: string; desc: string }[] = [
-    { id: 'easy', label: 'Fácil', desc: 'Alicerce Anti-Desistência' },
-    { id: 'medium', label: 'Médio', desc: 'Consolidação de Hábitos' },
-    { id: 'hard', label: 'Difícil', desc: 'Alta Performance' },
-  ];
 
   return (
     <header
@@ -157,7 +155,7 @@ export const Header: React.FC = () => {
               }}
             >
               <CheckCircle2 size={13} />
-              <span>Rotina Diária</span>
+              <span>Rotina</span>
             </button>
 
             <button
@@ -179,7 +177,7 @@ export const Header: React.FC = () => {
               }}
             >
               <BarChart2 size={13} />
-              <span>Dashboard & Métricas</span>
+              <span>Dashboard</span>
             </button>
 
             <button
@@ -256,7 +254,7 @@ export const Header: React.FC = () => {
         </div>
       </div>
 
-      {/* Sub-bar: Apenas visível na visão de rotina ou dashboard para selecionar nível e data */}
+      {/* Sub-bar: Visível para selecionar Tipos de Rotina e Data */}
       {activeView !== 'backlog' && (
         <div
           style={{
@@ -268,25 +266,25 @@ export const Header: React.FC = () => {
             paddingTop: '4px',
           }}
         >
-          {/* Nível da Rotina */}
+          {/* Tipos de Rotina 100% Dinâmicos */}
           <div
             style={{
               display: 'flex',
               alignItems: 'center',
               background: 'var(--bg-secondary)',
-              padding: '3px',
+              padding: '3px 6px 3px 4px',
               borderRadius: '9999px',
               border: '1px solid var(--border-subtle)',
-              gap: '2px',
+              gap: '4px',
             }}
           >
-            {levels.map((lvl) => {
-              const active = selectedLevel === lvl.id;
+            {routineTypes.map((rt) => {
+              const active = selectedRoutineTypeId === rt.id;
               return (
                 <button
-                  key={lvl.id}
-                  onClick={() => setLevel(lvl.id)}
-                  title={lvl.desc}
+                  key={rt.id}
+                  onClick={() => selectRoutineType(rt.id)}
+                  title={rt.description}
                   style={{
                     padding: '5px 12px',
                     borderRadius: '9999px',
@@ -299,10 +297,30 @@ export const Header: React.FC = () => {
                     transition: 'all 200ms var(--bezier-haptic)',
                   }}
                 >
-                  {lvl.label}
+                  {rt.name}
                 </button>
               );
             })}
+
+            {/* Botão para gerenciar / criar tipos de rotina */}
+            <button
+              onClick={openManageRoutinesModal}
+              title="Gerenciar ou Criar Tipos de Rotina"
+              style={{
+                width: '24px',
+                height: '24px',
+                borderRadius: '50%',
+                border: 'none',
+                background: 'var(--bg-elevated)',
+                color: 'var(--text-secondary)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+              }}
+            >
+              <Plus size={12} strokeWidth={2.5} />
+            </button>
           </div>
 
           {/* Seletor de Data */}

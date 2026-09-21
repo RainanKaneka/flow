@@ -9,15 +9,21 @@ import { TaskCard } from '../components/TaskCard';
 import { TaskModal } from '../components/TaskModal';
 import { DashboardView } from '../components/DashboardView';
 import { BacklogView } from '../components/BacklogView';
+import { ManageRoutinesModal } from '../components/ManageRoutinesModal';
+import { ManageCategoriesModal } from '../components/ManageCategoriesModal';
 import { Sparkles, Compass, RefreshCw } from 'lucide-react';
 
 export default function Home() {
   const activeView = useFlowStore((s) => s.activeView);
   const tasks = useFlowStore((s) => s.tasks);
-  const selectedLevel = useFlowStore((s) => s.selectedLevel);
+  const routineTypes = useFlowStore((s) => s.routineTypes);
+  const selectedRoutineTypeId = useFlowStore((s) => s.selectedRoutineTypeId);
   const selectedDate = useFlowStore((s) => s.selectedDate);
-  const activeCategory = useFlowStore((s) => s.activeCategoryFilter);
-  const resetToInitialRoutine = useFlowStore((s) => s.resetToInitialRoutine);
+  const activeCategoryId = useFlowStore((s) => s.activeCategoryIdFilter);
+  const resetToTemplate = useFlowStore((s) => s.resetToTemplate);
+
+  const currentRoutineType =
+    routineTypes.find((rt) => rt.id === selectedRoutineTypeId) || routineTypes[0];
 
   // Filtragem e ordenação cronológica síncrona (vercel-react-best-practices)
   const currentDayOfWeek = useMemo(() => {
@@ -28,43 +34,18 @@ export default function Home() {
   const filteredTasks = useMemo(() => {
     return tasks
       .filter((t) => {
-        const matchesLevel = t.level === selectedLevel;
+        const matchesRoutine = t.routineTypeId === selectedRoutineTypeId;
         const matchesDay = t.daysOfWeek.includes(currentDayOfWeek);
         const matchesCategory =
-          activeCategory === 'all' || t.category === activeCategory;
-        return matchesLevel && matchesDay && matchesCategory;
+          activeCategoryId === 'all' || t.categoryId === activeCategoryId;
+        return matchesRoutine && matchesDay && matchesCategory;
       })
       .sort((a, b) => {
         const [ah, am] = a.startTime.split(':').map(Number);
         const [bh, bm] = b.startTime.split(':').map(Number);
         return ah * 60 + am - (bh * 60 + bm);
       });
-  }, [tasks, selectedLevel, currentDayOfWeek, activeCategory]);
-
-  const getLevelPhilosophy = () => {
-    switch (selectedLevel) {
-      case 'easy':
-        return {
-          title: 'Nível Fácil — O Alicerce Anti-Desistência',
-          focus: 'Eliminar o celular na cama & 45 min de programação.',
-          quote: 'Não corte seu lazer, organize as vitórias. Comece sem culpa.',
-        };
-      case 'medium':
-        return {
-          title: 'Nível Médio — A Consolidação dos Hábitos',
-          focus: 'Acordar 09:30, 10 min de exercício, café ao sol e rotação criativa (Arte/RPG).',
-          quote: 'A consistência transforma esforço em automatismo.',
-        };
-      case 'hard':
-        return {
-          title: 'Nível Difícil — Alta Performance',
-          focus: 'Acordar 09:00, 2h15 de Deep Work em código, arte diária e 8h30 de sono.',
-          quote: 'Estado da arte: 100% dos seus sonhos com harmonia e energia.',
-        };
-    }
-  };
-
-  const philosophy = getLevelPhilosophy();
+  }, [tasks, selectedRoutineTypeId, currentDayOfWeek, activeCategoryId]);
 
   return (
     <div style={{ minHeight: '100vh', paddingBottom: '60px' }}>
@@ -82,7 +63,7 @@ export default function Home() {
             {/* Daily Stats Bar */}
             <DailyStatsBar />
 
-            {/* Philosophy Card - Notion Inspiration */}
+            {/* Philosophy Card - Dinâmico por Tipo de Rotina */}
             <div style={{ padding: '0 28px 12px' }}>
               <div
                 style={{
@@ -101,22 +82,24 @@ export default function Home() {
                   <Compass size={17} color="var(--accent-primary)" />
                   <div>
                     <span style={{ fontSize: '13px', fontWeight: 700 }}>
-                      {philosophy.title}:
+                      {currentRoutineType?.name}:
                     </span>{' '}
                     <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-                      {philosophy.focus}
+                      {currentRoutineType?.description}
                     </span>
                   </div>
                 </div>
-                <span
-                  style={{
-                    fontSize: '11px',
-                    fontStyle: 'italic',
-                    color: 'var(--text-muted)',
-                  }}
-                >
-                  &ldquo;{philosophy.quote}&rdquo;
-                </span>
+                {currentRoutineType?.philosophy && (
+                  <span
+                    style={{
+                      fontSize: '11px',
+                      fontStyle: 'italic',
+                      color: 'var(--text-muted)',
+                    }}
+                  >
+                    &ldquo;{currentRoutineType.philosophy}&rdquo;
+                  </span>
+                )}
               </div>
             </div>
 
@@ -196,11 +179,11 @@ export default function Home() {
             gap: '12px',
           }}
         >
-          <span>Flow App — SQLite Relacional & Dashboard Integrado</span>
+          <span>Flow App — SQLite Relacional & Rotinas Customizáveis</span>
           <button
             onClick={() => {
-              if (window.confirm('Deseja restaurar as tarefas originais dos 3 níveis? Suas anotações personalizadas serão redefinidas.')) {
-                resetToInitialRoutine();
+              if (window.confirm('Deseja restaurar as rotinas e categorias padrão? Seus dados serão redefinidos para os modelos iniciais.')) {
+                resetToTemplate();
               }
             }}
             style={{
@@ -216,13 +199,15 @@ export default function Home() {
             }}
           >
             <RefreshCw size={12} />
-            <span>Restaurar Rotina Oficial</span>
+            <span>Restaurar Template Padrão</span>
           </button>
         </div>
       </main>
 
-      {/* Modal de Criação / Edição de Tarefas */}
+      {/* Modais Globais de Controle */}
       <TaskModal />
+      <ManageRoutinesModal />
+      <ManageCategoriesModal />
     </div>
   );
 }

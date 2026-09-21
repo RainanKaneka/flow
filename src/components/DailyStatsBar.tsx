@@ -6,18 +6,21 @@ import { Award, Flame, CheckCircle2, AlertCircle, ShieldAlert } from 'lucide-rea
 
 export const DailyStatsBar: React.FC = () => {
   const tasks = useFlowStore((s) => s.tasks);
-  const selectedLevel = useFlowStore((s) => s.selectedLevel);
+  const routineTypes = useFlowStore((s) => s.routineTypes);
+  const selectedRoutineTypeId = useFlowStore((s) => s.selectedRoutineTypeId);
   const selectedDate = useFlowStore((s) => s.selectedDate);
   const logs = useFlowStore((s) => s.logs);
 
-  // Filtrar tarefas aplicáveis ao dia e nível selecionado
+  const currentType = routineTypes.find((rt) => rt.id === selectedRoutineTypeId) || routineTypes[0];
+
+  // Filtrar tarefas aplicáveis ao dia e tipo de rotina selecionado
   const [year, month, day] = selectedDate.split('-').map(Number);
   const currentDayOfWeek = new Date(year, month - 1, day).getDay(); // 0 = Domingo, 1 = Segunda...
 
   const dayTasks = tasks.filter((t) => {
-    const matchesLevel = t.level === selectedLevel;
+    const matchesRoutine = t.routineTypeId === selectedRoutineTypeId;
     const matchesDay = t.daysOfWeek.includes(currentDayOfWeek);
-    return matchesLevel && matchesDay;
+    return matchesRoutine && matchesDay;
   });
 
   const total = dayTasks.length;
@@ -36,20 +39,20 @@ export const DailyStatsBar: React.FC = () => {
     if (percentage === 100) {
       return {
         label: 'Dia Épico (100%)',
-        desc: 'Todas as metas cumpridas com maestria.',
+        desc: 'Todas as atividades concluídas com maestria.',
         color: 'var(--success)',
       };
     }
     if (percentage >= 60) {
       return {
         label: 'Bom Progresso',
-        desc: 'Consistência sustentável. Continue firme!',
+        desc: 'Consistência sustentável. Continue firme no ritmo!',
         color: 'var(--accent-primary)',
       };
     }
     return {
-      label: 'Construindo o Hábito',
-      desc: 'Foque nas 2 Regras de Ouro (cama e estudo) para não falhar.',
+      label: 'Construindo Consistência',
+      desc: currentType?.philosophy || 'Foque nas atividades essenciais para manter seu ritmo.',
       color: 'var(--golden-rule)',
     };
   };
@@ -120,10 +123,10 @@ export const DailyStatsBar: React.FC = () => {
                   className="badge-eyebrow"
                   style={{
                     background: 'var(--bg-elevated)',
-                    color: 'var(--text-muted)',
+                    color: currentType?.color || 'var(--accent-primary)',
                   }}
                 >
-                  NÍVEL {selectedLevel.toUpperCase()}
+                  {currentType?.name.toUpperCase() || 'ROTINA'}
                 </span>
               </div>
               <p

@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useFlowStore } from '../store/useFlowStore';
-import { BacklogItem, TaskCategory } from '../types/routine';
+import { BacklogItem } from '../types/routine';
 import {
   Inbox,
   Plus,
@@ -19,6 +19,7 @@ import {
 
 export const BacklogView: React.FC = () => {
   const backlog = useFlowStore((s) => s.backlog);
+  const categories = useFlowStore((s) => s.categories);
   const deleteBacklogItem = useFlowStore((s) => s.deleteBacklogItem);
   const addBacklogItem = useFlowStore((s) => s.addBacklogItem);
   const promoteBacklogToTask = useFlowStore((s) => s.promoteBacklogToTask);
@@ -29,7 +30,7 @@ export const BacklogView: React.FC = () => {
   // Form states para nova pendência
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [category, setCategory] = useState<TaskCategory>('coding');
+  const [categoryId, setCategoryId] = useState(categories[0]?.id || '');
   const [targetMinutes, setTargetMinutes] = useState(45);
 
   // Form states para promover para hoje
@@ -40,12 +41,14 @@ export const BacklogView: React.FC = () => {
     e.preventDefault();
     if (!title.trim()) return;
 
+    const catObj = categories.find((c) => c.id === categoryId) || categories[0];
+
     addBacklogItem({
       title: title.trim(),
       description: description.trim(),
-      category,
+      categoryId: catObj?.id || 'focus',
       targetMinutes: Number(targetMinutes) || 30,
-      tags: [category],
+      tags: catObj ? [catObj.name] : [],
     });
 
     setTitle('');
@@ -111,19 +114,28 @@ export const BacklogView: React.FC = () => {
               >
                 <div style={{ flex: 1, minWidth: '240px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                    <span
-                      style={{
-                        padding: '2px 8px',
-                        borderRadius: '9999px',
-                        fontSize: '10px',
-                        fontWeight: 700,
-                        textTransform: 'uppercase',
-                        background: 'var(--bg-elevated)',
-                        color: 'var(--text-secondary)',
-                      }}
-                    >
-                      {item.category}
-                    </span>
+                    {(() => {
+                      const itemCat = categories.find((c) => c.id === item.categoryId) || {
+                        name: 'Geral',
+                        color: '#6366F1',
+                      };
+                      return (
+                        <span
+                          style={{
+                            padding: '2px 8px',
+                            borderRadius: '9999px',
+                            fontSize: '10px',
+                            fontWeight: 700,
+                            textTransform: 'uppercase',
+                            background: 'var(--bg-elevated)',
+                            color: itemCat.color,
+                            border: `1px solid ${itemCat.color}40`,
+                          }}
+                        >
+                          {itemCat.name}
+                        </span>
+                      );
+                    })()}
                     <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
                       Criada em {new Date(item.createdAt).toLocaleDateString('pt-BR')}
                     </span>
@@ -300,8 +312,8 @@ export const BacklogView: React.FC = () => {
                       Categoria
                     </label>
                     <select
-                      value={category}
-                      onChange={(e) => setCategory(e.target.value as TaskCategory)}
+                      value={categoryId}
+                      onChange={(e) => setCategoryId(e.target.value)}
                       style={{
                         width: '100%',
                         padding: '8px 10px',
@@ -313,12 +325,11 @@ export const BacklogView: React.FC = () => {
                         outline: 'none',
                       }}
                     >
-                      <option value="coding">Programação</option>
-                      <option value="routine">Rotina</option>
-                      <option value="health">Saúde</option>
-                      <option value="college">Faculdade</option>
-                      <option value="creative">Arte & RPG</option>
-                      <option value="career">Carreira</option>
+                      {categories.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
                     </select>
                   </div>
 

@@ -1,19 +1,24 @@
-import { Task, TaskLog, BacklogItem } from '../types/routine';
-
-export interface SqliteExport {
-  schema: string;
-  data: {
-    tasks: Task[];
-    taskCompletions: TaskLog[];
-    backlog: BacklogItem[];
-  };
-  sqlDump: string;
-}
+import { Task, TaskLog, BacklogItem, RoutineType, Category } from '../types/routine';
 
 export const SQLITE_SCHEMA = `
 -- ============================================
 -- FLOW ROUTINE DATABASE SCHEMA (SQLite v3)
 -- ============================================
+
+CREATE TABLE IF NOT EXISTS routine_types (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT,
+    philosophy TEXT,
+    color TEXT
+);
+
+CREATE TABLE IF NOT EXISTS categories (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    color TEXT NOT NULL,
+    icon TEXT
+);
 
 CREATE TABLE IF NOT EXISTS tasks (
     id TEXT PRIMARY KEY,
@@ -21,14 +26,16 @@ CREATE TABLE IF NOT EXISTS tasks (
     description TEXT,
     start_time TEXT NOT NULL,
     end_time TEXT NOT NULL,
-    level TEXT CHECK(level IN ('easy', 'medium', 'hard')),
-    category TEXT NOT NULL,
+    routine_type_id TEXT NOT NULL,
+    category_id TEXT NOT NULL,
     is_golden_rule INTEGER DEFAULT 0,
     days_of_week TEXT NOT NULL, -- JSON array string ex: "[1,2,3,4,5]"
     target_minutes INTEGER NOT NULL,
-    tags TEXT, -- JSON array string ex: "['tag1', 'tag2']"
+    tags TEXT, -- JSON array string
     notes TEXT,
-    is_custom INTEGER DEFAULT 0
+    is_custom INTEGER DEFAULT 0,
+    FOREIGN KEY(routine_type_id) REFERENCES routine_types(id) ON DELETE CASCADE,
+    FOREIGN KEY(category_id) REFERENCES categories(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS task_completions (
@@ -45,12 +52,13 @@ CREATE TABLE IF NOT EXISTS backlog (
     id TEXT PRIMARY KEY,
     title TEXT NOT NULL,
     description TEXT,
-    category TEXT NOT NULL,
+    category_id TEXT NOT NULL,
     target_minutes INTEGER NOT NULL,
     tags TEXT,
     notes TEXT,
     created_at TEXT NOT NULL,
-    original_task_id TEXT
+    original_task_id TEXT,
+    FOREIGN KEY(category_id) REFERENCES categories(id) ON DELETE CASCADE
 );
 
 CREATE INDEX IF NOT EXISTS idx_completions_date ON task_completions(date);
@@ -58,14 +66,32 @@ CREATE INDEX IF NOT EXISTS idx_completions_task ON task_completions(task_id);
 `;
 
 /**
- * Gera um SQL dump completo com todas as tabelas e dados relacionais
+ * Gera um SQL dump completo com todas as tabelas e dados relacionais dinâmicos
  */
 export function generateSqlDump(
+  routineTypes: RoutineType[],
+  categories: Category[],
   tasks: Task[],
   logs: Record<string, TaskLog>,
   backlog: BacklogItem[]
 ): string {
   let dump = `${SQLITE_SCHEMA}\n\n-- SEED / SYNC DATA\nBEGIN TRANSACTION;\n`;
+
+  // Routine Types
+  for (const rt of routineTypes) {
+    const nameEsc = rt.name.replace(/'/g, "''");
+    const descEsc = (rt.description || '').replace(/'/g, "''");
+    const philEsc = (rt.philosophy || '').replace(/'/g, "''");
+    dump += `INSERT OR REPLACE INTO routine_types (id, name, description, philosophy, color)
+VALUES ('${rt.id}', '${nameEsc}', '${descEsc}', '${philEsc}', '${rt.color || '#6366F1'}');\n`;
+  }
+
+  // Categories
+  for (const c of categories) {
+    const nameEsc = c.name.replace(/'/g, "''");
+    dump += `INSERT OR REPLACE INTO categories (id, name, color, icon)
+VALUES ('${c.id}', '${nameEsc}', '${c.color}', '${c.icon || ''}');\n`;
+  }
 
   // Tasks
   for (const t of tasks) {
@@ -75,8 +101,8 @@ export function generateSqlDump(
     const descEsc = (t.description || '').replace(/'/g, "''");
     const notesEsc = (t.notes || '').replace(/'/g, "''");
 
-    dump += `INSERT OR REPLACE INTO tasks (id, title, description, start_time, end_time, level, category, is_golden_rule, days_of_week, target_minutes, tags, notes, is_custom)
-VALUES ('${t.id}', '${titleEsc}', '${descEsc}', '${t.startTime}', '${t.endTime}', '${t.level}', '${t.category}', ${t.isGoldenRule ? 1 : 0}, '${daysStr}', ${t.targetMinutes}, '${tagsStr}', '${notesEsc}', ${t.isCustom ? 1 : 0});\n`;
+    dump += `INSERT OR REPLACE INTO tasks (id, title, description, start_time, end_time, routine_type_id, category_id, is_golden_rule, days_of_week, target_minutes, tags, notes, is_custom)
+VALUES ('${t.id}', '${titleEsc}', '${descEsc}', '${t.startTime}', '${t.endTime}', '${t.routineTypeId}', '${t.categoryId}', ${t.isGoldenRule ? 1 : 0}, '${daysStr}', ${t.targetMinutes}, '${tagsStr}', '${notesEsc}', ${t.isCustom ? 1 : 0});\n`;
   }
 
   // Completions
@@ -93,8 +119,8 @@ VALUES ('${log.id}', '${log.taskId}', '${log.date}', 1, '${log.completedAt || ''
     const notesEsc = (b.notes || '').replace(/'/g, "''");
     const tagsStr = JSON.stringify(b.tags || []);
 
-    dump += `INSERT OR REPLACE INTO backlog (id, title, description, category, target_minutes, tags, notes, created_at, original_task_id)
-VALUES ('${b.id}', '${titleEsc}', '${descEsc}', '${b.category}', ${b.targetMinutes}, '${tagsStr}', '${notesEsc}', '${b.createdAt}', '${b.originalTaskId || ''}');\n`;
+    dump += `INSERT OR REPLACE INTO backlog (id, title, description, category_id, target_minutes, tags, notes, created_at, original_task_id)
+VALUES ('${b.id}', '${titleEsc}', '${descEsc}', '${b.categoryId}', ${b.targetMinutes}, '${tagsStr}', '${notesEsc}', '${b.createdAt}', '${b.originalTaskId || ''}');\n`;
   }
 
   dump += `COMMIT;\n`;
@@ -102,12 +128,13 @@ VALUES ('${b.id}', '${titleEsc}', '${descEsc}', '${b.category}', ${b.targetMinut
 }
 
 /**
- * Funções de agregação analítica para o Dashboard
+ * Funções de agregação analítica dinâmicas para o Dashboard
  */
 export function calculateStreakAndMetrics(
   tasks: Task[],
   logs: Record<string, TaskLog>,
-  selectedLevel: string
+  selectedRoutineTypeId: string,
+  categories: Category[]
 ) {
   const today = new Date();
   const days: { date: string; displayDate: string; percentage: number; completed: number; total: number; goldenRulesDone: boolean }[] = [];
@@ -119,7 +146,7 @@ export function calculateStreakAndMetrics(
     const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     const dayOfWeek = d.getDay();
 
-    const dayTasks = tasks.filter((t) => t.level === selectedLevel && t.daysOfWeek.includes(dayOfWeek));
+    const dayTasks = tasks.filter((t) => t.routineTypeId === selectedRoutineTypeId && t.daysOfWeek.includes(dayOfWeek));
     const completedCount = dayTasks.filter((t) => logs[`${dateStr}_${t.id}`]?.completed).length;
     const totalCount = dayTasks.length;
     const percentage = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
@@ -137,36 +164,43 @@ export function calculateStreakAndMetrics(
     });
   }
 
-  // Calcular streak de dias consecutivos com progresso ou regras de ouro mantidas
+  // Calcular streak de dias consecutivos
   let currentStreak = 0;
-  // Checar a partir de ontem para trás ou hoje se já marcou
   for (let i = days.length - 1; i >= 0; i--) {
     if (days[i].completed > 0 || days[i].total === 0) {
       if (days[i].completed > 0) currentStreak++;
     } else {
-      // Se for hoje e ainda for cedo, não quebra streak
       if (i === days.length - 1) continue;
       break;
     }
   }
 
-  // Agregação por categoria (tempo total focado em minutos)
-  const categoryTime: Record<string, { minutes: number; count: number }> = {};
+  // Agregação por categoria dinâmica
+  const categoryMap = new Map(categories.map((c) => [c.id, c]));
+  const categoryStats: Record<string, { name: string; color: string; minutes: number; count: number }> = {};
+
   for (const log of Object.values(logs)) {
     if (!log.completed) continue;
     const task = tasks.find((t) => t.id === log.taskId);
     if (!task) continue;
 
-    if (!categoryTime[task.category]) {
-      categoryTime[task.category] = { minutes: 0, count: 0 };
+    const catInfo = categoryMap.get(task.categoryId) || { name: 'Geral', color: '#6366F1' };
+
+    if (!categoryStats[task.categoryId]) {
+      categoryStats[task.categoryId] = {
+        name: catInfo.name,
+        color: catInfo.color,
+        minutes: 0,
+        count: 0,
+      };
     }
-    categoryTime[task.category].minutes += task.targetMinutes;
-    categoryTime[task.category].count += 1;
+    categoryStats[task.categoryId].minutes += task.targetMinutes;
+    categoryStats[task.categoryId].count += 1;
   }
 
   return {
     history14Days: days,
     currentStreak,
-    categoryTime,
+    categoryStats,
   };
 }
