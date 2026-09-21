@@ -18,6 +18,7 @@ import {
   GraduationCap,
   Sparkles,
   Gamepad2,
+  Inbox,
 } from 'lucide-react';
 
 interface TaskCardProps {
@@ -30,6 +31,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
   const toggleTaskCompletion = useFlowStore((s) => s.toggleTaskCompletion);
   const openTaskModal = useFlowStore((s) => s.openTaskModal);
   const deleteTask = useFlowStore((s) => s.deleteTask);
+  const moveTaskToBacklog = useFlowStore((s) => s.moveTaskToBacklog);
 
   const key = `${selectedDate}_${task.id}`;
   const log = logs[key];
@@ -255,6 +257,32 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
 
         {/* Right Actions */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          {!isCompleted && (
+            <button
+              onClick={() => {
+                if (window.confirm(`Mover "${task.title}" para a lista de pendências (Backlog)?`)) {
+                  moveTaskToBacklog(task.id, selectedDate);
+                }
+              }}
+              title="Mover para o Backlog (tarefa pendente)"
+              style={{
+                width: '30px',
+                height: '30px',
+                borderRadius: '8px',
+                border: 'none',
+                background: 'var(--bg-elevated)',
+                color: 'var(--text-secondary)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                transition: 'all 200ms',
+              }}
+            >
+              <Inbox size={13} />
+            </button>
+          )}
+
           <button
             onClick={() => openTaskModal(task)}
             title="Editar atividade"

@@ -7,9 +7,12 @@ import { DailyStatsBar } from '../components/DailyStatsBar';
 import { CategoryFilter } from '../components/CategoryFilter';
 import { TaskCard } from '../components/TaskCard';
 import { TaskModal } from '../components/TaskModal';
-import { Sparkles, Compass, RefreshCw, CheckCircle } from 'lucide-react';
+import { DashboardView } from '../components/DashboardView';
+import { BacklogView } from '../components/BacklogView';
+import { Sparkles, Compass, RefreshCw } from 'lucide-react';
 
 export default function Home() {
+  const activeView = useFlowStore((s) => s.activeView);
   const tasks = useFlowStore((s) => s.tasks);
   const selectedLevel = useFlowStore((s) => s.selectedLevel);
   const selectedDate = useFlowStore((s) => s.selectedDate);
@@ -32,7 +35,6 @@ export default function Home() {
         return matchesLevel && matchesDay && matchesCategory;
       })
       .sort((a, b) => {
-        // Conversão em minutos para ordenação cronológica precisa
         const [ah, am] = a.startTime.split(':').map(Number);
         const [bh, bm] = b.startTime.split(':').map(Number);
         return ah * 60 + am - (bh * 60 + bm);
@@ -70,110 +72,119 @@ export default function Home() {
       <Header />
 
       <main style={{ maxWidth: '1000px', margin: '0 auto' }}>
-        {/* Daily Stats Bar */}
-        <DailyStatsBar />
+        {/* Renderização Condicional da View Selecionada */}
+        {activeView === 'dashboard' && <DashboardView />}
 
-        {/* Philosophy Card - Notion Inspiration */}
-        <div style={{ padding: '0 28px 12px' }}>
-          <div
-            style={{
-              padding: '12px 18px',
-              borderRadius: '16px',
-              backgroundColor: 'var(--bg-secondary)',
-              border: '1px solid var(--border-subtle)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              flexWrap: 'wrap',
-              gap: '10px',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <Compass size={17} color="var(--accent-primary)" />
-              <div>
-                <span style={{ fontSize: '13px', fontWeight: 700 }}>
-                  {philosophy.title}:
-                </span>{' '}
-                <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-                  {philosophy.focus}
-                </span>
-              </div>
-            </div>
-            <span
-              style={{
-                fontSize: '11px',
-                fontStyle: 'italic',
-                color: 'var(--text-muted)',
-              }}
-            >
-              &ldquo;{philosophy.quote}&rdquo;
-            </span>
-          </div>
-        </div>
+        {activeView === 'backlog' && <BacklogView />}
 
-        {/* Category Filters */}
-        <CategoryFilter />
+        {activeView === 'routine' && (
+          <>
+            {/* Daily Stats Bar */}
+            <DailyStatsBar />
 
-        {/* Tasks Stream */}
-        <div
-          style={{
-            padding: '8px 28px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '12px',
-          }}
-        >
-          {filteredTasks.length > 0 ? (
-            filteredTasks.map((task) => (
-              <TaskCard key={task.id} task={task} />
-            ))
-          ) : (
-            <div
-              className="double-bezel-outer"
-              style={{
-                textAlign: 'center',
-                padding: '40px 20px',
-              }}
-            >
+            {/* Philosophy Card - Notion Inspiration */}
+            <div style={{ padding: '0 28px 12px' }}>
               <div
-                className="double-bezel-inner"
                 style={{
-                  padding: '36px 20px',
+                  padding: '12px 18px',
+                  borderRadius: '16px',
+                  backgroundColor: 'var(--bg-secondary)',
+                  border: '1px solid var(--border-subtle)',
                   display: 'flex',
-                  flexDirection: 'column',
                   alignItems: 'center',
-                  gap: '12px',
+                  justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: '10px',
                 }}
               >
-                <div
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <Compass size={17} color="var(--accent-primary)" />
+                  <div>
+                    <span style={{ fontSize: '13px', fontWeight: 700 }}>
+                      {philosophy.title}:
+                    </span>{' '}
+                    <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                      {philosophy.focus}
+                    </span>
+                  </div>
+                </div>
+                <span
                   style={{
-                    width: '48px',
-                    height: '48px',
-                    borderRadius: '50%',
-                    background: 'var(--bg-elevated)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
+                    fontSize: '11px',
+                    fontStyle: 'italic',
                     color: 'var(--text-muted)',
                   }}
                 >
-                  <Sparkles size={22} />
-                </div>
-                <h4 style={{ fontSize: '16px', fontWeight: 700 }}>
-                  Nenhuma atividade encontrada neste filtro
-                </h4>
-                <p style={{ fontSize: '13px', color: 'var(--text-secondary)', maxWidth: '400px' }}>
-                  Não há atividades para a categoria selecionada neste dia. Você pode alternar o filtro ou adicionar uma nova atividade personalizada.
-                </p>
+                  &ldquo;{philosophy.quote}&rdquo;
+                </span>
               </div>
             </div>
-          )}
-        </div>
+
+            {/* Category Filters */}
+            <CategoryFilter />
+
+            {/* Tasks Stream */}
+            <div
+              style={{
+                padding: '8px 28px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px',
+              }}
+            >
+              {filteredTasks.length > 0 ? (
+                filteredTasks.map((task) => (
+                  <TaskCard key={task.id} task={task} />
+                ))
+              ) : (
+                <div
+                  className="double-bezel-outer"
+                  style={{
+                    textAlign: 'center',
+                    padding: '40px 20px',
+                  }}
+                >
+                  <div
+                    className="double-bezel-inner"
+                    style={{
+                      padding: '36px 20px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: '12px',
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: '48px',
+                        height: '48px',
+                        borderRadius: '50%',
+                        background: 'var(--bg-elevated)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'var(--text-muted)',
+                      }}
+                    >
+                      <Sparkles size={22} />
+                    </div>
+                    <h4 style={{ fontSize: '16px', fontWeight: 700 }}>
+                      Nenhuma atividade encontrada neste filtro
+                    </h4>
+                    <p style={{ fontSize: '13px', color: 'var(--text-secondary)', maxWidth: '400px' }}>
+                      Não há atividades para a categoria selecionada neste dia. Você pode alternar o filtro ou adicionar uma nova atividade personalizada.
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </>
+        )}
 
         {/* Footer info & restore */}
         <div
           style={{
-            marginTop: '32px',
+            marginTop: '36px',
             padding: '16px 28px',
             display: 'flex',
             alignItems: 'center',
@@ -185,7 +196,7 @@ export default function Home() {
             gap: '12px',
           }}
         >
-          <span>Flow App — Baseado no seu Plano de Rotina Progressiva</span>
+          <span>Flow App — SQLite Relacional & Dashboard Integrado</span>
           <button
             onClick={() => {
               if (window.confirm('Deseja restaurar as tarefas originais dos 3 níveis? Suas anotações personalizadas serão redefinidas.')) {
