@@ -81,6 +81,13 @@ export interface Note {
   updatedAt: string; // ISO string
 }
 
+// Lembretes Nativos & Notificações (RF-12)
+export interface ReminderSettings {
+  enabled: boolean;
+  advanceMinutes: number; // 0, 5, 10, 15
+  soundEnabled: boolean;
+}
+
 // Pomodoro Vinculado (RF-7, RF-13)
 export type PomodoroMode = 'focus' | 'shortBreak' | 'longBreak';
 
@@ -116,6 +123,10 @@ export interface FlowState {
   
   // Pomodoro (RF-7, RF-13)
   pomodoro: PomodoroState;
+
+  // Lembretes Nativos & Notificações (RF-12)
+  reminderSettings: ReminderSettings;
+  isNotificationModalOpen: boolean;
 
   // Modais de Controle
   isTaskModalOpen: boolean;
@@ -198,6 +209,11 @@ export interface FlowActions {
   linkTaskToPomodoro: (taskId: string | null) => void;
   tickPomodoro: () => void;
   finishPomodoroSession: () => void;
+
+  // Lembretes & Notificações (RF-12)
+  updateReminderSettings: (updates: Partial<ReminderSettings>) => void;
+  openNotificationModal: () => void;
+  closeNotificationModal: () => void;
 }
 
 export type FlowStore = FlowState & FlowActions;

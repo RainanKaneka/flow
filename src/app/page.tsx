@@ -14,9 +14,16 @@ import { PomodoroView } from '../components/PomodoroView';
 import { NotepadView } from '../components/NotepadView';
 import { ManageRoutinesModal } from '../components/ManageRoutinesModal';
 import { ManageCategoriesModal } from '../components/ManageCategoriesModal';
+import { NotificationSettingsModal } from '../components/NotificationSettingsModal';
+import { useGlobalShortcuts } from '../hooks/useGlobalShortcuts';
+import { useReminderScheduler } from '../services/reminderScheduler';
 import { Sparkles, Compass, RefreshCw } from 'lucide-react';
 
 export default function Home() {
+  // Atalhos Globais de Teclado & Agendador de Lembretes Nativos (RF-12)
+  useGlobalShortcuts();
+  useReminderScheduler();
+
   const activeView = useFlowStore((s) => s.activeView);
   const tasks = useFlowStore((s) => s.tasks);
   const routineTypes = useFlowStore((s) => s.routineTypes);
@@ -227,6 +234,7 @@ export default function Home() {
       <TaskDetailModal />
       <ManageRoutinesModal />
       <ManageCategoriesModal />
+      <NotificationSettingsModal />
     </div>
   );
 }

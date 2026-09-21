@@ -12,6 +12,7 @@ import {
   PomodoroMode,
   TaskAttachment,
   TaskChecklistItem,
+  ReminderSettings,
 } from '../types/routine';
 import { DEFAULT_ROUTINE_TYPES, DEFAULT_CATEGORIES, DEFAULT_TASKS } from '../data/initialRoutine';
 import { sounds } from '../utils/audio';
@@ -66,6 +67,14 @@ export const useFlowStore = create<FlowStore>()(
           linkedTaskId: null,
           completedSessions: 0,
         },
+
+        // Lembretes & Notificações Nativas (RF-12)
+        reminderSettings: {
+          enabled: true,
+          advanceMinutes: 5,
+          soundEnabled: true,
+        },
+        isNotificationModalOpen: false,
 
         // Modais de Controle
         isTaskModalOpen: false,
@@ -606,6 +615,24 @@ export const useFlowStore = create<FlowStore>()(
               completedSessions: newCompletedSessions,
             },
           });
+        },
+
+        // Lembretes & Notificações (RF-12)
+        updateReminderSettings: (updates: Partial<ReminderSettings>) => {
+          set((state) => ({
+            reminderSettings: {
+              ...state.reminderSettings,
+              ...updates,
+            },
+          }));
+        },
+
+        openNotificationModal: () => {
+          set({ isNotificationModalOpen: true });
+        },
+
+        closeNotificationModal: () => {
+          set({ isNotificationModalOpen: false });
         },
       }),
       {

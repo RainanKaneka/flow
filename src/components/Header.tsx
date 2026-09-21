@@ -17,6 +17,7 @@ import {
   SlidersHorizontal,
   Timer,
   FileText,
+  Bell,
 } from 'lucide-react';
 
 export const Header: React.FC = () => {
@@ -36,6 +37,8 @@ export const Header: React.FC = () => {
   const backlog = useFlowStore((s) => s.backlog);
   const notes = useFlowStore((s) => s.notes);
   const pomodoro = useFlowStore((s) => s.pomodoro);
+  const reminderSettings = useFlowStore((s) => s.reminderSettings);
+  const openNotificationModal = useFlowStore((s) => s.openNotificationModal);
 
   const pomodoroMinutes = Math.floor(pomodoro.timeLeftSeconds / 60);
   const pomodoroSeconds = pomodoro.timeLeftSeconds % 60;
@@ -144,8 +147,10 @@ export const Header: React.FC = () => {
               gap: '2px',
             }}
           >
+            {/* 1: Rotina Tab */}
             <button
               onClick={() => setActiveView('routine')}
+              title="Rotina [Atalho: 1]"
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -166,66 +171,10 @@ export const Header: React.FC = () => {
               <span>Rotina</span>
             </button>
 
-            <button
-              onClick={() => setActiveView('dashboard')}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '6px 14px',
-                borderRadius: '9999px',
-                border: 'none',
-                fontSize: '12px',
-                fontWeight: activeView === 'dashboard' ? 700 : 500,
-                cursor: 'pointer',
-                backgroundColor: activeView === 'dashboard' ? 'var(--bg-secondary)' : 'transparent',
-                color: activeView === 'dashboard' ? 'var(--text-primary)' : 'var(--text-secondary)',
-                boxShadow: activeView === 'dashboard' ? '0 2px 8px rgba(0,0,0,0.06)' : 'none',
-                transition: 'all 200ms var(--bezier-haptic)',
-              }}
-            >
-              <BarChart2 size={13} />
-              <span>Dashboard</span>
-            </button>
-
-            <button
-              onClick={() => setActiveView('backlog')}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '6px 14px',
-                borderRadius: '9999px',
-                border: 'none',
-                fontSize: '12px',
-                fontWeight: activeView === 'backlog' ? 700 : 500,
-                cursor: 'pointer',
-                backgroundColor: activeView === 'backlog' ? 'var(--bg-secondary)' : 'transparent',
-                color: activeView === 'backlog' ? 'var(--text-primary)' : 'var(--text-secondary)',
-                boxShadow: activeView === 'backlog' ? '0 2px 8px rgba(0,0,0,0.06)' : 'none',
-                transition: 'all 200ms var(--bezier-haptic)',
-              }}
-            >
-              <Inbox size={13} />
-              <span>Backlog</span>
-              {backlog.length > 0 && (
-                <span
-                  style={{
-                    fontSize: '10px',
-                    padding: '1px 6px',
-                    borderRadius: '9999px',
-                    background: 'var(--accent-soft)',
-                    color: 'var(--accent-primary)',
-                    fontWeight: 700,
-                  }}
-                >
-                  {backlog.length}
-                </span>
-              )}
-            </button>
-            {/* Pomodoro Tab */}
+            {/* 2: Pomodoro Tab */}
             <button
               onClick={() => setActiveView('pomodoro')}
+              title="Pomodoro [Atalho: 2]"
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -261,9 +210,10 @@ export const Header: React.FC = () => {
               )}
             </button>
 
-            {/* Bloco de Notas Tab */}
+            {/* 3: Bloco de Notas Tab */}
             <button
               onClick={() => setActiveView('notes')}
+              title="Notas [Atalho: 3]"
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -297,6 +247,68 @@ export const Header: React.FC = () => {
                 </span>
               )}
             </button>
+
+            {/* 4: Backlog Tab */}
+            <button
+              onClick={() => setActiveView('backlog')}
+              title="Backlog [Atalho: 4]"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '6px 14px',
+                borderRadius: '9999px',
+                border: 'none',
+                fontSize: '12px',
+                fontWeight: activeView === 'backlog' ? 700 : 500,
+                cursor: 'pointer',
+                backgroundColor: activeView === 'backlog' ? 'var(--bg-secondary)' : 'transparent',
+                color: activeView === 'backlog' ? 'var(--text-primary)' : 'var(--text-secondary)',
+                boxShadow: activeView === 'backlog' ? '0 2px 8px rgba(0,0,0,0.06)' : 'none',
+                transition: 'all 200ms var(--bezier-haptic)',
+              }}
+            >
+              <Inbox size={13} />
+              <span>Backlog</span>
+              {backlog.length > 0 && (
+                <span
+                  style={{
+                    fontSize: '10px',
+                    padding: '1px 6px',
+                    borderRadius: '9999px',
+                    background: 'var(--accent-soft)',
+                    color: 'var(--accent-primary)',
+                    fontWeight: 700,
+                  }}
+                >
+                  {backlog.length}
+                </span>
+              )}
+            </button>
+
+            {/* 5: Dashboard Tab */}
+            <button
+              onClick={() => setActiveView('dashboard')}
+              title="Dashboard [Atalho: 5]"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '6px 14px',
+                borderRadius: '9999px',
+                border: 'none',
+                fontSize: '12px',
+                fontWeight: activeView === 'dashboard' ? 700 : 500,
+                cursor: 'pointer',
+                backgroundColor: activeView === 'dashboard' ? 'var(--bg-secondary)' : 'transparent',
+                color: activeView === 'dashboard' ? 'var(--text-primary)' : 'var(--text-secondary)',
+                boxShadow: activeView === 'dashboard' ? '0 2px 8px rgba(0,0,0,0.06)' : 'none',
+                transition: 'all 200ms var(--bezier-haptic)',
+              }}
+            >
+              <BarChart2 size={13} />
+              <span>Dashboard</span>
+            </button>
           </div>
         </div>
 
@@ -327,6 +339,42 @@ export const Header: React.FC = () => {
             </button>
           )}
 
+          {/* Lembretes & Notificações (RF-12) */}
+          <button
+            onClick={openNotificationModal}
+            style={{
+              width: '36px',
+              height: '36px',
+              borderRadius: '50%',
+              background: 'var(--bg-secondary)',
+              border: '1px solid var(--border-subtle)',
+              color: reminderSettings.enabled ? 'var(--accent-primary)' : 'var(--text-secondary)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              position: 'relative',
+              transition: 'all 200ms var(--bezier-haptic)',
+            }}
+            title="Lembretes & Configurações de Notificação (RF-12)"
+          >
+            <Bell size={16} />
+            {reminderSettings.enabled && (
+              <span
+                style={{
+                  position: 'absolute',
+                  top: '7px',
+                  right: '7px',
+                  width: '7px',
+                  height: '7px',
+                  borderRadius: '50%',
+                  backgroundColor: '#10B981',
+                  border: '1.5px solid var(--bg-secondary)',
+                }}
+              />
+            )}
+          </button>
+
           {/* Theme Toggle */}
           <button
             onClick={toggleTheme}
@@ -352,6 +400,7 @@ export const Header: React.FC = () => {
           <button
             onClick={() => openTaskModal(null)}
             className="btn-island btn-island-primary"
+            title="Nova Atividade [Atalho: Ctrl+N]"
           >
             <span>Nova Atividade</span>
             <div className="btn-circle-icon">

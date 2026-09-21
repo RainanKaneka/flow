@@ -137,6 +137,40 @@ class SoundManager {
     osc.start();
     osc.stop(ctx.currentTime + 0.04);
   }
+
+  // Notificação suave de lembrete de atividade (dois tons harmônicos)
+  playNotificationChime() {
+    const ctx = this.getContext();
+    if (!ctx) return;
+
+    const baseTime = ctx.currentTime;
+    const tone1 = 587.33; // D5
+    const tone2 = 880.00; // A5
+
+    // Primeiro tom
+    const osc1 = ctx.createOscillator();
+    const gain1 = ctx.createGain();
+    osc1.type = 'sine';
+    osc1.frequency.setValueAtTime(tone1, baseTime);
+    gain1.gain.setValueAtTime(0.08, baseTime);
+    gain1.gain.exponentialRampToValueAtTime(0.0001, baseTime + 0.5);
+    osc1.connect(gain1);
+    gain1.connect(ctx.destination);
+    osc1.start(baseTime);
+    osc1.stop(baseTime + 0.5);
+
+    // Segundo tom suave após 100ms
+    const osc2 = ctx.createOscillator();
+    const gain2 = ctx.createGain();
+    osc2.type = 'sine';
+    osc2.frequency.setValueAtTime(tone2, baseTime + 0.12);
+    gain2.gain.setValueAtTime(0.09, baseTime + 0.12);
+    gain2.gain.exponentialRampToValueAtTime(0.0001, baseTime + 0.75);
+    osc2.connect(gain2);
+    gain2.connect(ctx.destination);
+    osc2.start(baseTime + 0.12);
+    osc2.stop(baseTime + 0.75);
+  }
 }
 
 export const sounds = new SoundManager();

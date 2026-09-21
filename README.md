@@ -58,6 +58,16 @@ A minimalist personal productivity desktop application engineered to conquer dai
 - **Performance Analytics**: Real-time streak tracking, weekly adherence score, total focus hours, and 7-day adherence charts.
 - **One-Click SQL Backup Export**: Export full relational schema and data into standard `.sql` dump files anytime.
 
+### 🔔 Desktop Experience, Reminders & Hotkeys (RF-12)
+- **Windows System Reminders**: Background scheduler (`reminderScheduler.ts`) checks upcoming daily routine blocks and fires native alerts.
+- **Customizable Advance Notice**: Configure warnings for exact time (0 min), 5 min before, 10 min before, or 15 min before.
+- **Synthesized Glass Chime**: Pleasant two-tone harmonic notification audio via Web Audio API.
+- **High-Performance Global Hotkeys**:
+  - `1` - `5`: Instant navigation between Routine, Pomodoro, Notes, Backlog, and Dashboard.
+  - `Space`: Quick toggle start / pause on Pomodoro timer.
+  - `Ctrl + N`: Open New Task creation modal from anywhere in the app.
+  - `Esc`: Close any active modal.
+
 ---
 
 ## Application Architecture
