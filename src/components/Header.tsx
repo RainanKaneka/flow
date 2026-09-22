@@ -41,6 +41,10 @@ export const Header: React.FC = () => {
   const openNotificationModal = useFlowStore((s) => s.openNotificationModal);
   const availableUpdate = useFlowStore((s) => s.availableUpdate);
   const openUpdateModal = useFlowStore((s) => s.openUpdateModal);
+  
+  const googleUser = useFlowStore((s) => s.googleUser);
+  const geminiConfig = useFlowStore((s) => s.geminiConfig);
+  const openGoogleAuthModal = useFlowStore((s) => s.openGoogleAuthModal);
 
   const pomodoroMinutes = Math.floor(pomodoro.timeLeftSeconds / 60);
   const pomodoroSeconds = pomodoro.timeLeftSeconds % 60;
@@ -311,6 +315,30 @@ export const Header: React.FC = () => {
               <BarChart2 size={13} />
               <span>Dashboard</span>
             </button>
+
+            {/* 6: IA Assistant Tab (RF-15, RF-16, RF-18) */}
+            <button
+              onClick={() => setActiveView('ai')}
+              title="Assistente IA Copilot [Atalho: 6]"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '6px 14px',
+                borderRadius: '9999px',
+                border: 'none',
+                fontSize: '12px',
+                fontWeight: activeView === 'ai' ? 700 : 500,
+                cursor: 'pointer',
+                backgroundColor: activeView === 'ai' ? 'var(--bg-secondary)' : 'transparent',
+                color: activeView === 'ai' ? '#6366F1' : 'var(--text-secondary)',
+                boxShadow: activeView === 'ai' ? '0 2px 8px rgba(99,102,241,0.15)' : 'none',
+                transition: 'all 200ms var(--bezier-haptic)',
+              }}
+            >
+              <Sparkles size={13} color="#6366F1" />
+              <span>IA</span>
+            </button>
           </div>
         </div>
 
@@ -365,6 +393,38 @@ export const Header: React.FC = () => {
               <span>Atualização v{availableUpdate.latestVersion}</span>
             </button>
           )}
+
+          {/* Conexão Google & Gemini (RF-19) */}
+          <button
+            onClick={openGoogleAuthModal}
+            style={{
+              height: '36px',
+              padding: googleUser ? '0 12px 0 6px' : '0 12px',
+              borderRadius: '9999px',
+              background: 'var(--bg-secondary)',
+              border: '1px solid var(--border-subtle)',
+              color: googleUser || geminiConfig.apiKey ? '#6366F1' : 'var(--text-secondary)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              cursor: 'pointer',
+              transition: 'all 200ms var(--bezier-haptic)',
+              fontSize: '12px',
+              fontWeight: 600,
+            }}
+            title="Conexão Google & Chave Gemini IA (RF-19)"
+          >
+            {googleUser?.avatarUrl ? (
+              <img
+                src={googleUser.avatarUrl}
+                alt={googleUser.name}
+                style={{ width: '22px', height: '22px', borderRadius: '50%', objectFit: 'cover' }}
+              />
+            ) : (
+              <Sparkles size={14} color={geminiConfig.apiKey ? '#6366F1' : undefined} />
+            )}
+            <span>{googleUser ? googleUser.name.split(' ')[0] : geminiConfig.apiKey ? 'Gemini' : 'Google / IA'}</span>
+          </button>
 
           {/* Lembretes & Notificações (RF-12) */}
           <button

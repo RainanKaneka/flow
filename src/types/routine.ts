@@ -1,4 +1,38 @@
-export type AppView = 'routine' | 'dashboard' | 'backlog' | 'pomodoro' | 'notes';
+export type AppView = 'routine' | 'dashboard' | 'backlog' | 'pomodoro' | 'notes' | 'ai';
+
+// Integração Google & Agente de IA com Gemini (RF-15, RF-16, RF-17, RF-18, RF-19)
+export interface GoogleUserProfile {
+  id: string;
+  name: string;
+  email: string;
+  avatarUrl?: string;
+  connectedAt: string;
+}
+
+export interface GeminiConfig {
+  apiKey: string;
+  model: string;
+  isConnected: boolean;
+}
+
+export type AiActionType = 'create_task' | 'replan_schedule' | 'decompose_checklist' | 'productivity_report';
+
+export interface AiActionProposal {
+  id: string;
+  type: AiActionType;
+  title: string;
+  summary: string;
+  payload: any;
+  applied?: boolean;
+}
+
+export interface AiChatMessage {
+  id: string;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  timestamp: string;
+  actionProposal?: AiActionProposal;
+}
 
 export interface RoutineType {
   id: string;
@@ -140,6 +174,12 @@ export interface FlowState {
   } | null;
   isUpdateModalOpen: boolean;
 
+  // Integração Google & Agente de IA com Gemini (RF-15, RF-16, RF-18, RF-19)
+  googleUser: GoogleUserProfile | null;
+  geminiConfig: GeminiConfig;
+  aiMessages: AiChatMessage[];
+  isGoogleAuthModalOpen: boolean;
+
   // Modais de Controle
   isTaskModalOpen: boolean;
   editingTask: Task | null;
@@ -231,6 +271,15 @@ export interface FlowActions {
   setAvailableUpdate: (update: FlowState['availableUpdate']) => void;
   openUpdateModal: () => void;
   closeUpdateModal: () => void;
+
+  // Agente de IA com Gemini & Conta Google (RF-15, RF-16, RF-18, RF-19)
+  setGoogleUser: (user: GoogleUserProfile | null) => void;
+  setGeminiConfig: (config: Partial<GeminiConfig>) => void;
+  addAiMessage: (msg: Omit<AiChatMessage, 'id' | 'timestamp'> & { id?: string; timestamp?: string }) => void;
+  clearAiChat: () => void;
+  applyAiActionProposal: (proposalId: string) => void;
+  openGoogleAuthModal: () => void;
+  closeGoogleAuthModal: () => void;
 }
 
 export type FlowStore = FlowState & FlowActions;

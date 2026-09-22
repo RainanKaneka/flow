@@ -171,6 +171,32 @@ class SoundManager {
     osc2.start(baseTime + 0.12);
     osc2.stop(baseTime + 0.75);
   }
+
+  // Chime cristalino para confirmações de IA e conquistas (arpeggio suave C6 -> E6 -> G6)
+  playGlassChime() {
+    const ctx = this.getContext();
+    if (!ctx) return;
+
+    const baseTime = ctx.currentTime;
+    const notes = [1046.5, 1318.51, 1567.98]; // C6 -> E6 -> G6
+
+    notes.forEach((freq, idx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, baseTime + idx * 0.08);
+
+      gain.gain.setValueAtTime(0.06, baseTime + idx * 0.08);
+      gain.gain.exponentialRampToValueAtTime(0.0001, baseTime + idx * 0.08 + 0.6);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(baseTime + idx * 0.08);
+      osc.stop(baseTime + idx * 0.08 + 0.6);
+    });
+  }
 }
 
 export const sounds = new SoundManager();

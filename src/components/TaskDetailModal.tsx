@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useFlowStore } from '../store/useFlowStore';
 import { TaskAttachment, TaskChecklistItem } from '../types/routine';
 import { sounds } from '../utils/audio';
+import { decomposeTaskWithGemini } from '../services/geminiService';
 import {
   X,
   Play,
@@ -27,6 +28,7 @@ export const TaskDetailModal: React.FC = () => {
   const routineTypes = useFlowStore((s) => s.routineTypes);
   const selectedDate = useFlowStore((s) => s.selectedDate);
   const logs = useFlowStore((s) => s.logs);
+  const geminiConfig = useFlowStore((s) => s.geminiConfig);
   const closeTaskDetail = useFlowStore((s) => s.closeTaskDetail);
   const updateTaskSpecifications = useFlowStore((s) => s.updateTaskSpecifications);
   const toggleChecklistItem = useFlowStore((s) => s.toggleChecklistItem);
@@ -42,6 +44,7 @@ export const TaskDetailModal: React.FC = () => {
   const [newLinkUrl, setNewLinkUrl] = useState('');
   const [isAddingLink, setIsAddingLink] = useState(false);
   const [isSavedBanner, setIsSavedBanner] = useState(false);
+  const [isDecomposing, setIsDecomposing] = useState(false);
 
   useEffect(() => {
     if (task) {
@@ -102,6 +105,38 @@ export const TaskDetailModal: React.FC = () => {
       checklist: checklist.filter((i) => i.id !== itemId),
     });
     sounds.playTick();
+  };
+
+  // Sugerir Subtarefas com Gemini IA (RF-17)
+  const handleDecomposeWithAi = async () => {
+    if (!task || isDecomposing) return;
+    setIsDecomposing(true);
+    sounds.playTick();
+
+    try {
+      const suggestedItems = await decomposeTaskWithGemini({
+        task,
+        apiKey: geminiConfig.apiKey,
+        model: geminiConfig.model,
+      });
+
+      if (suggestedItems && suggestedItems.length > 0) {
+        const newChecklistItems: TaskChecklistItem[] = suggestedItems.map((title, idx) => ({
+          id: `check_ai_${Date.now()}_${idx}`,
+          title,
+          completed: false,
+        }));
+
+        updateTaskSpecifications(task.id, {
+          checklist: [...checklist, ...newChecklistItems],
+        });
+        sounds.playGlassChime();
+      }
+    } catch (e) {
+      console.error('Falha ao sugerir subtarefas com IA:', e);
+    } finally {
+      setIsDecomposing(false);
+    }
   };
 
   // Adicionar Link
@@ -305,17 +340,39 @@ export const TaskDetailModal: React.FC = () => {
 
           {/* Seção 1: Checklist de Sub-tarefas (RF-6, RF-17) */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <ListTodo size={16} color="var(--accent-primary)" />
                 <h4 style={{ fontSize: '14px', fontWeight: 700 }}>Checklist & Sub-tarefas</h4>
+                {checklist.length > 0 && (
+                  <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)' }}>
+                    ({completedSubtasks}/{checklist.length})
+                  </span>
+                )}
               </div>
 
-              {checklist.length > 0 && (
-                <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)' }}>
-                  {completedSubtasks}/{checklist.length} ({subtaskPercentage}%)
-                </span>
-              )}
+              <button
+                type="button"
+                onClick={handleDecomposeWithAi}
+                disabled={isDecomposing}
+                style={{
+                  background: 'rgba(99, 102, 241, 0.1)',
+                  border: '1px solid rgba(99, 102, 241, 0.25)',
+                  color: '#6366F1',
+                  borderRadius: '8px',
+                  padding: '4px 10px',
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  cursor: isDecomposing ? 'wait' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                  transition: 'all 0.2s',
+                }}
+              >
+                <Sparkles size={13} className={isDecomposing ? 'animate-spin' : ''} />
+                <span>{isDecomposing ? 'Gerando com IA...' : 'Sugerir Subtarefas com IA'}</span>
+              </button>
             </div>
 
             {/* Barra de progresso do checklist */}

@@ -12,10 +12,12 @@ import { DashboardView } from '../components/DashboardView';
 import { BacklogView } from '../components/BacklogView';
 import { PomodoroView } from '../components/PomodoroView';
 import { NotepadView } from '../components/NotepadView';
+import { AiAssistantView } from '../components/AiAssistantView';
 import { ManageRoutinesModal } from '../components/ManageRoutinesModal';
 import { ManageCategoriesModal } from '../components/ManageCategoriesModal';
 import { NotificationSettingsModal } from '../components/NotificationSettingsModal';
 import { UpdateModal } from '../components/UpdateModal';
+import { GoogleAuthModal } from '../components/GoogleAuthModal';
 import { useGlobalShortcuts } from '../hooks/useGlobalShortcuts';
 import { useReminderScheduler } from '../services/reminderScheduler';
 import { useUpdateChecker } from '../hooks/useUpdateChecker';
@@ -85,6 +87,8 @@ export default function Home() {
         {activeView === 'pomodoro' && <PomodoroView />}
 
         {activeView === 'notes' && <NotepadView />}
+
+        {activeView === 'ai' && <AiAssistantView />}
 
         {activeView === 'routine' && (
           <>
@@ -239,6 +243,7 @@ export default function Home() {
       <ManageCategoriesModal />
       <NotificationSettingsModal />
       <UpdateModal />
+      <GoogleAuthModal />
     </div>
   );
 }

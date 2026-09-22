@@ -12,6 +12,7 @@ export const useGlobalShortcuts = () => {
   const closeNotificationModal = useFlowStore((s) => s.closeNotificationModal);
   const closeManageRoutinesModal = useFlowStore((s) => s.closeManageRoutinesModal);
   const closeManageCategoriesModal = useFlowStore((s) => s.closeManageCategoriesModal);
+  const closeGoogleAuthModal = useFlowStore((s) => s.closeGoogleAuthModal);
   
   const pomodoro = useFlowStore((s) => s.pomodoro);
   const startPomodoro = useFlowStore((s) => s.startPomodoro);
@@ -22,6 +23,7 @@ export const useGlobalShortcuts = () => {
   const isNotificationModalOpen = useFlowStore((s) => s.isNotificationModalOpen);
   const isManageRoutinesModalOpen = useFlowStore((s) => s.isManageRoutinesModalOpen);
   const isManageCategoriesModalOpen = useFlowStore((s) => s.isManageCategoriesModalOpen);
+  const isGoogleAuthModalOpen = useFlowStore((s) => s.isGoogleAuthModalOpen);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -41,6 +43,7 @@ export const useGlobalShortcuts = () => {
         if (isNotificationModalOpen) closeNotificationModal();
         if (isManageRoutinesModalOpen) closeManageRoutinesModal();
         if (isManageCategoriesModalOpen) closeManageCategoriesModal();
+        if (isGoogleAuthModalOpen) closeGoogleAuthModal();
         return;
       }
 
@@ -87,6 +90,10 @@ export const useGlobalShortcuts = () => {
           case '5':
             e.preventDefault();
             setActiveView('dashboard');
+            break;
+          case '6':
+            e.preventDefault();
+            setActiveView('ai');
             break;
           default:
             break;
