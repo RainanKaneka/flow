@@ -13,6 +13,10 @@ A minimalist personal productivity desktop application engineered to conquer dai
 [![Zustand](https://img.shields.io/badge/State-Zustand-443e38?style=flat-square)](https://zustand.docs.pmnd.rs/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178C6?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
 
+<br/>
+
+[![Download Windows Installer](https://img.shields.io/badge/Download-Windows%20Installer%20(.exe)-6366F1?style=for-the-badge&logo=windows)](https://github.com/RainanKaneka/flow/releases/latest)
+
 </div>
 
 ---
