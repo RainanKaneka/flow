@@ -1,0 +1,54 @@
+name: Build Flow Desktop Setup (.exe)
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build-tauri:
+    name: Build Windows Desktop App
+    runs-on: windows-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust dependencies
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      - name: Install Frontend Dependencies
+        run: npm ci || npm install
+
+      - name: Build Next.js Static Bundle
+        run: npm run build
+
+      - name: Build Tauri Desktop Installer
+        run: npx tauri build
+
+      - name: Upload Windows Setup Artifact (.exe / .msi)
+        uses: actions/upload-artifact@v4
+        with:
+          name: Flow-Windows-Setup-x64
+          path: |
+            src-tauri/target/release/bundle/nsis/*.exe
+            src-tauri/target/release/bundle/msi/*.msi
+          if-no-files-found: warn
+          retention-days: 14
