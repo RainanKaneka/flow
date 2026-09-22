@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { useFlowStore } from '../store/useFlowStore';
 import { PomodoroMode } from '../types/routine';
+import { sounds } from '../utils/audio';
 import {
   Play,
   Pause,
@@ -16,6 +17,9 @@ import {
   Sliders,
   Bell,
   Layers,
+  ChevronDown,
+  Check,
+  X,
 } from 'lucide-react';
 
 export const PomodoroView: React.FC = () => {
@@ -34,6 +38,22 @@ export const PomodoroView: React.FC = () => {
   const linkTaskToPomodoro = useFlowStore((s) => s.linkTaskToPomodoro);
   const tickPomodoro = useFlowStore((s) => s.tickPomodoro);
   const finishPomodoroSession = useFlowStore((s) => s.finishPomodoroSession);
+  const categories = useFlowStore((s) => s.categories);
+
+  const [isLinkDropdownOpen, setIsLinkDropdownOpen] = useState(false);
+  const linkDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (linkDropdownRef.current && !linkDropdownRef.current.contains(e.target as Node)) {
+        setIsLinkDropdownOpen(false);
+      }
+    };
+    if (isLinkDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isLinkDropdownOpen]);
 
   // Intervalo de contagem regressiva
   useEffect(() => {
@@ -434,27 +454,247 @@ export const PomodoroView: React.FC = () => {
               O tempo focado nesta sessão será somado automaticamente ao histórico real da atividade.
             </p>
 
-            <select
-              value={pomodoro.linkedTaskId || ''}
-              onChange={(e) => linkTaskToPomodoro(e.target.value || null)}
-              style={{
-                width: '100%',
-                padding: '9px 12px',
-                borderRadius: '10px',
-                border: '1px solid var(--border-subtle)',
-                background: 'var(--bg-primary)',
-                color: 'var(--text-primary)',
-                fontSize: '13px',
-                outline: 'none',
-              }}
-            >
-              <option value="">-- Nenhuma (Foco Avulso) --</option>
-              {todayTasks.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.startTime} - {t.title} ({t.targetMinutes}m)
-                </option>
-              ))}
-            </select>
+            {/* Custom Dropdown Seletor de Atividades */}
+            <div ref={linkDropdownRef} style={{ position: 'relative' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsLinkDropdownOpen((prev) => !prev);
+                  sounds.playTick();
+                }}
+                style={{
+                  width: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '10px 14px',
+                  borderRadius: '12px',
+                  border: isLinkDropdownOpen
+                    ? '1px solid var(--accent-primary, #6366F1)'
+                    : '1px solid var(--border-subtle)',
+                  background: 'var(--bg-primary)',
+                  color: 'var(--text-primary)',
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  outline: 'none',
+                  boxShadow: isLinkDropdownOpen ? '0 0 0 3px rgba(99, 102, 241, 0.15)' : 'none',
+                  transition: 'all 0.2s ease',
+                  textAlign: 'left',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0, flex: 1 }}>
+                  {linkedTask ? (
+                    <>
+                      <div
+                        style={{
+                          width: '10px',
+                          height: '10px',
+                          borderRadius: '50%',
+                          background: categories.find((c) => c.id === linkedTask.categoryId)?.color || '#6366F1',
+                          flexShrink: 0,
+                          boxShadow: `0 0 8px ${categories.find((c) => c.id === linkedTask.categoryId)?.color || '#6366F1'}80`,
+                        }}
+                      />
+                      <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                        <span style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {linkedTask.title}
+                        </span>
+                        <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                          {linkedTask.startTime} - {linkedTask.endTime} • {linkedTask.targetMinutes} min
+                        </span>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles size={15} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+                      <span style={{ color: 'var(--text-secondary)' }}>
+                        Nenhuma atividade vinculada (Foco Avulso)
+                      </span>
+                    </>
+                  )}
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  {linkedTask && (
+                    <span
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        linkTaskToPomodoro(null);
+                        sounds.playTick();
+                      }}
+                      title="Desvincular atividade"
+                      style={{
+                        padding: '3px',
+                        borderRadius: '6px',
+                        color: 'var(--text-muted)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <X size={14} />
+                    </span>
+                  )}
+                  <ChevronDown
+                    size={16}
+                    style={{
+                      color: 'var(--text-muted)',
+                      transform: isLinkDropdownOpen ? 'rotate(180deg)' : 'none',
+                      transition: 'transform 0.2s ease',
+                    }}
+                  />
+                </div>
+              </button>
+
+              {/* Menu Flutuante */}
+              {isLinkDropdownOpen && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: 'calc(100% + 6px)',
+                    left: 0,
+                    right: 0,
+                    zIndex: 60,
+                    backgroundColor: 'var(--bg-elevated, #18181B)',
+                    border: '1px solid var(--border-subtle)',
+                    borderRadius: '14px',
+                    boxShadow: '0 16px 40px -8px rgba(0, 0, 0, 0.6)',
+                    backdropFilter: 'blur(16px)',
+                    WebkitBackdropFilter: 'blur(16px)',
+                    padding: '8px',
+                    maxHeight: '290px',
+                    overflowY: 'auto',
+                  }}
+                >
+                  {/* Opção Desvincular / Foco Avulso */}
+                  <div
+                    onClick={() => {
+                      linkTaskToPomodoro(null);
+                      setIsLinkDropdownOpen(false);
+                      sounds.playTick();
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '9px 12px',
+                      borderRadius: '10px',
+                      cursor: 'pointer',
+                      backgroundColor: !pomodoro.linkedTaskId ? 'rgba(99, 102, 241, 0.12)' : 'transparent',
+                      color: !pomodoro.linkedTaskId ? 'var(--accent-primary, #6366F1)' : 'var(--text-primary)',
+                      fontSize: '12px',
+                      fontWeight: !pomodoro.linkedTaskId ? 600 : 500,
+                      marginBottom: '6px',
+                      transition: 'background 0.15s ease',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Sparkles size={14} />
+                      <div>
+                        <div>Foco Avulso (Sem vincular)</div>
+                        <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 400 }}>
+                          Sessão livre sem vincular a nenhuma atividade da rotina
+                        </div>
+                      </div>
+                    </div>
+                    {!pomodoro.linkedTaskId && <Check size={14} />}
+                  </div>
+
+                  <div
+                    style={{
+                      height: '1px',
+                      background: 'var(--border-subtle)',
+                      margin: '4px 6px 8px',
+                    }}
+                  />
+
+                  <div
+                    style={{
+                      fontSize: '10px',
+                      fontWeight: 700,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                      color: 'var(--text-muted)',
+                      padding: '2px 8px 6px',
+                    }}
+                  >
+                    Atividades da Rotina de Hoje ({todayTasks.length})
+                  </div>
+
+                  {todayTasks.length === 0 ? (
+                    <div style={{ padding: '12px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '12px' }}>
+                      Nenhuma atividade encontrada para a rotina de hoje.
+                    </div>
+                  ) : (
+                    todayTasks.map((t) => {
+                      const isSelected = pomodoro.linkedTaskId === t.id;
+                      const cat = categories.find((c) => c.id === t.categoryId);
+                      const isTaskCompleted = !!logs[`${selectedDate}_${t.id}`]?.completed;
+
+                      return (
+                        <div
+                          key={t.id}
+                          onClick={() => {
+                            linkTaskToPomodoro(t.id);
+                            setIsLinkDropdownOpen(false);
+                            sounds.playTick();
+                          }}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            padding: '9px 12px',
+                            borderRadius: '10px',
+                            cursor: 'pointer',
+                            backgroundColor: isSelected ? 'rgba(99, 102, 241, 0.15)' : 'transparent',
+                            color: isSelected ? 'var(--text-primary)' : 'var(--text-secondary)',
+                            fontSize: '12px',
+                            marginBottom: '3px',
+                            transition: 'all 0.15s ease',
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                            <div
+                              style={{
+                                width: '8px',
+                                height: '8px',
+                                borderRadius: '50%',
+                                background: cat?.color || '#6366F1',
+                                flexShrink: 0,
+                              }}
+                            />
+                            <div style={{ minWidth: 0 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <span style={{ fontWeight: isSelected ? 700 : 500, color: 'var(--text-primary)' }}>
+                                  {t.title}
+                                </span>
+                                {isTaskCompleted && (
+                                  <CheckCircle2 size={12} style={{ color: 'var(--success, #10B981)', flexShrink: 0 }} />
+                                )}
+                              </div>
+                              <div style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'flex', gap: '6px', alignItems: 'center' }}>
+                                <span>{t.startTime} - {t.endTime}</span>
+                                <span>•</span>
+                                <span>{t.targetMinutes}m</span>
+                                {cat && (
+                                  <>
+                                    <span>•</span>
+                                    <span style={{ color: cat.color }}>{cat.name}</span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          {isSelected && <Check size={14} style={{ color: 'var(--accent-primary, #6366F1)', flexShrink: 0 }} />}
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Ajustador de Tempo Personalizado (RF-7) */}

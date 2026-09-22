@@ -157,45 +157,118 @@ VALUES ('${n.id}', '${titleEsc}', '${contentEsc}', '${tagsStr}', '${n.color || '
 /**
  * Funções de agregação analítica dinâmicas para o Dashboard
  */
+export interface DateRangeOption {
+  daysCount?: number;
+  startDate?: string;
+  endDate?: string;
+}
+
+export interface CategoryMetricItem {
+  id: string;
+  name: string;
+  color: string;
+  minutes: number;
+  hours: number;
+  count: number;
+  percentage: number;
+}
+
+/**
+ * Funções de agregação analítica dinâmicas para o Dashboard
+ */
 export function calculateStreakAndMetrics(
   tasks: Task[],
   logs: Record<string, TaskLog>,
   selectedRoutineTypeId: string,
-  categories: Category[]
+  categories: Category[],
+  rangeOption?: DateRangeOption
 ) {
+  const days: {
+    date: string;
+    displayDate: string;
+    percentage: number;
+    completed: number;
+    total: number;
+    goldenRulesDone: boolean;
+  }[] = [];
+
   const today = new Date();
-  const days: { date: string; displayDate: string; percentage: number; completed: number; total: number; goldenRulesDone: boolean }[] = [];
 
-  // Analisar últimos 14 dias
-  for (let i = 13; i >= 0; i--) {
-    const d = new Date(today);
-    d.setDate(d.getDate() - i);
-    const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    const dayOfWeek = d.getDay();
+  if (rangeOption?.startDate && rangeOption?.endDate) {
+    // Intervalo personalizado
+    const [startYear, startMonth, startDay] = rangeOption.startDate.split('-').map(Number);
+    const [endYear, endMonth, endDay] = rangeOption.endDate.split('-').map(Number);
+    const current = new Date(startYear, startMonth - 1, startDay);
+    const end = new Date(endYear, endMonth - 1, endDay);
 
-    const dayTasks = tasks.filter((t) => {
-      if (t.routineTypeId !== selectedRoutineTypeId) return false;
-      if (t.specificDate) return t.specificDate === dateStr;
-      return t.daysOfWeek.includes(dayOfWeek);
-    });
-    const completedCount = dayTasks.filter((t) => logs[`${dateStr}_${t.id}`]?.completed).length;
-    const totalCount = dayTasks.length;
-    const percentage = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+    // Limitar no máximo 180 dias para evitar sobrecarga de renderização
+    let safetyCounter = 0;
+    while (current <= end && safetyCounter < 180) {
+      const dateStr = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, '0')}-${String(current.getDate()).padStart(2, '0')}`;
+      const dayOfWeek = current.getDay();
 
-    const goldenRules = dayTasks.filter((t) => t.isGoldenRule);
-    const goldenRulesDone = goldenRules.length > 0 && goldenRules.every((t) => logs[`${dateStr}_${t.id}`]?.completed);
+      const dayTasks = tasks.filter((t) => {
+        if (t.routineTypeId !== selectedRoutineTypeId) return false;
+        if (t.specificDate) return t.specificDate === dateStr;
+        return t.daysOfWeek.includes(dayOfWeek);
+      });
+      const completedCount = dayTasks.filter((t) => logs[`${dateStr}_${t.id}`]?.completed).length;
+      const totalCount = dayTasks.length;
+      const percentage = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
-    days.push({
-      date: dateStr,
-      displayDate: d.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit' }),
-      percentage,
-      completed: completedCount,
-      total: totalCount,
-      goldenRulesDone,
-    });
+      const goldenRules = dayTasks.filter((t) => t.isGoldenRule);
+      const goldenRulesDone = goldenRules.length > 0 && goldenRules.every((t) => logs[`${dateStr}_${t.id}`]?.completed);
+
+      days.push({
+        date: dateStr,
+        displayDate: current.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+        percentage,
+        completed: completedCount,
+        total: totalCount,
+        goldenRulesDone,
+      });
+
+      current.setDate(current.getDate() + 1);
+      safetyCounter++;
+    }
+  } else {
+    // Intervalo de dias fixos (7, 14, 30, 90 etc.)
+    const daysCount = rangeOption?.daysCount || 14;
+    for (let i = daysCount - 1; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      const dayOfWeek = d.getDay();
+
+      const dayTasks = tasks.filter((t) => {
+        if (t.routineTypeId !== selectedRoutineTypeId) return false;
+        if (t.specificDate) return t.specificDate === dateStr;
+        return t.daysOfWeek.includes(dayOfWeek);
+      });
+      const completedCount = dayTasks.filter((t) => logs[`${dateStr}_${t.id}`]?.completed).length;
+      const totalCount = dayTasks.length;
+      const percentage = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+
+      const goldenRules = dayTasks.filter((t) => t.isGoldenRule);
+      const goldenRulesDone = goldenRules.length > 0 && goldenRules.every((t) => logs[`${dateStr}_${t.id}`]?.completed);
+
+      const displayDate =
+        daysCount <= 7
+          ? d.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit' })
+          : `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+
+      days.push({
+        date: dateStr,
+        displayDate,
+        percentage,
+        completed: completedCount,
+        total: totalCount,
+        goldenRulesDone,
+      });
+    }
   }
 
-  // Calcular streak de dias consecutivos
+  // Calcular streak de dias consecutivos (a partir do último dia analisado)
   let currentStreak = 0;
   for (let i = days.length - 1; i >= 0; i--) {
     if (days[i].completed > 0 || days[i].total === 0) {
@@ -206,32 +279,56 @@ export function calculateStreakAndMetrics(
     }
   }
 
+  // Conjunto de datas ativas no intervalo para filtrar métricas de categoria
+  const activeDateSet = new Set(days.map((d) => d.date));
+
   // Agregação por categoria dinâmica
   const categoryMap = new Map(categories.map((c) => [c.id, c]));
-  const categoryStats: Record<string, { name: string; color: string; minutes: number; count: number }> = {};
+  const categoryStatsMap: Record<string, { id: string; name: string; color: string; minutes: number; count: number }> = {};
+  let totalPeriodCompletedCount = 0;
+  let totalPeriodMinutes = 0;
 
   for (const log of Object.values(logs)) {
     if (!log.completed) continue;
+    // Se o log estiver dentro do intervalo de datas selecionado
+    if (!activeDateSet.has(log.date)) continue;
+
     const task = tasks.find((t) => t.id === log.taskId);
     if (!task) continue;
 
-    const catInfo = categoryMap.get(task.categoryId) || { name: 'Geral', color: '#6366F1' };
+    const catInfo = categoryMap.get(task.categoryId) || { id: task.categoryId, name: 'Geral', color: '#6366F1' };
 
-    if (!categoryStats[task.categoryId]) {
-      categoryStats[task.categoryId] = {
+    if (!categoryStatsMap[task.categoryId]) {
+      categoryStatsMap[task.categoryId] = {
+        id: task.categoryId,
         name: catInfo.name,
         color: catInfo.color,
         minutes: 0,
         count: 0,
       };
     }
-    categoryStats[task.categoryId].minutes += task.targetMinutes;
-    categoryStats[task.categoryId].count += 1;
+    categoryStatsMap[task.categoryId].minutes += task.targetMinutes;
+    categoryStatsMap[task.categoryId].count += 1;
+    totalPeriodCompletedCount += 1;
+    totalPeriodMinutes += task.targetMinutes;
   }
+
+  // Converter para array ordenado para o Recharts PieChart
+  const categoryDistribution: CategoryMetricItem[] = Object.values(categoryStatsMap)
+    .map((item) => ({
+      ...item,
+      hours: Number((item.minutes / 60).toFixed(1)),
+      percentage: totalPeriodCompletedCount > 0 ? Math.round((item.count / totalPeriodCompletedCount) * 100) : 0,
+    }))
+    .sort((a, b) => b.count - a.count);
 
   return {
     history14Days: days,
+    historyDays: days,
     currentStreak,
-    categoryStats,
+    categoryStats: categoryStatsMap,
+    categoryDistribution,
+    totalPeriodCompletedCount,
+    totalPeriodMinutes,
   };
 }

@@ -1,9 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Task } from '../types/routine';
 import { useFlowStore } from '../store/useFlowStore';
 import { sounds } from '../utils/audio';
+import { MoveToBacklogModal } from './MoveToBacklogModal';
 import {
   Check,
   Clock,
@@ -34,6 +35,8 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
   const setActiveView = useFlowStore((s) => s.setActiveView);
   const deleteTask = useFlowStore((s) => s.deleteTask);
   const moveTaskToBacklog = useFlowStore((s) => s.moveTaskToBacklog);
+
+  const [isBacklogModalOpen, setIsBacklogModalOpen] = useState(false);
 
   const category = categories.find((c) => c.id === task.categoryId) || {
     id: task.categoryId,
@@ -393,11 +396,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
 
           {!isCompleted && (
             <button
-              onClick={() => {
-                if (window.confirm(`Mover "${task.title}" para a lista de pendências (Backlog)?`)) {
-                  moveTaskToBacklog(task.id, selectedDate);
-                }
-              }}
+              onClick={() => setIsBacklogModalOpen(true)}
               title="Mover para o Backlog (tarefa pendente)"
               style={{
                 width: '30px',
@@ -460,6 +459,16 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
           )}
         </div>
       </div>
+
+      <MoveToBacklogModal
+        isOpen={isBacklogModalOpen}
+        taskTitle={task.title}
+        onConfirm={() => {
+          moveTaskToBacklog(task.id, selectedDate);
+          setIsBacklogModalOpen(false);
+        }}
+        onCancel={() => setIsBacklogModalOpen(false)}
+      />
     </div>
   );
 };
