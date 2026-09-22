@@ -1,20 +1,46 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useFlowStore } from '../store/useFlowStore';
-import { Sparkles, Download, X, ArrowUpRight, ShieldCheck, RefreshCw } from 'lucide-react';
+import {
+  Sparkles,
+  Download,
+  X,
+  ArrowUpRight,
+  ShieldCheck,
+  RefreshCw,
+  Copy,
+  Check,
+  ExternalLink,
+} from 'lucide-react';
+import { openExternalUrl, copyToClipboard } from '../utils/browser';
 
 export const UpdateModal: React.FC = () => {
   const availableUpdate = useFlowStore((s) => s.availableUpdate);
   const isUpdateModalOpen = useFlowStore((s) => s.isUpdateModalOpen);
   const closeUpdateModal = useFlowStore((s) => s.closeUpdateModal);
 
+  const [downloadTriggered, setDownloadTriggered] = useState(false);
+  const [copied, setCopied] = useState(false);
+
   if (!isUpdateModalOpen || !availableUpdate) return null;
 
-  const handleDownload = () => {
-    // Abre diretamente o download do novo instalador .exe
-    window.open(availableUpdate.downloadUrl, '_blank');
-    closeUpdateModal();
+  const handleDownload = async () => {
+    setDownloadTriggered(true);
+    // Dispara a abertura do download no navegador padrão do sistema
+    await openExternalUrl(availableUpdate.downloadUrl);
+  };
+
+  const handleCopyLink = async () => {
+    const ok = await copyToClipboard(availableUpdate.downloadUrl);
+    if (ok) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    }
+  };
+
+  const handleOpenReleasePage = async () => {
+    await openExternalUrl(availableUpdate.releaseUrl);
   };
 
   return (
@@ -38,7 +64,7 @@ export const UpdateModal: React.FC = () => {
         className="double-bezel-outer"
         style={{
           width: '100%',
-          maxWidth: '520px',
+          maxWidth: '540px',
           maxHeight: '90vh',
           overflowY: 'auto',
           boxShadow: '0 24px 60px rgba(99, 102, 241, 0.25)',
@@ -47,7 +73,7 @@ export const UpdateModal: React.FC = () => {
         <div
           className="double-bezel-inner"
           style={{
-            padding: '30px',
+            padding: '28px',
             position: 'relative',
           }}
         >
@@ -93,7 +119,7 @@ export const UpdateModal: React.FC = () => {
               <Sparkles size={24} strokeWidth={2.4} />
             </div>
 
-            <div>
+            <div style={{ flex: 1, minWidth: 0, paddingRight: '24px' }}>
               <span
                 style={{
                   display: 'inline-flex',
@@ -127,8 +153,8 @@ export const UpdateModal: React.FC = () => {
               borderRadius: '12px',
               backgroundColor: 'var(--bg-elevated)',
               border: '1px solid var(--border-subtle)',
-              marginBottom: '20px',
-              maxHeight: '180px',
+              marginBottom: '16px',
+              maxHeight: '160px',
               overflowY: 'auto',
             }}
           >
@@ -139,6 +165,32 @@ export const UpdateModal: React.FC = () => {
               {availableUpdate.releaseNotes}
             </p>
           </div>
+
+          {/* Feedback se o download já foi disparado */}
+          {downloadTriggered && (
+            <div
+              style={{
+                padding: '12px 14px',
+                borderRadius: '10px',
+                backgroundColor: 'rgba(16, 185, 129, 0.12)',
+                border: '1px solid rgba(16, 185, 129, 0.3)',
+                marginBottom: '16px',
+                fontSize: '12px',
+                color: '#10B981',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+              }}
+            >
+              <Check size={18} style={{ flexShrink: 0 }} />
+              <div>
+                <strong>Download acionado no navegador padrão!</strong>
+                <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                  Verifique a pasta de Downloads do seu Windows para executar o novo instalador assim que terminar.
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Security & Verification Callout */}
           <div
@@ -152,13 +204,69 @@ export const UpdateModal: React.FC = () => {
               border: '1px solid rgba(99, 102, 241, 0.2)',
               fontSize: '11px',
               color: 'var(--accent-primary)',
-              marginBottom: '24px',
+              marginBottom: '20px',
             }}
           >
             <ShieldCheck size={16} style={{ flexShrink: 0 }} />
             <span>
               O instalador `.exe` oficial substitui a versão antiga mantendo todos os seus dados e tarefas salvos com segurança.
             </span>
+          </div>
+
+          {/* Opções secundárias: Copiar Link ou Abrir no GitHub */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '10px 12px',
+              borderRadius: '10px',
+              backgroundColor: 'var(--bg-elevated)',
+              border: '1px solid var(--border-subtle)',
+              marginBottom: '20px',
+              gap: '10px',
+            }}
+          >
+            <button
+              onClick={handleCopyLink}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                background: 'none',
+                border: 'none',
+                color: copied ? '#10B981' : 'var(--text-secondary)',
+                fontSize: '11px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                padding: '4px 6px',
+                borderRadius: '6px',
+                transition: 'color 150ms',
+              }}
+            >
+              {copied ? <Check size={13} /> : <Copy size={13} />}
+              <span>{copied ? 'Link Copiado!' : 'Copiar Link Direto (.exe)'}</span>
+            </button>
+
+            <button
+              onClick={handleOpenReleasePage}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                background: 'none',
+                border: 'none',
+                color: 'var(--text-muted)',
+                fontSize: '11px',
+                cursor: 'pointer',
+                padding: '4px 6px',
+                borderRadius: '6px',
+                transition: 'color 150ms',
+              }}
+            >
+              <span>Ver Release no GitHub</span>
+              <ExternalLink size={12} />
+            </button>
           </div>
 
           {/* Actions */}
@@ -178,7 +286,7 @@ export const UpdateModal: React.FC = () => {
                 transition: 'all 150ms',
               }}
             >
-              Lembrar Mais Tarde
+              {downloadTriggered ? 'Fechar' : 'Lembrar Mais Tarde'}
             </button>
 
             <button
@@ -202,7 +310,7 @@ export const UpdateModal: React.FC = () => {
               }}
             >
               <Download size={16} />
-              <span>Baixar Atualização (.exe)</span>
+              <span>{downloadTriggered ? 'Baixar Novamente' : 'Baixar Atualização (.exe)'}</span>
               <ArrowUpRight size={14} />
             </button>
           </div>
@@ -211,3 +319,4 @@ export const UpdateModal: React.FC = () => {
     </div>
   );
 };
+
