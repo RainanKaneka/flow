@@ -725,16 +725,23 @@ Aqui estão algumas coisas que podemos fazer:
 
             const proposal = msg.actionProposal;
             let updatedTasks = [...state.tasks];
+            let nextSelectedDate = state.selectedDate;
 
             if (proposal.type === 'create_task') {
               const taskPayload = proposal.payload;
-              const newTask = {
+              const hasSpecificDate = !!taskPayload.specificDate;
+              const newTask: Task = {
                 ...taskPayload,
                 id: `task_${Date.now()}`,
-                daysOfWeek: taskPayload.daysOfWeek || [0, 1, 2, 3, 4, 5, 6],
+                specificDate: taskPayload.specificDate || undefined,
+                daysOfWeek: hasSpecificDate ? [] : (taskPayload.daysOfWeek || [0, 1, 2, 3, 4, 5, 6]),
                 tags: taskPayload.tags || ['ia-flow'],
               };
               updatedTasks.push(newTask);
+
+              if (hasSpecificDate) {
+                nextSelectedDate = taskPayload.specificDate;
+              }
             } else if (proposal.type === 'replan_schedule') {
               const diffs = proposal.payload.diffs || [];
               const diffMap = new Map(diffs.map((d: any) => [d.taskId, d]));
@@ -766,6 +773,8 @@ Aqui estão algumas coisas que podemos fazer:
 
             return {
               tasks: updatedTasks,
+              selectedDate: nextSelectedDate,
+              activeView: 'routine',
               aiMessages: updatedMessages,
             };
           });

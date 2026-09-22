@@ -38,14 +38,19 @@ export const useReminderScheduler = () => {
       const currentTimeStr = `${currentHours}:${currentMinutes}`;
       const currentDayOfWeek = now.getDay();
 
+      const yStr = now.getFullYear();
+      const mStr = String(now.getMonth() + 1).padStart(2, '0');
+      const dStr = String(now.getDate()).padStart(2, '0');
+      const todayStr = `${yStr}-${mStr}-${dStr}`;
+
       const advance = reminderSettings.advanceMinutes;
 
       // Filtra as tarefas ativas para o tipo de rotina selecionado e para o dia de hoje
-      const todaysTasks = tasks.filter(
-        (t) =>
-          t.routineTypeId === selectedRoutineTypeId &&
-          t.daysOfWeek.includes(currentDayOfWeek)
-      );
+      const todaysTasks = tasks.filter((t) => {
+        if (t.routineTypeId !== selectedRoutineTypeId) return false;
+        if (t.specificDate) return t.specificDate === todayStr;
+        return t.daysOfWeek.includes(currentDayOfWeek);
+      });
 
       for (const task of todaysTasks) {
         if (!task.startTime) continue;

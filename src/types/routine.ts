@@ -7,12 +7,14 @@ export interface GoogleUserProfile {
   email: string;
   avatarUrl?: string;
   connectedAt: string;
+  accessToken?: string;
 }
 
 export interface GeminiConfig {
   apiKey: string;
   model: string;
   isConnected: boolean;
+  clientId?: string;
 }
 
 export type AiActionType = 'create_task' | 'replan_schedule' | 'decompose_checklist' | 'productivity_report';
@@ -72,6 +74,7 @@ export interface Task {
   categoryId: string;    // Referência a Category.id
   isGoldenRule?: boolean; // Hábito âncora / Regra prioritária
   daysOfWeek: number[];   // [1,2,3,4,5] = Segunda a Sexta
+  specificDate?: string;  // YYYY-MM-DD (para tarefas específicas de um determinado dia)
   targetMinutes: number;
   tags: string[];
   notes?: string;

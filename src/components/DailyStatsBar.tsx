@@ -19,7 +19,9 @@ export const DailyStatsBar: React.FC = () => {
 
   const dayTasks = tasks.filter((t) => {
     const matchesRoutine = t.routineTypeId === selectedRoutineTypeId;
-    const matchesDay = t.daysOfWeek.includes(currentDayOfWeek);
+    const matchesDay = t.specificDate
+      ? t.specificDate === selectedDate
+      : t.daysOfWeek.includes(currentDayOfWeek);
     return matchesRoutine && matchesDay;
   });
 

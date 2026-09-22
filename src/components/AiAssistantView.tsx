@@ -97,6 +97,7 @@ export const AiAssistantView: React.FC = () => {
         history,
         context: chatContext,
         apiKey: geminiConfig.apiKey,
+        accessToken: googleUser?.accessToken,
         model: geminiConfig.model,
       });
 

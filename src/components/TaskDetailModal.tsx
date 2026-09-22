@@ -29,6 +29,7 @@ export const TaskDetailModal: React.FC = () => {
   const selectedDate = useFlowStore((s) => s.selectedDate);
   const logs = useFlowStore((s) => s.logs);
   const geminiConfig = useFlowStore((s) => s.geminiConfig);
+  const googleUser = useFlowStore((s) => s.googleUser);
   const closeTaskDetail = useFlowStore((s) => s.closeTaskDetail);
   const updateTaskSpecifications = useFlowStore((s) => s.updateTaskSpecifications);
   const toggleChecklistItem = useFlowStore((s) => s.toggleChecklistItem);
@@ -117,6 +118,7 @@ export const TaskDetailModal: React.FC = () => {
       const suggestedItems = await decomposeTaskWithGemini({
         task,
         apiKey: geminiConfig.apiKey,
+        accessToken: googleUser?.accessToken,
         model: geminiConfig.model,
       });
 

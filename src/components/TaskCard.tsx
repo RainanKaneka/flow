@@ -160,6 +160,23 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
                 </span>
               )}
 
+              {/* Specific Date Badge */}
+              {task.specificDate && (
+                <span
+                  style={{
+                    fontSize: '10px',
+                    padding: '2px 7px',
+                    borderRadius: '9999px',
+                    backgroundColor: 'rgba(99, 102, 241, 0.12)',
+                    color: '#818CF8',
+                    border: '1px solid rgba(99, 102, 241, 0.25)',
+                    fontWeight: 600,
+                  }}
+                >
+                  📅 {task.specificDate.split('-').reverse().join('/')}
+                </span>
+              )}
+
               {/* Custom Task Tag */}
               {task.isCustom && (
                 <span

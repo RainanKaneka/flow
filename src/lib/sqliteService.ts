@@ -173,7 +173,11 @@ export function calculateStreakAndMetrics(
     const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     const dayOfWeek = d.getDay();
 
-    const dayTasks = tasks.filter((t) => t.routineTypeId === selectedRoutineTypeId && t.daysOfWeek.includes(dayOfWeek));
+    const dayTasks = tasks.filter((t) => {
+      if (t.routineTypeId !== selectedRoutineTypeId) return false;
+      if (t.specificDate) return t.specificDate === dateStr;
+      return t.daysOfWeek.includes(dayOfWeek);
+    });
     const completedCount = dayTasks.filter((t) => logs[`${dateStr}_${t.id}`]?.completed).length;
     const totalCount = dayTasks.length;
     const percentage = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;

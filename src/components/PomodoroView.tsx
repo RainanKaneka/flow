@@ -51,10 +51,12 @@ export const PomodoroView: React.FC = () => {
   const currentDayOfWeek = new Date(year, month - 1, day).getDay();
 
   const todayTasks = useMemo(() => {
-    return tasks.filter(
-      (t) => t.routineTypeId === selectedRoutineTypeId && t.daysOfWeek.includes(currentDayOfWeek)
-    );
-  }, [tasks, selectedRoutineTypeId, currentDayOfWeek]);
+    return tasks.filter((t) => {
+      if (t.routineTypeId !== selectedRoutineTypeId) return false;
+      if (t.specificDate) return t.specificDate === selectedDate;
+      return t.daysOfWeek.includes(currentDayOfWeek);
+    });
+  }, [tasks, selectedRoutineTypeId, currentDayOfWeek, selectedDate]);
 
   const linkedTask = tasks.find((t) => t.id === pomodoro.linkedTaskId);
   const linkedTaskTime = linkedTask ? logs[`${selectedDate}_${linkedTask.id}`]?.timeSpentMinutes || 0 : 0;

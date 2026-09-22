@@ -48,10 +48,26 @@ export default function Home() {
     return () => clearInterval(interval);
   }, [isPomodoroActive, tickPomodoro]);
 
+  // Listener para capturar token se aberto como popup de OAuth 2.0
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.hash.includes('access_token=')) {
+      try {
+        const params = new URLSearchParams(window.location.hash.substring(1));
+        const token = params.get('access_token');
+        if (token && window.opener) {
+          window.opener.postMessage({ type: 'GOOGLE_OAUTH_TOKEN', token }, window.location.origin);
+          window.close();
+        }
+      } catch (e) {
+        // Ignora
+      }
+    }
+  }, []);
+
   const currentRoutineType =
     routineTypes.find((rt) => rt.id === selectedRoutineTypeId) || routineTypes[0];
 
-  // Filtragem e ordenação cronológica síncrona (vercel-react-best-practices)
+  // Filtragem e ordenação cronológica síncrona (com suporte estrito a data específica)
   const currentDayOfWeek = useMemo(() => {
     const [y, m, d] = selectedDate.split('-').map(Number);
     return new Date(y, m - 1, d).getDay();
@@ -61,17 +77,24 @@ export default function Home() {
     return tasks
       .filter((t) => {
         const matchesRoutine = t.routineTypeId === selectedRoutineTypeId;
-        const matchesDay = t.daysOfWeek.includes(currentDayOfWeek);
         const matchesCategory =
           activeCategoryId === 'all' || t.categoryId === activeCategoryId;
-        return matchesRoutine && matchesDay && matchesCategory;
+        if (!matchesRoutine || !matchesCategory) return false;
+
+        // Se a tarefa foi agendada para uma data específica (ex: 2026-09-25)
+        if (t.specificDate) {
+          return t.specificDate === selectedDate;
+        }
+
+        // Se for hábito recorrente
+        return t.daysOfWeek.includes(currentDayOfWeek);
       })
       .sort((a, b) => {
         const [ah, am] = a.startTime.split(':').map(Number);
         const [bh, bm] = b.startTime.split(':').map(Number);
         return ah * 60 + am - (bh * 60 + bm);
       });
-  }, [tasks, selectedRoutineTypeId, currentDayOfWeek, activeCategoryId]);
+  }, [tasks, selectedRoutineTypeId, currentDayOfWeek, activeCategoryId, selectedDate]);
 
   return (
     <div style={{ minHeight: '100vh', paddingBottom: '60px' }}>
