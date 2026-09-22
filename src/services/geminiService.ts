@@ -17,18 +17,89 @@ export interface ChatResponse {
   actionProposal?: AiActionProposal;
 }
 
-const DEFAULT_MODEL = 'gemini-1.5-flash';
+export const DEFAULT_MODEL = 'gemini-2.5-flash';
+
+export interface GeminiModelOption {
+  id: string;
+  displayName: string;
+  description?: string;
+}
+
+export const FALLBACK_MODELS: GeminiModelOption[] = [
+  {
+    id: 'gemini-2.5-flash',
+    displayName: 'Gemini 2.5 Flash (Recomendado: Nova Geração Ultra-Rápida)',
+  },
+  {
+    id: 'gemini-1.5-flash',
+    displayName: 'Gemini 1.5 Flash (Estável & Gratuito)',
+  },
+  {
+    id: 'gemini-2.5-pro',
+    displayName: 'Gemini 2.5 Pro (Raciocínio Analítico Avançado)',
+  },
+  {
+    id: 'gemini-1.5-pro',
+    displayName: 'Gemini 1.5 Pro (Alta Capacidade)',
+  },
+];
 
 /**
- * Valida se uma chave de API do Gemini é válida fazendo um ping simples
+ * Normaliza nomes de modelos substituindo versões descontinuadas (ex: 2.0-flash -> 2.5-flash)
  */
-export const testGeminiApiKey = async (apiKey: string, model: string = DEFAULT_MODEL): Promise<{ valid: boolean; error?: string }> => {
+export const normalizeModelName = (modelName?: string): string => {
+  if (!modelName || modelName === 'gemini-2.0-flash') {
+    return 'gemini-2.5-flash';
+  }
+  return modelName;
+};
+
+/**
+ * Busca a lista dinâmica de modelos disponíveis na chave de API do usuário
+ */
+export const fetchAvailableGeminiModels = async (apiKey: string): Promise<GeminiModelOption[]> => {
+  if (!apiKey || apiKey.trim().length < 10) return FALLBACK_MODELS;
+
+  try {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey.trim()}`);
+    if (!res.ok) return FALLBACK_MODELS;
+
+    const data = await res.json();
+    if (!data.models || !Array.isArray(data.models)) return FALLBACK_MODELS;
+
+    const filtered = data.models
+      .filter((m: any) => m.supportedGenerationMethods?.includes('generateContent'))
+      .map((m: any) => {
+        const id = m.name.replace(/^models\//, '');
+        return {
+          id,
+          displayName: m.displayName ? `${m.displayName} (${id})` : id,
+          description: m.description,
+        };
+      })
+      .filter((m: any) => !m.id.includes('embedding') && !m.id.includes('aqa') && m.id !== 'gemini-2.0-flash');
+
+    return filtered.length > 0 ? filtered : FALLBACK_MODELS;
+  } catch {
+    return FALLBACK_MODELS;
+  }
+};
+
+/**
+ * Valida se uma chave de API do Gemini é válida fazendo um ping simples com auto-fallback
+ */
+export const testGeminiApiKey = async (
+  apiKey: string,
+  model: string = DEFAULT_MODEL
+): Promise<{ valid: boolean; recommendedModel?: string; error?: string; availableModels?: GeminiModelOption[] }> => {
   if (!apiKey || apiKey.trim().length < 10) {
     return { valid: false, error: 'Chave de API inválida ou muito curta.' };
   }
 
+  const sanitizedModel = normalizeModelName(model);
+
   try {
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey.trim()}`;
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${sanitizedModel}:generateContent?key=${apiKey.trim()}`;
     const res = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -44,10 +115,35 @@ export const testGeminiApiKey = async (apiKey: string, model: string = DEFAULT_M
     if (!res.ok) {
       const errData = await res.json().catch(() => ({}));
       const message = errData?.error?.message || `Erro HTTP ${res.status}`;
-      return { valid: false, error: message };
+
+      // Se o erro for de modelo indisponível (ex: gemini-2.0-flash), tenta fallback para gemini-2.5-flash ou gemini-1.5-flash
+      if (message.includes('no longer available') || message.includes('not found') || message.includes('deprecated')) {
+        const fallback = sanitizedModel === 'gemini-2.5-flash' ? 'gemini-1.5-flash' : 'gemini-2.5-flash';
+        const retryEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/${fallback}:generateContent?key=${apiKey.trim()}`;
+        const retryRes = await fetch(retryEndpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: 'Ping de teste. Responda "OK".' }] }],
+          }),
+        });
+
+        if (retryRes.ok) {
+          const models = await fetchAvailableGeminiModels(apiKey);
+          return {
+            valid: true,
+            recommendedModel: fallback,
+            availableModels: models,
+          };
+        }
+      }
+
+      const models = await fetchAvailableGeminiModels(apiKey);
+      return { valid: false, error: message, availableModels: models };
     }
 
-    return { valid: true };
+    const models = await fetchAvailableGeminiModels(apiKey);
+    return { valid: true, recommendedModel: sanitizedModel, availableModels: models };
   } catch (err: any) {
     return { valid: false, error: err.message || 'Falha de conexão com a API do Google.' };
   }
@@ -321,7 +417,8 @@ export const sendMessageToAssistant = async ({
 
   try {
     const systemPrompt = buildSystemInstruction(context);
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey.trim()}`;
+    const sanitizedModel = normalizeModelName(model);
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${sanitizedModel}:generateContent?key=${apiKey.trim()}`;
 
     // Monta histórico no formato aceito pelo Gemini
     const contents: any[] = [
@@ -394,7 +491,8 @@ export const decomposeTaskWithGemini = async ({
   // Se houver chave API, consulta Gemini
   if (apiKey && apiKey.trim().length > 10) {
     try {
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey.trim()}`;
+      const sanitizedModel = normalizeModelName(model);
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${sanitizedModel}:generateContent?key=${apiKey.trim()}`;
       const prompt = `Dada a seguinte tarefa da rotina:
 Título: "${task.title}"
 Descrição: "${task.description || 'Sem descrição'}"

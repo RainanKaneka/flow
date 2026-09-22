@@ -84,7 +84,7 @@ export const useFlowStore = create<FlowStore>()(
         googleUser: null,
         geminiConfig: {
           apiKey: '',
-          model: 'gemini-1.5-flash',
+          model: 'gemini-2.5-flash',
           isConnected: false,
         },
         aiMessages: [
@@ -682,12 +682,16 @@ Aqui estão algumas coisas que podemos fazer:
         },
 
         setGeminiConfig: (config) => {
-          set((state) => ({
-            geminiConfig: {
+          set((state) => {
+            const updatedConfig = {
               ...state.geminiConfig,
               ...config,
-            },
-          }));
+            };
+            if (updatedConfig.model === 'gemini-2.0-flash') {
+              updatedConfig.model = 'gemini-2.5-flash';
+            }
+            return { geminiConfig: updatedConfig };
+          });
         },
 
         addAiMessage: (msg) => {

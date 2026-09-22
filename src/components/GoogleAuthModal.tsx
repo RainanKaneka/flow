@@ -2,7 +2,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { useFlowStore } from '../store/useFlowStore';
-import { testGeminiApiKey } from '../services/geminiService';
+import {
+  testGeminiApiKey,
+  fetchAvailableGeminiModels,
+  FALLBACK_MODELS,
+  GeminiModelOption,
+  normalizeModelName,
+} from '../services/geminiService';
 import { sounds } from '../utils/audio';
 import {
   X,
@@ -16,49 +22,150 @@ import {
   EyeOff,
   LogOut,
   Zap,
+  User,
+  Mail,
+  RefreshCw,
 } from 'lucide-react';
 
 export const GoogleAuthModal: React.FC = () => {
   const isOpen = useFlowStore((s) => s.isGoogleAuthModalOpen);
   const closeModal = useFlowStore((s) => s.closeGoogleAuthModal);
-  
+
   const googleUser = useFlowStore((s) => s.googleUser);
   const setGoogleUser = useFlowStore((s) => s.setGoogleUser);
-  
+
   const geminiConfig = useFlowStore((s) => s.geminiConfig);
   const setGeminiConfig = useFlowStore((s) => s.setGeminiConfig);
 
   const [apiKeyInput, setApiKeyInput] = useState('');
-  const [selectedModel, setSelectedModel] = useState('gemini-1.5-flash');
+  const [selectedModel, setSelectedModel] = useState('gemini-2.5-flash');
+  const [availableModels, setAvailableModels] = useState<GeminiModelOption[]>(FALLBACK_MODELS);
   const [showKey, setShowKey] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ success?: boolean; message?: string } | null>(null);
 
+  // Estados de formulário de perfil Google real
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [profileName, setProfileName] = useState('');
+  const [profileEmail, setProfileEmail] = useState('');
+
   useEffect(() => {
     if (isOpen) {
       setApiKeyInput(geminiConfig.apiKey || '');
-      setSelectedModel(geminiConfig.model || 'gemini-1.5-flash');
+      const cleanModel = normalizeModelName(geminiConfig.model || 'gemini-2.5-flash');
+      setSelectedModel(cleanModel);
       setTestResult(null);
+
+      if (googleUser) {
+        setProfileName(googleUser.name);
+        setProfileEmail(googleUser.email);
+        setIsEditingProfile(false);
+      } else {
+        setProfileName('');
+        setProfileEmail('');
+        setIsEditingProfile(false);
+      }
+
+      // Se já houver chave, busca modelos atualizados em segundo plano
+      if (geminiConfig.apiKey) {
+        fetchAvailableGeminiModels(geminiConfig.apiKey).then((models) => {
+          if (models.length > 0) setAvailableModels(models);
+        });
+      }
     }
-  }, [isOpen, geminiConfig]);
+  }, [isOpen, geminiConfig, googleUser]);
 
   if (!isOpen) return null;
 
-  // Conectar com conta Google (Simulação autenticada / GIS)
-  const handleConnectGoogle = () => {
-    const mockUser = {
+  // Conectar com perfil Google real fornecido pelo usuário
+  const handleSaveRealGoogleProfile = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!profileName.trim() || !profileEmail.trim()) return;
+
+    // Gera avatar padrão com iniciais ou foto
+    const initials = profileName.trim().substring(0, 2).toUpperCase();
+    const avatarUrl = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(
+      profileName.trim()
+    )}&backgroundColor=6366f1,4f46e5,4338ca&textColor=ffffff`;
+
+    const newUser = {
       id: `google_${Date.now()}`,
-      name: 'Usuário Flow',
-      email: 'usuario@gmail.com',
-      avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80',
+      name: profileName.trim(),
+      email: profileEmail.trim(),
+      avatarUrl,
       connectedAt: new Date().toLocaleDateString('pt-BR'),
     };
-    setGoogleUser(mockUser);
+
+    setGoogleUser(newUser);
+    setIsEditingProfile(false);
     sounds.playGlassChime();
+  };
+
+  // Login via Google OAuth 2.0 Popup
+  const handleGoogleOAuthPopup = () => {
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+
+    if (!clientId) {
+      // Se não há client_id de OAuth configurado no app, abre o formulário para inserção direta dos dados reais
+      setIsEditingProfile(true);
+      return;
+    }
+
+    const redirectUri = window.location.origin;
+    const scope = encodeURIComponent('email profile openid');
+    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(
+      redirectUri
+    )}&response_type=token&scope=${scope}&prompt=select_account`;
+
+    const popup = window.open(authUrl, 'google_oauth_popup', 'width=500,height=650,left=200,top=100');
+
+    if (!popup) {
+      setIsEditingProfile(true);
+      return;
+    }
+
+    const pollTimer = window.setInterval(async () => {
+      try {
+        if (popup.closed) {
+          clearInterval(pollTimer);
+          return;
+        }
+
+        const popupUrl = popup.location.href;
+        if (popupUrl && popupUrl.includes('access_token=')) {
+          clearInterval(pollTimer);
+          const params = new URLSearchParams(popup.location.hash.substring(1));
+          const accessToken = params.get('access_token');
+          popup.close();
+
+          if (accessToken) {
+            const userInfoRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+              headers: { Authorization: `Bearer ${accessToken}` },
+            });
+            if (userInfoRes.ok) {
+              const userInfo = await userInfoRes.json();
+              setGoogleUser({
+                id: userInfo.sub || `google_${Date.now()}`,
+                name: userInfo.name || 'Usuário Google',
+                email: userInfo.email || '',
+                avatarUrl: userInfo.picture,
+                connectedAt: new Date().toLocaleDateString('pt-BR'),
+              });
+              sounds.playGlassChime();
+            }
+          }
+        }
+      } catch (err) {
+        // Cross-origin até o redirecionamento
+      }
+    }, 500);
   };
 
   const handleDisconnectGoogle = () => {
     setGoogleUser(null);
+    setProfileName('');
+    setProfileEmail('');
+    setIsEditingProfile(false);
     sounds.playTick();
   };
 
@@ -75,25 +182,35 @@ export const GoogleAuthModal: React.FC = () => {
     const res = await testGeminiApiKey(apiKeyInput.trim(), selectedModel);
     setIsTesting(false);
 
+    if (res.availableModels && res.availableModels.length > 0) {
+      setAvailableModels(res.availableModels);
+    }
+
     if (res.valid) {
-      setTestResult({ success: true, message: 'Chave do Gemini validada com sucesso!' });
+      const activeModel = res.recommendedModel || selectedModel;
+      setSelectedModel(activeModel);
+      setTestResult({
+        success: true,
+        message: `Chave validada com sucesso no modelo ${activeModel}!`,
+      });
       setGeminiConfig({
         apiKey: apiKeyInput.trim(),
-        model: selectedModel,
+        model: activeModel,
         isConnected: true,
       });
       sounds.playGlassChime();
     } else {
-      setTestResult({ success: false, message: res.error || 'Não foi possível validar a chave.' });
+      setTestResult({ success: false, message: res.error || 'Não foi possível validar a chave com a API do Google.' });
       sounds.playTick();
     }
   };
 
   // Salvar configuração
   const handleSaveConfig = () => {
+    const cleanModel = normalizeModelName(selectedModel);
     setGeminiConfig({
       apiKey: apiKeyInput.trim(),
-      model: selectedModel,
+      model: cleanModel,
       isConnected: apiKeyInput.trim().length > 10,
     });
     sounds.playTick();
@@ -190,7 +307,7 @@ export const GoogleAuthModal: React.FC = () => {
         </div>
 
         {/* Conteúdo do Modal */}
-        <div style={{ padding: '24px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+        <div style={{ padding: '24px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '20px' }}>
           {/* Seção 1: Conexão com Conta Google (RF-19) */}
           <div
             style={{
@@ -202,7 +319,6 @@ export const GoogleAuthModal: React.FC = () => {
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                {/* Ícone SVG Google */}
                 <svg width="20" height="20" viewBox="0 0 24 24">
                   <path
                     fill="#4285F4"
@@ -221,7 +337,7 @@ export const GoogleAuthModal: React.FC = () => {
                     d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
                   />
                 </svg>
-                <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>Conta Google</span>
+                <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>Conta Google do Usuário</span>
               </div>
               {googleUser ? (
                 <span
@@ -240,85 +356,222 @@ export const GoogleAuthModal: React.FC = () => {
                   <CheckCircle2 size={12} /> Conectado
                 </span>
               ) : (
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Opcional</span>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Personalização</span>
               )}
             </div>
 
-            {googleUser ? (
+            {googleUser && !isEditingProfile ? (
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <img
-                    src={googleUser.avatarUrl}
-                    alt={googleUser.name}
-                    style={{ width: '36px', height: '36px', borderRadius: '50%', objectFit: 'cover' }}
-                  />
+                  {googleUser.avatarUrl ? (
+                    <img
+                      src={googleUser.avatarUrl}
+                      alt={googleUser.name}
+                      style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }}
+                    />
+                  ) : (
+                    <div
+                      style={{
+                        width: '40px',
+                        height: '40px',
+                        borderRadius: '50%',
+                        backgroundColor: '#6366F1',
+                        color: '#FFF',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontWeight: 700,
+                      }}
+                    >
+                      {googleUser.name.substring(0, 2).toUpperCase()}
+                    </div>
+                  )}
                   <div>
-                    <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{googleUser.name}</div>
+                    <div style={{ fontWeight: 600, fontSize: '0.92rem' }}>{googleUser.name}</div>
                     <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{googleUser.email}</div>
                   </div>
                 </div>
-                <button
-                  onClick={handleDisconnectGoogle}
-                  style={{
-                    background: 'none',
-                    border: '1px solid var(--border-color)',
-                    padding: '6px 12px',
-                    borderRadius: '8px',
-                    fontSize: '0.8rem',
-                    color: '#EF4444',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                  }}
-                >
-                  <LogOut size={14} /> Desconectar
-                </button>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    onClick={() => setIsEditingProfile(true)}
+                    style={{
+                      background: 'none',
+                      border: '1px solid var(--border-color)',
+                      padding: '6px 12px',
+                      borderRadius: '8px',
+                      fontSize: '0.8rem',
+                      color: 'var(--text-primary)',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Editar
+                  </button>
+                  <button
+                    onClick={handleDisconnectGoogle}
+                    style={{
+                      background: 'none',
+                      border: '1px solid rgba(239, 68, 68, 0.3)',
+                      padding: '6px 12px',
+                      borderRadius: '8px',
+                      fontSize: '0.8rem',
+                      color: '#EF4444',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                    }}
+                  >
+                    <LogOut size={13} /> Desconectar
+                  </button>
+                </div>
               </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <p style={{ fontSize: '0.83rem', color: 'var(--text-muted)', margin: 0 }}>
-                  Conecte sua conta Google para vincular seu perfil e sincronizar preferências do assistente.
+            ) : isEditingProfile ? (
+              <form onSubmit={handleSaveRealGoogleProfile} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: 0 }}>
+                  Informe seus dados reais da sua conta Google para personalizar o assistente:
                 </p>
-                <button
-                  onClick={handleConnectGoogle}
-                  style={{
-                    marginTop: '6px',
-                    padding: '10px 16px',
-                    borderRadius: '12px',
-                    border: '1px solid var(--border-color)',
-                    backgroundColor: 'var(--bg-primary)',
-                    color: 'var(--text-primary)',
-                    fontWeight: 600,
-                    fontSize: '0.88rem',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '10px',
-                    transition: 'all 0.2s',
-                  }}
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24">
-                    <path
-                      fill="#4285F4"
-                      d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ fontSize: '0.76rem', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>
+                      Seu Nome:
+                    </label>
+                    <input
+                      type="text"
+                      value={profileName}
+                      onChange={(e) => setProfileName(e.target.value)}
+                      placeholder="Ex: Rainan"
+                      required
+                      style={{
+                        width: '100%',
+                        padding: '8px 12px',
+                        borderRadius: '10px',
+                        border: '1px solid var(--border-color)',
+                        backgroundColor: 'var(--bg-primary)',
+                        color: 'var(--text-primary)',
+                        fontSize: '0.86rem',
+                        boxSizing: 'border-box',
+                      }}
                     />
-                    <path
-                      fill="#34A853"
-                      d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.34 24 12 24z"
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ fontSize: '0.76rem', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>
+                      Seu E-mail Google:
+                    </label>
+                    <input
+                      type="email"
+                      value={profileEmail}
+                      onChange={(e) => setProfileEmail(e.target.value)}
+                      placeholder="Ex: seuemail@gmail.com"
+                      required
+                      style={{
+                        width: '100%',
+                        padding: '8px 12px',
+                        borderRadius: '10px',
+                        border: '1px solid var(--border-color)',
+                        backgroundColor: 'var(--bg-primary)',
+                        color: 'var(--text-primary)',
+                        fontSize: '0.86rem',
+                        boxSizing: 'border-box',
+                      }}
                     />
-                    <path
-                      fill="#FBBC05"
-                      d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.17 0 9.99 0 12s.45 3.83 1.25 5.42l4.03-3.15z"
-                    />
-                    <path
-                      fill="#EA4335"
-                      d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
-                    />
-                  </svg>
-                  Conectar com o Google
-                </button>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '4px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setIsEditingProfile(false)}
+                    style={{
+                      padding: '6px 12px',
+                      borderRadius: '8px',
+                      border: '1px solid var(--border-color)',
+                      background: 'none',
+                      color: 'var(--text-muted)',
+                      fontSize: '0.8rem',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    style={{
+                      padding: '6px 14px',
+                      borderRadius: '8px',
+                      border: 'none',
+                      backgroundColor: '#6366F1',
+                      color: '#FFF',
+                      fontSize: '0.8rem',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Salvar Perfil Google
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <p style={{ fontSize: '0.83rem', color: 'var(--text-muted)', margin: 0 }}>
+                  Vincule sua conta Google para que o assistente do Flow identifique seu nome e perfil oficial.
+                </p>
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    onClick={handleGoogleOAuthPopup}
+                    style={{
+                      flex: 1,
+                      padding: '10px 14px',
+                      borderRadius: '12px',
+                      border: '1px solid var(--border-color)',
+                      backgroundColor: 'var(--bg-primary)',
+                      color: 'var(--text-primary)',
+                      fontWeight: 600,
+                      fontSize: '0.85rem',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                    }}
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24">
+                      <path
+                        fill="#4285F4"
+                        d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"
+                      />
+                      <path
+                        fill="#34A853"
+                        d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.34 24 12 24z"
+                      />
+                      <path
+                        fill="#FBBC05"
+                        d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.17 0 9.99 0 12s.45 3.83 1.25 5.42l4.03-3.15z"
+                      />
+                      <path
+                        fill="#EA4335"
+                        d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
+                      />
+                    </svg>
+                    <span>Conectar Conta Google</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsEditingProfile(true)}
+                    style={{
+                      padding: '10px 14px',
+                      borderRadius: '12px',
+                      border: '1px solid var(--border-color)',
+                      backgroundColor: 'transparent',
+                      color: 'var(--text-primary)',
+                      fontSize: '0.85rem',
+                      fontWeight: 500,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Digitar Meu Nome / E-mail
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -338,7 +591,7 @@ export const GoogleAuthModal: React.FC = () => {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Key size={18} color="#6366F1" />
-                <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>Chave de API Gemini</span>
+                <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>Chave de API Gemini (IA)</span>
               </div>
               <a
                 href="https://aistudio.google.com/app/apikey"
@@ -354,14 +607,14 @@ export const GoogleAuthModal: React.FC = () => {
                   fontWeight: 500,
                 }}
               >
-                Obter chave grátis no Google AI Studio <ExternalLink size={12} />
+                Gerar chave no Google AI Studio <ExternalLink size={12} />
               </a>
             </div>
 
             {/* Input da Chave */}
             <div>
               <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>
-                Cole sua chave de API (Google AI Studio):
+                Cole sua chave de API gerada com sua conta Google:
               </label>
               <div style={{ position: 'relative' }}>
                 <input
@@ -404,11 +657,35 @@ export const GoogleAuthModal: React.FC = () => {
               </div>
             </div>
 
-            {/* Seletor de Modelo */}
+            {/* Seletor Dinâmico de Modelo */}
             <div>
-              <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>
-                Modelo do Gemini:
-              </label>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                  Modelo do Gemini:
+                </label>
+                {apiKeyInput.trim().length > 10 && (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const models = await fetchAvailableGeminiModels(apiKeyInput);
+                      setAvailableModels(models);
+                      sounds.playTick();
+                    }}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#6366F1',
+                      fontSize: '0.74rem',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                    }}
+                  >
+                    <RefreshCw size={11} /> Atualizar modelos
+                  </button>
+                )}
+              </div>
               <select
                 value={selectedModel}
                 onChange={(e) => setSelectedModel(e.target.value)}
@@ -425,9 +702,11 @@ export const GoogleAuthModal: React.FC = () => {
                   boxSizing: 'border-box',
                 }}
               >
-                <option value="gemini-1.5-flash">Gemini 1.5 Flash (Recomendado: Rápido & Gratuito)</option>
-                <option value="gemini-2.0-flash">Gemini 2.0 Flash (Nova Geração de Alta Velocidade)</option>
-                <option value="gemini-1.5-pro">Gemini 1.5 Pro (Raciocínio Analítico Avançado)</option>
+                {availableModels.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.displayName}
+                  </option>
+                ))}
               </select>
             </div>
 
@@ -452,7 +731,7 @@ export const GoogleAuthModal: React.FC = () => {
             )}
 
             {/* Botão de Testar Conexão */}
-            <div style={{ display: 'flex', gap: '10px', marginTop: '4px' }}>
+            <div style={{ display: 'flex', gap: '10px', marginTop: '2px' }}>
               <button
                 type="button"
                 onClick={handleTestKey}
@@ -475,14 +754,14 @@ export const GoogleAuthModal: React.FC = () => {
                 }}
               >
                 <Zap size={15} color="#F59E0B" />
-                {isTesting ? 'Testando conexão...' : 'Testar Conexão'}
+                {isTesting ? 'Validando chave com o Google...' : 'Testar Conexão'}
               </button>
             </div>
 
             {/* Aviso de Privacidade */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.76rem', color: 'var(--text-muted)' }}>
               <ShieldCheck size={14} color="#10B981" />
-              <span>Sua chave é armazenada exclusivamente de forma local no seu dispositivo.</span>
+              <span>Sua chave é armazenada de forma estritamente local no seu próprio dispositivo.</span>
             </div>
           </div>
         </div>
