@@ -15,6 +15,7 @@
     "notification:allow-request-permission",
     "notification:allow-is-permission-granted",
     "opener:default",
-    "opener:allow-open-url"
+    "opener:allow-open-url",
+    "allow-custom-commands"
   ]
 }

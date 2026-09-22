@@ -21,6 +21,7 @@ import {
   BarChart2,
   HelpCircle,
 } from 'lucide-react';
+import { MarkdownRenderer } from './MarkdownRenderer';
 
 export const AiAssistantView: React.FC = () => {
   const tasks = useFlowStore((s) => s.tasks);
@@ -410,12 +411,11 @@ export const AiAssistantView: React.FC = () => {
                       border: isUser ? 'none' : '1px solid var(--border-color)',
                       boxShadow: '0 2px 10px rgba(0, 0, 0, 0.04)',
                       fontSize: '0.92rem',
-                      lineHeight: '1.55',
-                      whiteSpace: 'pre-wrap',
+                      lineHeight: '1.6',
                       wordBreak: 'break-word',
                     }}
                   >
-                    {msg.content}
+                    <MarkdownRenderer content={msg.content} isUser={isUser} />
                   </div>
 
                   {/* Card Interativo de Ação Proposta (RF-15, RF-16, RF-18) */}

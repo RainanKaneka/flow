@@ -1,0 +1,7 @@
+[[permission]]
+identifier = "allow-custom-commands"
+description = "Permite comandos nativos do Flow (toasts nativos do Windows e auto-updater in-app)"
+commands.allow = [
+  "show_windows_toast",
+  "apply_inapp_update"
+]

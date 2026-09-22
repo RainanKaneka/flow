@@ -12,23 +12,67 @@ import {
   Copy,
   Check,
   ExternalLink,
+  Zap,
+  CheckCircle2,
 } from 'lucide-react';
-import { openExternalUrl, copyToClipboard } from '../utils/browser';
+import { openExternalUrl, copyToClipboard, isTauri } from '../utils/browser';
 
 export const UpdateModal: React.FC = () => {
   const availableUpdate = useFlowStore((s) => s.availableUpdate);
   const isUpdateModalOpen = useFlowStore((s) => s.isUpdateModalOpen);
   const closeUpdateModal = useFlowStore((s) => s.closeUpdateModal);
 
-  const [downloadTriggered, setDownloadTriggered] = useState(false);
+  const [isInstalling, setIsInstalling] = useState(false);
+  const [installProgress, setInstallProgress] = useState(0);
+  const [installStepText, setInstallStepText] = useState('');
   const [copied, setCopied] = useState(false);
 
   if (!isUpdateModalOpen || !availableUpdate) return null;
 
-  const handleDownload = async () => {
-    setDownloadTriggered(true);
-    // Dispara a abertura do download no navegador padrão do sistema
-    await openExternalUrl(availableUpdate.downloadUrl);
+  const handleStartInAppUpdate = async () => {
+    setIsInstalling(true);
+    setInstallProgress(10);
+    setInstallStepText('Conectando ao repositório de lançamentos...');
+
+    // Progress step 1
+    setTimeout(() => {
+      setInstallProgress(35);
+      setInstallStepText(`Baixando versão oficial v${availableUpdate.latestVersion}...`);
+    }, 600);
+
+    // Progress step 2
+    setTimeout(() => {
+      setInstallProgress(70);
+      setInstallStepText('Verificando integridade dos arquivos...');
+    }, 1400);
+
+    // Progress step 3
+    setTimeout(() => {
+      setInstallProgress(90);
+      setInstallStepText('Aplicando atualização e preparando reinício...');
+    }, 2200);
+
+    if (isTauri()) {
+      try {
+        const { invoke } = await import('@tauri-apps/api/core');
+        // Inicia download em background e reinício automático com /S /R
+        await invoke('apply_inapp_update', { url: availableUpdate.downloadUrl });
+        setInstallProgress(100);
+        setInstallStepText('Atualização instalada com sucesso! Reiniciando o Flow...');
+      } catch (err) {
+        console.warn('Falha no auto-updater nativo, caindo para fallback externo:', err);
+        setInstallProgress(100);
+        setInstallStepText('Abrindo instalador no seu computador...');
+        await openExternalUrl(availableUpdate.downloadUrl);
+      }
+    } else {
+      // Ambiente Web convencional: simula progresso e dispara download
+      setTimeout(async () => {
+        setInstallProgress(100);
+        setInstallStepText('Download concluído no navegador!');
+        await openExternalUrl(availableUpdate.downloadUrl);
+      }, 2600);
+    }
   };
 
   const handleCopyLink = async () => {
@@ -57,7 +101,7 @@ export const UpdateModal: React.FC = () => {
         padding: '20px',
       }}
       onClick={(e) => {
-        if (e.target === e.currentTarget) closeUpdateModal();
+        if (e.target === e.currentTarget && !isInstalling) closeUpdateModal();
       }}
     >
       <div
@@ -77,46 +121,57 @@ export const UpdateModal: React.FC = () => {
             position: 'relative',
           }}
         >
-          {/* Close Button */}
-          <button
-            onClick={closeUpdateModal}
-            style={{
-              position: 'absolute',
-              top: '20px',
-              right: '20px',
-              width: '32px',
-              height: '32px',
-              borderRadius: '8px',
-              border: 'none',
-              backgroundColor: 'var(--bg-elevated)',
-              color: 'var(--text-secondary)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              transition: 'all 200ms',
-            }}
-          >
-            <X size={16} />
-          </button>
+          {/* Close Button (desabilitado durante instalação ativa) */}
+          {!isInstalling && (
+            <button
+              onClick={closeUpdateModal}
+              style={{
+                position: 'absolute',
+                top: '20px',
+                right: '20px',
+                width: '32px',
+                height: '32px',
+                borderRadius: '8px',
+                border: 'none',
+                backgroundColor: 'var(--bg-elevated)',
+                color: 'var(--text-secondary)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                transition: 'all 200ms',
+              }}
+            >
+              <X size={16} />
+            </button>
+          )}
 
-          {/* Header with Glow */}
+          {/* Header com Ícone Glow */}
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px', marginBottom: '20px' }}>
             <div
               style={{
                 width: '48px',
                 height: '48px',
                 borderRadius: '14px',
-                background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+                background: isInstalling
+                  ? 'linear-gradient(135deg, #6366F1 0%, #4F46E5 100%)'
+                  : 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
                 color: '#FFFFFF',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                boxShadow: '0 6px 20px rgba(16, 185, 129, 0.35)',
+                boxShadow: isInstalling
+                  ? '0 6px 20px rgba(99, 102, 241, 0.35)'
+                  : '0 6px 20px rgba(16, 185, 129, 0.35)',
                 flexShrink: 0,
+                transition: 'all 300ms ease',
               }}
             >
-              <Sparkles size={24} strokeWidth={2.4} />
+              {isInstalling ? (
+                <RefreshCw size={24} strokeWidth={2.4} className="animate-spin" />
+              ) : (
+                <Sparkles size={24} strokeWidth={2.4} />
+              )}
             </div>
 
             <div style={{ flex: 1, minWidth: 0, paddingRight: '24px' }}>
@@ -127,196 +182,225 @@ export const UpdateModal: React.FC = () => {
                   gap: '5px',
                   padding: '3px 9px',
                   borderRadius: '9999px',
-                  backgroundColor: 'rgba(16, 185, 129, 0.12)',
-                  color: '#10B981',
+                  backgroundColor: isInstalling ? 'rgba(99, 102, 241, 0.12)' : 'rgba(16, 185, 129, 0.12)',
+                  color: isInstalling ? '#818cf8' : '#10B981',
                   fontSize: '11px',
                   fontWeight: 700,
                   marginBottom: '6px',
                 }}
               >
                 <RefreshCw size={11} />
-                NOVA ATUALIZAÇÃO DISPONÍVEL
+                {isInstalling ? 'ATUALIZAÇÃO EM ANDAMENTO' : 'NOVA ATUALIZAÇÃO DISPONÍVEL'}
               </span>
               <h3 style={{ fontSize: '20px', fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.2 }}>
-                {availableUpdate.releaseName}
+                {isInstalling ? `Instalando Flow v${availableUpdate.latestVersion}` : availableUpdate.releaseName}
               </h3>
               <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                Versão atual instalada: <strong style={{ color: 'var(--text-primary)' }}>v{availableUpdate.currentVersion}</strong> ➔ Nova versão: <strong style={{ color: '#10B981' }}>v{availableUpdate.latestVersion}</strong>
+                Versão instalada: <strong style={{ color: 'var(--text-primary)' }}>v{availableUpdate.currentVersion}</strong> ➔ Nova versão: <strong style={{ color: '#10B981' }}>v{availableUpdate.latestVersion}</strong>
               </p>
             </div>
           </div>
 
-          {/* Release Notes Preview */}
-          <div
-            style={{
-              padding: '16px',
-              borderRadius: '12px',
-              backgroundColor: 'var(--bg-elevated)',
-              border: '1px solid var(--border-subtle)',
-              marginBottom: '16px',
-              maxHeight: '160px',
-              overflowY: 'auto',
-            }}
-          >
-            <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '8px' }}>
-              Novidades e Melhorias desta Versão:
-            </div>
-            <p style={{ fontSize: '12px', lineHeight: 1.5, color: 'var(--text-secondary)', whiteSpace: 'pre-line' }}>
-              {availableUpdate.releaseNotes}
-            </p>
-          </div>
-
-          {/* Feedback se o download já foi disparado */}
-          {downloadTriggered && (
+          {/* MODO 1: TELA DE PROGRESSO DA INSTALAÇÃO IN-APP */}
+          {isInstalling ? (
             <div
               style={{
-                padding: '12px 14px',
-                borderRadius: '10px',
-                backgroundColor: 'rgba(16, 185, 129, 0.12)',
-                border: '1px solid rgba(16, 185, 129, 0.3)',
-                marginBottom: '16px',
-                fontSize: '12px',
-                color: '#10B981',
+                padding: '24px 20px',
+                borderRadius: '16px',
+                backgroundColor: 'var(--bg-elevated)',
+                border: '1px solid var(--border-subtle)',
+                marginBottom: '20px',
                 display: 'flex',
-                alignItems: 'center',
-                gap: '10px',
+                flexDirection: 'column',
+                gap: '16px',
               }}
             >
-              <Check size={18} style={{ flexShrink: 0 }} />
-              <div>
-                <strong>Download acionado no navegador padrão!</strong>
-                <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                  Verifique a pasta de Downloads do seu Windows para executar o novo instalador assim que terminar.
-                </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                  {installStepText}
+                </span>
+                <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--accent-primary)' }}>
+                  {installProgress}%
+                </span>
+              </div>
+
+              {/* Barra de Progresso Animada */}
+              <div
+                style={{
+                  height: '8px',
+                  width: '100%',
+                  backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                  borderRadius: '9999px',
+                  overflow: 'hidden',
+                  position: 'relative',
+                }}
+              >
+                <div
+                  style={{
+                    height: '100%',
+                    width: `${installProgress}%`,
+                    background: 'linear-gradient(90deg, #6366F1 0%, #10B981 100%)',
+                    borderRadius: '9999px',
+                    transition: 'width 400ms cubic-bezier(0.16, 1, 0.3, 1)',
+                    boxShadow: '0 0 12px rgba(16, 185, 129, 0.4)',
+                  }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', color: 'var(--text-muted)' }}>
+                <Zap size={13} color="#10B981" />
+                <span>Atualização in-app automática: o aplicativo será reiniciado sozinho.</span>
               </div>
             </div>
+          ) : (
+            /* MODO 2: TELA INICIAL COM NOTAS DA RELEASE */
+            <>
+              {/* Release Notes Preview */}
+              <div
+                style={{
+                  padding: '16px',
+                  borderRadius: '12px',
+                  backgroundColor: 'var(--bg-elevated)',
+                  border: '1px solid var(--border-subtle)',
+                  marginBottom: '16px',
+                  maxHeight: '160px',
+                  overflowY: 'auto',
+                }}
+              >
+                <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '8px' }}>
+                  Novidades e Melhorias desta Versão:
+                </div>
+                <p style={{ fontSize: '12px', lineHeight: 1.5, color: 'var(--text-secondary)', whiteSpace: 'pre-line' }}>
+                  {availableUpdate.releaseNotes}
+                </p>
+              </div>
+
+              {/* Security Callout */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '10px 14px',
+                  borderRadius: '10px',
+                  backgroundColor: 'rgba(99, 102, 241, 0.08)',
+                  border: '1px solid rgba(99, 102, 241, 0.2)',
+                  fontSize: '11px',
+                  color: 'var(--accent-primary)',
+                  marginBottom: '20px',
+                }}
+              >
+                <ShieldCheck size={16} style={{ flexShrink: 0 }} />
+                <span>
+                  O processo atualiza o Flow diretamente na sua máquina, preservando todas as suas tarefas, notas e configurações com segurança.
+                </span>
+              </div>
+
+              {/* Opções secundárias: Copiar Link ou Abrir no GitHub */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '10px 12px',
+                  borderRadius: '10px',
+                  backgroundColor: 'var(--bg-elevated)',
+                  border: '1px solid var(--border-subtle)',
+                  marginBottom: '20px',
+                  gap: '10px',
+                }}
+              >
+                <button
+                  onClick={handleCopyLink}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    background: 'none',
+                    border: 'none',
+                    color: copied ? '#10B981' : 'var(--text-secondary)',
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    padding: '4px 6px',
+                    borderRadius: '6px',
+                    transition: 'color 150ms',
+                  }}
+                >
+                  {copied ? <Check size={13} /> : <Copy size={13} />}
+                  <span>{copied ? 'Link Copiado!' : 'Copiar Link (.exe)'}</span>
+                </button>
+
+                <button
+                  onClick={handleOpenReleasePage}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--text-muted)',
+                    fontSize: '11px',
+                    cursor: 'pointer',
+                    padding: '4px 6px',
+                    borderRadius: '6px',
+                    transition: 'color 150ms',
+                  }}
+                >
+                  <span>Ver Release no GitHub</span>
+                  <ExternalLink size={12} />
+                </button>
+              </div>
+
+              {/* Ações */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <button
+                  onClick={closeUpdateModal}
+                  style={{
+                    flex: 1,
+                    padding: '12px 18px',
+                    borderRadius: '12px',
+                    border: '1px solid var(--border-subtle)',
+                    backgroundColor: 'transparent',
+                    color: 'var(--text-secondary)',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'all 150ms',
+                  }}
+                >
+                  Lembrar Mais Tarde
+                </button>
+
+                <button
+                  onClick={handleStartInAppUpdate}
+                  style={{
+                    flex: 1.8,
+                    padding: '12px 20px',
+                    borderRadius: '12px',
+                    border: 'none',
+                    background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+                    color: '#FFFFFF',
+                    fontSize: '13px',
+                    fontWeight: 700,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 16px rgba(16, 185, 129, 0.35)',
+                    transition: 'all 200ms',
+                  }}
+                >
+                  <Download size={16} />
+                  <span>Atualizar Agora</span>
+                  <ArrowUpRight size={14} />
+                </button>
+              </div>
+            </>
           )}
-
-          {/* Security & Verification Callout */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '10px 14px',
-              borderRadius: '10px',
-              backgroundColor: 'rgba(99, 102, 241, 0.08)',
-              border: '1px solid rgba(99, 102, 241, 0.2)',
-              fontSize: '11px',
-              color: 'var(--accent-primary)',
-              marginBottom: '20px',
-            }}
-          >
-            <ShieldCheck size={16} style={{ flexShrink: 0 }} />
-            <span>
-              O instalador `.exe` oficial substitui a versão antiga mantendo todos os seus dados e tarefas salvos com segurança.
-            </span>
-          </div>
-
-          {/* Opções secundárias: Copiar Link ou Abrir no GitHub */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '10px 12px',
-              borderRadius: '10px',
-              backgroundColor: 'var(--bg-elevated)',
-              border: '1px solid var(--border-subtle)',
-              marginBottom: '20px',
-              gap: '10px',
-            }}
-          >
-            <button
-              onClick={handleCopyLink}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                background: 'none',
-                border: 'none',
-                color: copied ? '#10B981' : 'var(--text-secondary)',
-                fontSize: '11px',
-                fontWeight: 600,
-                cursor: 'pointer',
-                padding: '4px 6px',
-                borderRadius: '6px',
-                transition: 'color 150ms',
-              }}
-            >
-              {copied ? <Check size={13} /> : <Copy size={13} />}
-              <span>{copied ? 'Link Copiado!' : 'Copiar Link Direto (.exe)'}</span>
-            </button>
-
-            <button
-              onClick={handleOpenReleasePage}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                background: 'none',
-                border: 'none',
-                color: 'var(--text-muted)',
-                fontSize: '11px',
-                cursor: 'pointer',
-                padding: '4px 6px',
-                borderRadius: '6px',
-                transition: 'color 150ms',
-              }}
-            >
-              <span>Ver Release no GitHub</span>
-              <ExternalLink size={12} />
-            </button>
-          </div>
-
-          {/* Actions */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <button
-              onClick={closeUpdateModal}
-              style={{
-                flex: 1,
-                padding: '12px 18px',
-                borderRadius: '12px',
-                border: '1px solid var(--border-subtle)',
-                backgroundColor: 'transparent',
-                color: 'var(--text-secondary)',
-                fontSize: '13px',
-                fontWeight: 600,
-                cursor: 'pointer',
-                transition: 'all 150ms',
-              }}
-            >
-              {downloadTriggered ? 'Fechar' : 'Lembrar Mais Tarde'}
-            </button>
-
-            <button
-              onClick={handleDownload}
-              style={{
-                flex: 1.8,
-                padding: '12px 20px',
-                borderRadius: '12px',
-                border: 'none',
-                background: 'linear-gradient(135deg, #6366F1 0%, #4F46E5 100%)',
-                color: '#FFFFFF',
-                fontSize: '13px',
-                fontWeight: 700,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px',
-                cursor: 'pointer',
-                boxShadow: '0 4px 16px rgba(99, 102, 241, 0.35)',
-                transition: 'all 200ms',
-              }}
-            >
-              <Download size={16} />
-              <span>{downloadTriggered ? 'Baixar Novamente' : 'Baixar Atualização (.exe)'}</span>
-              <ArrowUpRight size={14} />
-            </button>
-          </div>
         </div>
       </div>
     </div>
   );
 };
-

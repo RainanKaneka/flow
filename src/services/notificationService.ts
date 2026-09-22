@@ -120,6 +120,16 @@ class NotificationService {
 
     // 2. Dispara a notificação nativa do SO (Windows / Tauri ou Navegador)
     if (isTauriEnvironment()) {
+      // Dispara toast nativo do Windows WinRT (garante sobreposição a outros apps no Windows)
+      try {
+        const { invoke } = await import('@tauri-apps/api/core');
+        invoke('show_windows_toast', { title, body }).catch((err) => {
+          console.warn('Fallback show_windows_toast invoke:', err);
+        });
+      } catch (invokeErr) {
+        console.warn('Tauri core invoke indisponível:', invokeErr);
+      }
+
       try {
         const tauri = await this.getTauriNotificationModule();
         if (tauri) {
