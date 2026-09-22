@@ -54,11 +54,26 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
+      - name: Determine Release Tag and Name
+        id: release_info
+        shell: pwsh
+        run: |
+          $tauriConf = Get-Content src-tauri/tauri.conf.json | ConvertFrom-Json
+          $version = $tauriConf.version
+          if ("${{ github.ref_type }}" -eq "tag") {
+            $tag = "${{ github.ref_name }}"
+          } else {
+            $tag = "v$version"
+          }
+          echo "RELEASE_TAG=$tag" >> $env:GITHUB_ENV
+          echo "RELEASE_NAME=Flow Desktop $tag" >> $env:GITHUB_ENV
+          echo "VERSION=$version" >> $env:GITHUB_ENV
+
       - name: Publish to GitHub Releases (Direct One-Click .exe)
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v0.1.0
-          name: Flow Desktop v0.1.0
+          tag_name: ${{ env.RELEASE_TAG }}
+          name: ${{ env.RELEASE_NAME }}
           draft: false
           prerelease: false
           files: |
@@ -66,12 +81,13 @@ jobs:
             src-tauri/target/release/bundle/msi/*.msi
             src-tauri/target/release/flow.exe
           body: |
-            ## 🌊 Flow — Instalador Desktop Oficial para Windows
+            ## 🌊 Flow — Instalador Desktop Oficial para Windows (${{ env.RELEASE_TAG }})
 
             Baixe o instalador `.exe` direto abaixo (sem precisar extrair nada, apenas dê dois cliques para instalar):
 
-            - 🚀 **`Flow_0.1.0_x64-setup.exe`** (Instalador recomendado com assistente e atalhos na Área de Trabalho)
-            - 📦 **`Flow_0.1.0_x64_en-US.msi`** (Pacote MSI corporativo)
-            - ⚡ **`flow.exe`** (Executável portátil standalone)
+            - 🚀 **Instalador NSIS `.exe`** (Recomendado: instalador completo com assistente e atalhos na Área de Trabalho)
+            - 📦 **Instalador MSI** (Pacote corporativo Windows)
+            - ⚡ **Executável Portátil** (`flow.exe`)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
