@@ -35,7 +35,8 @@ export const CategoryFilter: React.FC = () => {
           cursor: 'pointer',
           border: '1px solid',
           borderColor: activeCategoryId === 'all' ? 'transparent' : 'var(--border-subtle)',
-          backgroundColor: activeCategoryId === 'all' ? 'var(--text-primary)' : 'var(--bg-secondary)',
+          backgroundColor:
+            activeCategoryId === 'all' ? 'var(--text-primary)' : 'var(--bg-secondary)',
           color: activeCategoryId === 'all' ? 'var(--bg-primary)' : 'var(--text-secondary)',
           transition: 'all 200ms cubic-bezier(0.32, 0.72, 0, 1)',
           whiteSpace: 'nowrap',

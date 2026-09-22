@@ -6,11 +6,7 @@ export const metadata: Metadata = {
   description: 'Aplicativo minimalista para dominar a rotina pessoal progressiva em 3 níveis.',
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="pt-BR" className="dark">
       <head>

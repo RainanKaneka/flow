@@ -1,6 +1,6 @@
 // Serviço de verificação automática de novas versões do Flow no GitHub Releases
 
-export const CURRENT_APP_VERSION = '0.1.6';
+export const CURRENT_APP_VERSION = '0.2.0';
 export const GITHUB_REPO = 'RainanKaneka/flow';
 
 export interface UpdateInfo {
@@ -41,15 +41,12 @@ export const isNewerVersion = (latest: string, current: string): boolean => {
  */
 export const checkForUpdates = async (): Promise<UpdateInfo | null> => {
   try {
-    const response = await fetch(
-      `https://api.github.com/repos/${GITHUB_REPO}/releases/latest`,
-      {
-        headers: {
-          Accept: 'application/vnd.github.v3+json',
-        },
-        cache: 'no-store',
-      }
-    );
+    const response = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/releases/latest`, {
+      headers: {
+        Accept: 'application/vnd.github.v3+json',
+      },
+      cache: 'no-store',
+    });
 
     if (!response.ok) {
       if (response.status === 404) {

@@ -34,8 +34,16 @@ export const DEFAULT_TASKS: Task[] = [
     tags: ['início', 'tutorial'],
     notes: 'Dica: Clique no ícone de documento no card para ver sub-tarefas e links!',
     checklist: [
-      { id: 'step_1', title: 'Explorar as abas: Pomodoro, Notas, Backlog e Dashboard', completed: false },
-      { id: 'step_2', title: 'Criar suas próprias categorias no menu "Gerenciar Categorias"', completed: false },
+      {
+        id: 'step_1',
+        title: 'Explorar as abas: Pomodoro, Notas, Backlog e Dashboard',
+        completed: false,
+      },
+      {
+        id: 'step_2',
+        title: 'Criar suas próprias categorias no menu "Gerenciar Categorias"',
+        completed: false,
+      },
       { id: 'step_3', title: 'Adicionar sua primeira atividade personalizada', completed: false },
     ],
   },

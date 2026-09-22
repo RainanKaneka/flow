@@ -24,17 +24,24 @@ export const initiateGoogleOAuthPopup = ({
     }
 
     const redirectUri = window.location.origin;
-    const scope = encodeURIComponent('openid email profile https://www.googleapis.com/auth/generative-language');
+    const scope = encodeURIComponent(
+      'openid email profile https://www.googleapis.com/auth/generative-language'
+    );
     const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(
       clientId.trim()
     )}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=${scope}&prompt=select_account`;
 
-    const popup = window.open(authUrl, 'google_oauth_popup', 'width=500,height=650,left=250,top=120');
+    const popup = window.open(
+      authUrl,
+      'google_oauth_popup',
+      'width=500,height=650,left=250,top=120'
+    );
 
     if (!popup) {
       resolve({
         success: false,
-        error: 'O navegador bloqueou a janela pop-up do Google. Por favor, permita pop-ups para continuar.',
+        error:
+          'O navegador bloqueou a janela pop-up do Google. Por favor, permita pop-ups para continuar.',
       });
       return;
     }

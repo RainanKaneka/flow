@@ -64,7 +64,14 @@ export const MoveToBacklogModal: React.FC<MoveToBacklogModalProps> = ({
           }}
         >
           {/* Header */}
-          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '16px' }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'flex-start',
+              justifyContent: 'space-between',
+              marginBottom: '16px',
+            }}
+          >
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <div
                 style={{
@@ -82,7 +89,14 @@ export const MoveToBacklogModal: React.FC<MoveToBacklogModalProps> = ({
                 <Inbox size={20} />
               </div>
               <div>
-                <h3 style={{ fontSize: '16px', fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>
+                <h3
+                  style={{
+                    fontSize: '16px',
+                    fontWeight: 800,
+                    letterSpacing: '-0.02em',
+                    color: 'var(--text-primary)',
+                  }}
+                >
                   Mover para o Backlog?
                 </h3>
                 <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
@@ -108,8 +122,18 @@ export const MoveToBacklogModal: React.FC<MoveToBacklogModalProps> = ({
           </div>
 
           {/* Description */}
-          <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '22px' }}>
-            Deseja transferir a tarefa <strong style={{ color: 'var(--text-primary)' }}>&ldquo;{taskTitle}&rdquo;</strong> para o Backlog? Ela sairá da sua rotina ativa e ficará guardada na aba de pendências para quando você puder realizá-la.
+          <p
+            style={{
+              fontSize: '13px',
+              color: 'var(--text-secondary)',
+              lineHeight: 1.6,
+              marginBottom: '22px',
+            }}
+          >
+            Deseja transferir a tarefa{' '}
+            <strong style={{ color: 'var(--text-primary)' }}>&ldquo;{taskTitle}&rdquo;</strong> para
+            o Backlog? Ela sairá da sua rotina ativa e ficará guardada na aba de pendências para
+            quando você puder realizá-la.
           </p>
 
           {/* Actions */}

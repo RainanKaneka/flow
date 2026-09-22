@@ -217,7 +217,8 @@ export function calculateStreakAndMetrics(
       const percentage = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
       const goldenRules = dayTasks.filter((t) => t.isGoldenRule);
-      const goldenRulesDone = goldenRules.length > 0 && goldenRules.every((t) => logs[`${dateStr}_${t.id}`]?.completed);
+      const goldenRulesDone =
+        goldenRules.length > 0 && goldenRules.every((t) => logs[`${dateStr}_${t.id}`]?.completed);
 
       days.push({
         date: dateStr,
@@ -250,7 +251,8 @@ export function calculateStreakAndMetrics(
       const percentage = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
       const goldenRules = dayTasks.filter((t) => t.isGoldenRule);
-      const goldenRulesDone = goldenRules.length > 0 && goldenRules.every((t) => logs[`${dateStr}_${t.id}`]?.completed);
+      const goldenRulesDone =
+        goldenRules.length > 0 && goldenRules.every((t) => logs[`${dateStr}_${t.id}`]?.completed);
 
       const displayDate =
         daysCount <= 7
@@ -284,7 +286,10 @@ export function calculateStreakAndMetrics(
 
   // Agregação por categoria dinâmica
   const categoryMap = new Map(categories.map((c) => [c.id, c]));
-  const categoryStatsMap: Record<string, { id: string; name: string; color: string; minutes: number; count: number }> = {};
+  const categoryStatsMap: Record<
+    string,
+    { id: string; name: string; color: string; minutes: number; count: number }
+  > = {};
   let totalPeriodCompletedCount = 0;
   let totalPeriodMinutes = 0;
 
@@ -296,7 +301,11 @@ export function calculateStreakAndMetrics(
     const task = tasks.find((t) => t.id === log.taskId);
     if (!task) continue;
 
-    const catInfo = categoryMap.get(task.categoryId) || { id: task.categoryId, name: 'Geral', color: '#6366F1' };
+    const catInfo = categoryMap.get(task.categoryId) || {
+      id: task.categoryId,
+      name: 'Geral',
+      color: '#6366F1',
+    };
 
     if (!categoryStatsMap[task.categoryId]) {
       categoryStatsMap[task.categoryId] = {
@@ -318,7 +327,10 @@ export function calculateStreakAndMetrics(
     .map((item) => ({
       ...item,
       hours: Number((item.minutes / 60).toFixed(1)),
-      percentage: totalPeriodCompletedCount > 0 ? Math.round((item.count / totalPeriodCompletedCount) * 100) : 0,
+      percentage:
+        totalPeriodCompletedCount > 0
+          ? Math.round((item.count / totalPeriodCompletedCount) * 100)
+          : 0,
     }))
     .sort((a, b) => b.count - a.count);
 

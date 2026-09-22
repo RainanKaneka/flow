@@ -169,14 +169,14 @@ export const NotificationSettingsModal: React.FC = () => {
                 permissionStatus === 'granted'
                   ? 'rgba(16, 185, 129, 0.08)'
                   : permissionStatus === 'denied'
-                  ? 'rgba(239, 68, 68, 0.08)'
-                  : 'rgba(99, 102, 241, 0.08)',
+                    ? 'rgba(239, 68, 68, 0.08)'
+                    : 'rgba(99, 102, 241, 0.08)',
               border: `1px solid ${
                 permissionStatus === 'granted'
                   ? 'rgba(16, 185, 129, 0.25)'
                   : permissionStatus === 'denied'
-                  ? 'rgba(239, 68, 68, 0.25)'
-                  : 'rgba(99, 102, 241, 0.25)'
+                    ? 'rgba(239, 68, 68, 0.25)'
+                    : 'rgba(99, 102, 241, 0.25)'
               }`,
               display: 'flex',
               alignItems: 'center',
@@ -251,7 +251,9 @@ export const NotificationSettingsModal: React.FC = () => {
                   width: '44px',
                   height: '24px',
                   borderRadius: '12px',
-                  backgroundColor: reminderSettings.enabled ? 'var(--accent-primary)' : 'var(--border-focus)',
+                  backgroundColor: reminderSettings.enabled
+                    ? 'var(--accent-primary)'
+                    : 'var(--border-focus)',
                   border: 'none',
                   position: 'relative',
                   cursor: 'pointer',
@@ -319,7 +321,9 @@ export const NotificationSettingsModal: React.FC = () => {
                       }}
                     >
                       <div style={{ fontSize: '12px', fontWeight: 700 }}>{opt.label}</div>
-                      <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                      <div
+                        style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '2px' }}
+                      >
                         {opt.desc}
                       </div>
                     </button>
@@ -354,12 +358,16 @@ export const NotificationSettingsModal: React.FC = () => {
               </div>
 
               <button
-                onClick={() => updateReminderSettings({ soundEnabled: !reminderSettings.soundEnabled })}
+                onClick={() =>
+                  updateReminderSettings({ soundEnabled: !reminderSettings.soundEnabled })
+                }
                 style={{
                   width: '44px',
                   height: '24px',
                   borderRadius: '12px',
-                  backgroundColor: reminderSettings.soundEnabled ? 'var(--accent-primary)' : 'var(--border-focus)',
+                  backgroundColor: reminderSettings.soundEnabled
+                    ? 'var(--accent-primary)'
+                    : 'var(--border-focus)',
                   border: 'none',
                   position: 'relative',
                   cursor: 'pointer',
@@ -435,11 +443,21 @@ export const NotificationSettingsModal: React.FC = () => {
                 }}
               >
                 <div>
-                  <div style={{ fontSize: '13px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <div
+                    style={{
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                    }}
+                  >
                     <RefreshCw size={14} color="var(--accent-primary)" />
                     <span>Atualizações do Aplicativo</span>
                   </div>
-                  <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                  <div
+                    style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}
+                  >
                     Versão atual instalada: <strong>v{CURRENT_APP_VERSION}</strong>
                   </div>
                 </div>
@@ -508,22 +526,74 @@ export const NotificationSettingsModal: React.FC = () => {
                 <span>Atalhos Rápidos de Teclado</span>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '11px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span style={{ color: 'var(--text-secondary)' }}>Alternar Abas (Rotina, Pomodoro, Notas, Backlog, Dashboard)</span>
-                  <kbd style={{ padding: '2px 6px', background: 'var(--bg-elevated)', borderRadius: '4px', border: '1px solid var(--border-focus)', fontFamily: 'var(--font-mono)' }}>1 a 5</kbd>
+              <div
+                style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '11px' }}
+              >
+                <div
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+                >
+                  <span style={{ color: 'var(--text-secondary)' }}>
+                    Alternar Abas (Rotina, Pomodoro, Notas, Backlog, Dashboard)
+                  </span>
+                  <kbd
+                    style={{
+                      padding: '2px 6px',
+                      background: 'var(--bg-elevated)',
+                      borderRadius: '4px',
+                      border: '1px solid var(--border-focus)',
+                      fontFamily: 'var(--font-mono)',
+                    }}
+                  >
+                    1 a 5
+                  </kbd>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+                >
                   <span style={{ color: 'var(--text-secondary)' }}>Iniciar / Pausar Pomodoro</span>
-                  <kbd style={{ padding: '2px 6px', background: 'var(--bg-elevated)', borderRadius: '4px', border: '1px solid var(--border-focus)', fontFamily: 'var(--font-mono)' }}>Espaço</kbd>
+                  <kbd
+                    style={{
+                      padding: '2px 6px',
+                      background: 'var(--bg-elevated)',
+                      borderRadius: '4px',
+                      border: '1px solid var(--border-focus)',
+                      fontFamily: 'var(--font-mono)',
+                    }}
+                  >
+                    Espaço
+                  </kbd>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+                >
                   <span style={{ color: 'var(--text-secondary)' }}>Nova Atividade</span>
-                  <kbd style={{ padding: '2px 6px', background: 'var(--bg-elevated)', borderRadius: '4px', border: '1px solid var(--border-focus)', fontFamily: 'var(--font-mono)' }}>Ctrl + N</kbd>
+                  <kbd
+                    style={{
+                      padding: '2px 6px',
+                      background: 'var(--bg-elevated)',
+                      borderRadius: '4px',
+                      border: '1px solid var(--border-focus)',
+                      fontFamily: 'var(--font-mono)',
+                    }}
+                  >
+                    Ctrl + N
+                  </kbd>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+                >
                   <span style={{ color: 'var(--text-secondary)' }}>Fechar Modais / Janelas</span>
-                  <kbd style={{ padding: '2px 6px', background: 'var(--bg-elevated)', borderRadius: '4px', border: '1px solid var(--border-focus)', fontFamily: 'var(--font-mono)' }}>Esc</kbd>
+                  <kbd
+                    style={{
+                      padding: '2px 6px',
+                      background: 'var(--bg-elevated)',
+                      borderRadius: '4px',
+                      border: '1px solid var(--border-focus)',
+                      fontFamily: 'var(--font-mono)',
+                    }}
+                  >
+                    Esc
+                  </kbd>
                 </div>
               </div>
             </div>

@@ -13,7 +13,7 @@ export const useGlobalShortcuts = () => {
   const closeManageRoutinesModal = useFlowStore((s) => s.closeManageRoutinesModal);
   const closeManageCategoriesModal = useFlowStore((s) => s.closeManageCategoriesModal);
   const closeGoogleAuthModal = useFlowStore((s) => s.closeGoogleAuthModal);
-  
+
   const pomodoro = useFlowStore((s) => s.pomodoro);
   const startPomodoro = useFlowStore((s) => s.startPomodoro);
   const pausePomodoro = useFlowStore((s) => s.pausePomodoro);

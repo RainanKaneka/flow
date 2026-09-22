@@ -32,11 +32,11 @@ export const AiAssistantView: React.FC = () => {
   const logs = useFlowStore((s) => s.logs);
   const backlog = useFlowStore((s) => s.backlog);
   const pomodoro = useFlowStore((s) => s.pomodoro);
-  
+
   const googleUser = useFlowStore((s) => s.googleUser);
   const geminiConfig = useFlowStore((s) => s.geminiConfig);
   const openGoogleAuthModal = useFlowStore((s) => s.openGoogleAuthModal);
-  
+
   const aiMessages = useFlowStore((s) => s.aiMessages);
   const addAiMessage = useFlowStore((s) => s.addAiMessage);
   const clearAiChat = useFlowStore((s) => s.clearAiChat);
@@ -70,7 +70,16 @@ export const AiAssistantView: React.FC = () => {
       backlogCount: backlog.length,
       totalPomodoroMinutes,
     };
-  }, [tasks, categories, routineTypes, selectedRoutineTypeId, selectedDate, logs, backlog.length, totalPomodoroMinutes]);
+  }, [
+    tasks,
+    categories,
+    routineTypes,
+    selectedRoutineTypeId,
+    selectedDate,
+    logs,
+    backlog.length,
+    totalPomodoroMinutes,
+  ]);
 
   // Enviar mensagem
   const handleSendMessage = async (textToSend?: string) => {
@@ -117,7 +126,8 @@ export const AiAssistantView: React.FC = () => {
     } catch (err) {
       addAiMessage({
         role: 'assistant',
-        content: 'Desculpe, ocorreu uma instabilidade ao processar a resposta. Por favor, tente novamente.',
+        content:
+          'Desculpe, ocorreu uma instabilidade ao processar a resposta. Por favor, tente novamente.',
       });
     } finally {
       setIsLoading(false);
@@ -181,7 +191,9 @@ export const AiAssistantView: React.FC = () => {
                   fontSize: '0.72rem',
                   padding: '2px 8px',
                   borderRadius: '999px',
-                  backgroundColor: geminiConfig.apiKey ? 'rgba(16, 185, 129, 0.15)' : 'rgba(99, 102, 241, 0.15)',
+                  backgroundColor: geminiConfig.apiKey
+                    ? 'rgba(16, 185, 129, 0.15)'
+                    : 'rgba(99, 102, 241, 0.15)',
                   color: geminiConfig.apiKey ? '#10B981' : '#6366F1',
                   fontWeight: 600,
                 }}
@@ -191,7 +203,9 @@ export const AiAssistantView: React.FC = () => {
             </div>
             <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
               {googleUser ? (
-                <span>Conectado como <strong>{googleUser.name}</strong> ({googleUser.email})</span>
+                <span>
+                  Conectado como <strong>{googleUser.name}</strong> ({googleUser.email})
+                </span>
               ) : (
                 <span>Comandos de voz e texto para automação de rotina</span>
               )}
@@ -224,7 +238,11 @@ export const AiAssistantView: React.FC = () => {
       {/* Chips de Ações Rápidas (Sugestões de Comandos RF-15, RF-16, RF-18) */}
       <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
         <button
-          onClick={() => handleSendMessage('Atrasei 30 min no almoço, por favor replaneje os horários restantes de hoje')}
+          onClick={() =>
+            handleSendMessage(
+              'Atrasei 30 min no almoço, por favor replaneje os horários restantes de hoje'
+            )
+          }
           style={{
             padding: '8px 14px',
             borderRadius: '999px',
@@ -245,7 +263,11 @@ export const AiAssistantView: React.FC = () => {
         </button>
 
         <button
-          onClick={() => handleSendMessage('Gerar relatório e diagnóstico de produtividade com base no meu dashboard')}
+          onClick={() =>
+            handleSendMessage(
+              'Gerar relatório e diagnóstico de produtividade com base no meu dashboard'
+            )
+          }
           style={{
             padding: '8px 14px',
             borderRadius: '999px',
@@ -287,7 +309,9 @@ export const AiAssistantView: React.FC = () => {
         </button>
 
         <button
-          onClick={() => handleSendMessage('Quais são as minhas próximas tarefas e o que devo focar agora?')}
+          onClick={() =>
+            handleSendMessage('Quais são as minhas próximas tarefas e o que devo focar agora?')
+          }
           style={{
             padding: '8px 14px',
             borderRadius: '999px',
@@ -334,7 +358,9 @@ export const AiAssistantView: React.FC = () => {
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>Histórico de Conversa</span>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>• {aiMessages.length} mensagens</span>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+              • {aiMessages.length} mensagens
+            </span>
           </div>
 
           <button
@@ -401,7 +427,14 @@ export const AiAssistantView: React.FC = () => {
                   </div>
                 )}
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: isUser ? 'flex-end' : 'flex-start' }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '8px',
+                    alignItems: isUser ? 'flex-end' : 'flex-start',
+                  }}
+                >
                   <div
                     style={{
                       padding: '14px 18px',
@@ -433,7 +466,13 @@ export const AiAssistantView: React.FC = () => {
                         boxShadow: '0 4px 16px rgba(0, 0, 0, 0.06)',
                       }}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                        }}
+                      >
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <span
                             style={{
@@ -463,7 +502,9 @@ export const AiAssistantView: React.FC = () => {
                             <CheckCircle2 size={12} /> Aplicado
                           </span>
                         ) : (
-                          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Pronto para aplicar</span>
+                          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                            Pronto para aplicar
+                          </span>
                         )}
                       </div>
 
@@ -472,39 +513,49 @@ export const AiAssistantView: React.FC = () => {
                       </p>
 
                       {/* Visualização de Diffs em Replanejamento de Horário (RF-16) */}
-                      {msg.actionProposal.type === 'replan_schedule' && msg.actionProposal.payload?.diffs?.length > 0 && (
-                        <div
-                          style={{
-                            backgroundColor: 'var(--bg-secondary)',
-                            borderRadius: '12px',
-                            padding: '10px 14px',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: '6px',
-                            fontSize: '0.82rem',
-                          }}
-                        >
-                          {msg.actionProposal.payload.diffs.map((diff: any) => (
-                            <div
-                              key={diff.taskId}
-                              style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
-                                borderBottom: '1px solid var(--border-color)',
-                                paddingBottom: '4px',
-                              }}
-                            >
-                              <span style={{ fontWeight: 500 }}>{diff.title}</span>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-muted)' }}>
-                                <span style={{ textDecoration: 'line-through' }}>{diff.originalStartTime}</span>
-                                <ArrowRight size={12} />
-                                <strong style={{ color: '#10B981' }}>{diff.newStartTime}</strong>
+                      {msg.actionProposal.type === 'replan_schedule' &&
+                        msg.actionProposal.payload?.diffs?.length > 0 && (
+                          <div
+                            style={{
+                              backgroundColor: 'var(--bg-secondary)',
+                              borderRadius: '12px',
+                              padding: '10px 14px',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: '6px',
+                              fontSize: '0.82rem',
+                            }}
+                          >
+                            {msg.actionProposal.payload.diffs.map((diff: any) => (
+                              <div
+                                key={diff.taskId}
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'space-between',
+                                  borderBottom: '1px solid var(--border-color)',
+                                  paddingBottom: '4px',
+                                }}
+                              >
+                                <span style={{ fontWeight: 500 }}>{diff.title}</span>
+                                <div
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '6px',
+                                    color: 'var(--text-muted)',
+                                  }}
+                                >
+                                  <span style={{ textDecoration: 'line-through' }}>
+                                    {diff.originalStartTime}
+                                  </span>
+                                  <ArrowRight size={12} />
+                                  <strong style={{ color: '#10B981' }}>{diff.newStartTime}</strong>
+                                </div>
                               </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
+                            ))}
+                          </div>
+                        )}
 
                       {/* Botões de Ação */}
                       <div style={{ display: 'flex', gap: '10px', marginTop: '4px' }}>
@@ -556,7 +607,9 @@ export const AiAssistantView: React.FC = () => {
                     </div>
                   )}
 
-                  <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', padding: '0 4px' }}>
+                  <span
+                    style={{ fontSize: '0.72rem', color: 'var(--text-muted)', padding: '0 4px' }}
+                  >
                     {msg.timestamp}
                   </span>
                 </div>
@@ -612,7 +665,14 @@ export const AiAssistantView: React.FC = () => {
                   gap: '8px',
                 }}
               >
-                <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#6366F1' }} />
+                <div
+                  style={{
+                    width: '6px',
+                    height: '6px',
+                    borderRadius: '50%',
+                    backgroundColor: '#6366F1',
+                  }}
+                />
                 <span>O Flow AI está pensando e calculando os horários...</span>
               </div>
             </div>
@@ -659,22 +719,33 @@ export const AiAssistantView: React.FC = () => {
                 height: '46px',
                 borderRadius: '14px',
                 border: 'none',
-                backgroundColor: inputMessage.trim() && !isLoading ? '#6366F1' : 'var(--bg-secondary)',
+                backgroundColor:
+                  inputMessage.trim() && !isLoading ? '#6366F1' : 'var(--bg-secondary)',
                 color: inputMessage.trim() && !isLoading ? '#FFFFFF' : 'var(--text-muted)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 cursor: inputMessage.trim() && !isLoading ? 'pointer' : 'default',
                 transition: 'all 0.2s',
-                boxShadow: inputMessage.trim() && !isLoading ? '0 4px 12px rgba(99, 102, 241, 0.3)' : 'none',
+                boxShadow:
+                  inputMessage.trim() && !isLoading ? '0 4px 12px rgba(99, 102, 241, 0.3)' : 'none',
               }}
             >
               <Send size={18} />
             </button>
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.74rem', color: 'var(--text-muted)' }}>
-            <span>Pressione <strong>Enter</strong> para enviar</span>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              fontSize: '0.74rem',
+              color: 'var(--text-muted)',
+            }}
+          >
+            <span>
+              Pressione <strong>Enter</strong> para enviar
+            </span>
             <span>💡 Os dados e chaves são processados de forma privada</span>
           </div>
         </div>

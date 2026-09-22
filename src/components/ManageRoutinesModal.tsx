@@ -34,7 +34,15 @@ export const ManageRoutinesModal: React.FC = () => {
     setPhilosophy('');
   };
 
-  const presetColors = ['#6366F1', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899', '#0EA5E9', '#14B8A6'];
+  const presetColors = [
+    '#6366F1',
+    '#10B981',
+    '#F59E0B',
+    '#8B5CF6',
+    '#EC4899',
+    '#0EA5E9',
+    '#14B8A6',
+  ];
 
   return (
     <div
@@ -53,11 +61,24 @@ export const ManageRoutinesModal: React.FC = () => {
     >
       <div
         className="double-bezel-outer"
-        style={{ width: '100%', maxWidth: '520px', maxHeight: '85vh', display: 'flex', flexDirection: 'column' }}
+        style={{
+          width: '100%',
+          maxWidth: '520px',
+          maxHeight: '85vh',
+          display: 'flex',
+          flexDirection: 'column',
+        }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="double-bezel-inner" style={{ padding: '24px', overflowY: 'auto' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px' }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginBottom: '18px',
+            }}
+          >
             <div>
               <h3 style={{ fontSize: '17px', fontWeight: 800 }}>Gerenciar Tipos de Rotina</h3>
               <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>
@@ -66,15 +87,29 @@ export const ManageRoutinesModal: React.FC = () => {
             </div>
             <button
               onClick={close}
-              style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--text-secondary)',
+                cursor: 'pointer',
+              }}
             >
               <X size={18} />
             </button>
           </div>
 
           {/* Lista de Rotinas Existentes */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '22px' }}>
-            <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+          <div
+            style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '22px' }}
+          >
+            <span
+              style={{
+                fontSize: '11px',
+                fontWeight: 700,
+                color: 'var(--text-muted)',
+                textTransform: 'uppercase',
+              }}
+            >
               Tipos Ativos ({routineTypes.length})
             </span>
             {routineTypes.map((rt) => (
@@ -101,14 +136,18 @@ export const ManageRoutinesModal: React.FC = () => {
                   />
                   <div>
                     <h5 style={{ fontSize: '13px', fontWeight: 700 }}>{rt.name}</h5>
-                    <p style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{rt.description}</p>
+                    <p style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                      {rt.description}
+                    </p>
                   </div>
                 </div>
 
                 {routineTypes.length > 1 && (
                   <button
                     onClick={() => {
-                      if (window.confirm(`Deseja excluir "${rt.name}" e suas atividades associadas?`)) {
+                      if (
+                        window.confirm(`Deseja excluir "${rt.name}" e suas atividades associadas?`)
+                      ) {
                         deleteRoutineType(rt.id);
                       }
                     }}
@@ -144,7 +183,9 @@ export const ManageRoutinesModal: React.FC = () => {
             <span style={{ fontSize: '12px', fontWeight: 700 }}>Criar Novo Tipo de Rotina</span>
 
             <div>
-              <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, marginBottom: '4px' }}>
+              <label
+                style={{ display: 'block', fontSize: '11px', fontWeight: 600, marginBottom: '4px' }}
+              >
                 Nome do Tipo / Foco *
               </label>
               <input
@@ -167,7 +208,9 @@ export const ManageRoutinesModal: React.FC = () => {
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, marginBottom: '4px' }}>
+              <label
+                style={{ display: 'block', fontSize: '11px', fontWeight: 600, marginBottom: '4px' }}
+              >
                 Descrição
               </label>
               <input
@@ -189,7 +232,9 @@ export const ManageRoutinesModal: React.FC = () => {
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, marginBottom: '4px' }}>
+              <label
+                style={{ display: 'block', fontSize: '11px', fontWeight: 600, marginBottom: '4px' }}
+              >
                 Frase / Filosofia de Inspiração
               </label>
               <input
@@ -212,7 +257,9 @@ export const ManageRoutinesModal: React.FC = () => {
 
             {/* Presets de Cor */}
             <div>
-              <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, marginBottom: '6px' }}>
+              <label
+                style={{ display: 'block', fontSize: '11px', fontWeight: 600, marginBottom: '6px' }}
+              >
                 Cor de Destaque
               </label>
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>

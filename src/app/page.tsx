@@ -23,6 +23,7 @@ import { CustomTitleBar } from '../components/CustomTitleBar';
 import { useGlobalShortcuts } from '../hooks/useGlobalShortcuts';
 import { useReminderScheduler } from '../services/reminderScheduler';
 import { useUpdateChecker } from '../hooks/useUpdateChecker';
+import { ErrorBoundary } from '../components/ErrorBoundary';
 import { Sparkles, Compass, RefreshCw } from 'lucide-react';
 
 export default function Home() {
@@ -79,8 +80,7 @@ export default function Home() {
     return tasks
       .filter((t) => {
         const matchesRoutine = t.routineTypeId === selectedRoutineTypeId;
-        const matchesCategory =
-          activeCategoryId === 'all' || t.categoryId === activeCategoryId;
+        const matchesCategory = activeCategoryId === 'all' || t.categoryId === activeCategoryId;
         if (!matchesRoutine || !matchesCategory) return false;
 
         // Se a tarefa foi agendada para uma data específica (ex: 2026-09-25)
@@ -107,19 +107,39 @@ export default function Home() {
       <Header />
 
       <main style={{ maxWidth: '1000px', margin: '0 auto' }}>
-        {/* Renderização Condicional da View Selecionada */}
-        {activeView === 'dashboard' && <DashboardView />}
+        {/* Renderização Condicional da View Selecionada com Isolamento de Falhas */}
+        {activeView === 'dashboard' && (
+          <ErrorBoundary viewName="Painel de Métricas">
+            <DashboardView />
+          </ErrorBoundary>
+        )}
 
-        {activeView === 'backlog' && <BacklogView />}
+        {activeView === 'backlog' && (
+          <ErrorBoundary viewName="Lista de Pendências">
+            <BacklogView />
+          </ErrorBoundary>
+        )}
 
-        {activeView === 'pomodoro' && <PomodoroView />}
+        {activeView === 'pomodoro' && (
+          <ErrorBoundary viewName="Temporizador Pomodoro">
+            <PomodoroView />
+          </ErrorBoundary>
+        )}
 
-        {activeView === 'notes' && <NotepadView />}
+        {activeView === 'notes' && (
+          <ErrorBoundary viewName="Bloco de Notas">
+            <NotepadView />
+          </ErrorBoundary>
+        )}
 
-        {activeView === 'ai' && <AiAssistantView />}
+        {activeView === 'ai' && (
+          <ErrorBoundary viewName="Assistente Inteligente">
+            <AiAssistantView />
+          </ErrorBoundary>
+        )}
 
         {activeView === 'routine' && (
-          <>
+          <ErrorBoundary viewName="Rotina Diária">
             {/* Daily Stats Bar */}
             <DailyStatsBar />
 
@@ -176,9 +196,7 @@ export default function Home() {
               }}
             >
               {filteredTasks.length > 0 ? (
-                filteredTasks.map((task) => (
-                  <TaskCard key={task.id} task={task} />
-                ))
+                filteredTasks.map((task) => <TaskCard key={task.id} task={task} />)
               ) : (
                 <div
                   className="double-bezel-outer"
@@ -214,14 +232,21 @@ export default function Home() {
                     <h4 style={{ fontSize: '16px', fontWeight: 700 }}>
                       Nenhuma atividade encontrada neste filtro
                     </h4>
-                    <p style={{ fontSize: '13px', color: 'var(--text-secondary)', maxWidth: '400px' }}>
-                      Não há atividades para a categoria selecionada neste dia. Você pode alternar o filtro ou adicionar uma nova atividade personalizada.
+                    <p
+                      style={{
+                        fontSize: '13px',
+                        color: 'var(--text-secondary)',
+                        maxWidth: '400px',
+                      }}
+                    >
+                      Não há atividades para a categoria selecionada neste dia. Você pode alternar o
+                      filtro ou adicionar uma nova atividade personalizada.
                     </p>
                   </div>
                 </div>
               )}
             </div>
-          </>
+          </ErrorBoundary>
         )}
 
         {/* Footer info & restore */}
@@ -242,7 +267,11 @@ export default function Home() {
           <span>Flow App — SQLite Relacional & Rotinas Customizáveis</span>
           <button
             onClick={() => {
-              if (window.confirm('Deseja restaurar as rotinas e categorias padrão? Seus dados serão redefinidos para os modelos iniciais.')) {
+              if (
+                window.confirm(
+                  'Deseja restaurar as rotinas e categorias padrão? Seus dados serão redefinidos para os modelos iniciais.'
+                )
+              ) {
                 resetToTemplate();
               }
             }}

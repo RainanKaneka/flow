@@ -10,6 +10,8 @@ export interface GoogleUserProfile {
   accessToken?: string;
 }
 
+export type GoogleUser = GoogleUserProfile;
+
 export interface GeminiConfig {
   apiKey: string;
   model: string;
@@ -17,7 +19,8 @@ export interface GeminiConfig {
   clientId?: string;
 }
 
-export type AiActionType = 'create_task' | 'replan_schedule' | 'decompose_checklist' | 'productivity_report';
+export type AiActionType =
+  'create_task' | 'replan_schedule' | 'decompose_checklist' | 'productivity_report';
 
 export interface AiActionProposal {
   id: string;
@@ -69,17 +72,17 @@ export interface Task {
   title: string;
   description: string;
   startTime: string; // "10:30"
-  endTime: string;   // "11:00"
+  endTime: string; // "11:00"
   routineTypeId: string; // Referência a RoutineType.id
-  categoryId: string;    // Referência a Category.id
+  categoryId: string; // Referência a Category.id
   isGoldenRule?: boolean; // Hábito âncora / Regra prioritária
-  daysOfWeek: number[];   // [1,2,3,4,5] = Segunda a Sexta
-  specificDate?: string;  // YYYY-MM-DD (para tarefas específicas de um determinado dia)
+  daysOfWeek: number[]; // [1,2,3,4,5] = Segunda a Sexta
+  specificDate?: string; // YYYY-MM-DD (para tarefas específicas de um determinado dia)
   targetMinutes: number;
   tags: string[];
   notes?: string;
   isCustom?: boolean;
-  
+
   // Épico 2: Especificações internas & Rich Text (RF-6, RF-17)
   richContent?: string;
   attachments?: TaskAttachment[];
@@ -141,23 +144,23 @@ export interface FlowState {
   activeView: AppView;
   selectedDate: string; // YYYY-MM-DD
   theme: 'dark' | 'light';
-  
+
   // Tipos de Rotina Dinâmicos
   routineTypes: RoutineType[];
   selectedRoutineTypeId: string;
-  
+
   // Categorias Dinâmicas
   categories: Category[];
   activeCategoryIdFilter: string | 'all';
-  
+
   // Tarefas e Dados
   tasks: Task[];
   logs: Record<string, TaskLog>; // key: `${date}_${taskId}`
   backlog: BacklogItem[];
-  
+
   // Bloco de Notas (RF-8)
   notes: Note[];
-  
+
   // Pomodoro (RF-7, RF-13)
   pomodoro: PomodoroState;
 
@@ -189,7 +192,7 @@ export interface FlowState {
   promoteBacklogModalItem: BacklogItem | null;
   isManageRoutinesModalOpen: boolean;
   isManageCategoriesModalOpen: boolean;
-  
+
   // Modal de Especificações / Página Interna da Tarefa (RF-6)
   selectedTaskIdForDetail: string | null;
 }
@@ -198,7 +201,7 @@ export interface FlowActions {
   setActiveView: (view: AppView) => void;
   setDate: (date: string) => void;
   toggleTheme: () => void;
-  
+
   // Tipos de Rotina
   selectRoutineType: (id: string) => void;
   addRoutineType: (type: Omit<RoutineType, 'id'>) => void;
@@ -206,7 +209,7 @@ export interface FlowActions {
   deleteRoutineType: (id: string) => void;
   openManageRoutinesModal: () => void;
   closeManageRoutinesModal: () => void;
-  
+
   // Categorias
   setCategoryIdFilter: (categoryId: string | 'all') => void;
   addCategory: (category: Omit<Category, 'id'>) => void;
@@ -222,7 +225,7 @@ export interface FlowActions {
   resetToTemplate: () => void;
   openTaskModal: (task?: Task | null) => void;
   closeTaskModal: () => void;
-  
+
   // Detalhes / Página Interna da Tarefa (RF-6, RF-17)
   openTaskDetail: (taskId: string) => void;
   closeTaskDetail: () => void;
@@ -241,7 +244,12 @@ export interface FlowActions {
   addBacklogItem: (item: Omit<BacklogItem, 'id' | 'createdAt'>) => void;
   deleteBacklogItem: (id: string) => void;
   openPromoteBacklogModal: (item: BacklogItem | null) => void;
-  promoteBacklogToTask: (backlogId: string, startTime: string, endTime: string, routineTypeId?: string) => void;
+  promoteBacklogToTask: (
+    backlogId: string,
+    startTime: string,
+    endTime: string,
+    routineTypeId?: string
+  ) => void;
 
   // Bloco de Notas (RF-8, RF-14)
   addNote: (note: Omit<Note, 'id' | 'createdAt' | 'updatedAt'>) => void;
@@ -278,7 +286,9 @@ export interface FlowActions {
   // Agente de IA com Gemini & Conta Google (RF-15, RF-16, RF-18, RF-19)
   setGoogleUser: (user: GoogleUserProfile | null) => void;
   setGeminiConfig: (config: Partial<GeminiConfig>) => void;
-  addAiMessage: (msg: Omit<AiChatMessage, 'id' | 'timestamp'> & { id?: string; timestamp?: string }) => void;
+  addAiMessage: (
+    msg: Omit<AiChatMessage, 'id' | 'timestamp'> & { id?: string; timestamp?: string }
+  ) => void;
   clearAiChat: () => void;
   applyAiActionProposal: (proposalId: string) => void;
   openGoogleAuthModal: () => void;

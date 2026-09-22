@@ -3,19 +3,8 @@
 import React, { useState } from 'react';
 import { useFlowStore } from '../store/useFlowStore';
 import { BacklogItem } from '../types/routine';
-import {
-  Inbox,
-  Plus,
-  ArrowUpRight,
-  Trash2,
-  Clock,
-  Tag,
-  Code2,
-  Sparkles,
-  Calendar,
-  X,
-  Check,
-} from 'lucide-react';
+import { Inbox, Plus, ArrowUpRight, Trash2, X } from 'lucide-react';
+import styles from './BacklogView.module.css';
 
 export const BacklogView: React.FC = () => {
   const backlog = useFlowStore((s) => s.backlog);
@@ -65,30 +54,17 @@ export const BacklogView: React.FC = () => {
   };
 
   return (
-    <div style={{ padding: '20px 28px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+    <div className={styles.container}>
       {/* Top Header & Actions */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: '14px',
-        }}
-      >
+      <div className={styles.headerRow}>
         <div>
-          <h3 style={{ fontSize: '18px', fontWeight: 800, letterSpacing: '-0.02em' }}>
-            Lista de Pendências (Backlog)
-          </h3>
-          <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+          <h3 className={styles.headerTitle}>Lista de Pendências (Backlog)</h3>
+          <p className={styles.headerSubtitle}>
             Tarefas não concluídas ou ideias guardadas fora da rotina ativa (RF-11)
           </p>
         </div>
 
-        <button
-          onClick={() => setIsCreateOpen(true)}
-          className="btn-island btn-island-primary"
-        >
+        <button onClick={() => setIsCreateOpen(true)} className="btn-island btn-island-primary">
           <span>Nova Pendência</span>
           <div className="btn-circle-icon">
             <Plus size={14} strokeWidth={2.6} />
@@ -97,23 +73,13 @@ export const BacklogView: React.FC = () => {
       </div>
 
       {/* Lista de itens do Backlog */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      <div className={styles.backlogList}>
         {backlog.length > 0 ? (
           backlog.map((item) => (
             <div key={item.id} className="double-bezel-outer">
-              <div
-                className="double-bezel-inner"
-                style={{
-                  padding: '16px 20px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: '16px',
-                  flexWrap: 'wrap',
-                }}
-              >
-                <div style={{ flex: 1, minWidth: '240px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+              <div className={`double-bezel-inner ${styles.itemInner}`}>
+                <div className={styles.itemMain}>
+                  <div className={styles.itemMetaRow}>
                     {(() => {
                       const itemCat = categories.find((c) => c.id === item.categoryId) || {
                         name: 'Geral',
@@ -121,13 +87,8 @@ export const BacklogView: React.FC = () => {
                       };
                       return (
                         <span
+                          className={styles.categoryBadge}
                           style={{
-                            padding: '2px 8px',
-                            borderRadius: '9999px',
-                            fontSize: '10px',
-                            fontWeight: 700,
-                            textTransform: 'uppercase',
-                            background: 'var(--bg-elevated)',
                             color: itemCat.color,
                             border: `1px solid ${itemCat.color}40`,
                           }}
@@ -136,35 +97,24 @@ export const BacklogView: React.FC = () => {
                         </span>
                       );
                     })()}
-                    <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                    <span className={styles.itemCreatedDate}>
                       Criada em {new Date(item.createdAt).toLocaleDateString('pt-BR')}
                     </span>
                   </div>
 
-                  <h4 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '2px' }}>
-                    {item.title}
-                  </h4>
-                  {item.description && (
-                    <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
-                      {item.description}
-                    </p>
-                  )}
+                  <h4 className={styles.itemTitle}>{item.title}</h4>
+                  {item.description && <p className={styles.itemDesc}>{item.description}</p>}
                 </div>
 
                 {/* Actions: Agendar para Hoje ou Deletar */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div className={styles.itemActions}>
                   <button
                     onClick={() => setPromotingItem(item)}
-                    className="btn-island"
-                    style={{
-                      background: 'var(--accent-soft)',
-                      color: 'var(--accent-primary)',
-                      borderColor: 'transparent',
-                    }}
+                    className={`btn-island ${styles.promoteBtn}`}
                     title="Transformar esta pendência em uma tarefa ativa no dia de hoje"
                   >
                     <span>Puxar para Hoje</span>
-                    <div className="btn-circle-icon" style={{ background: 'rgba(99, 102, 241, 0.15)' }}>
+                    <div className={`btn-circle-icon ${styles.promoteIconBox}`}>
                       <ArrowUpRight size={13} strokeWidth={2.4} />
                     </div>
                   </button>
@@ -172,18 +122,7 @@ export const BacklogView: React.FC = () => {
                   <button
                     onClick={() => deleteBacklogItem(item.id)}
                     title="Remover pendência"
-                    style={{
-                      width: '32px',
-                      height: '32px',
-                      borderRadius: '8px',
-                      border: 'none',
-                      background: 'rgba(239, 68, 68, 0.1)',
-                      color: '#EF4444',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      cursor: 'pointer',
-                    }}
+                    className={styles.deleteBtn}
                   >
                     <Trash2 size={14} />
                   </button>
@@ -193,34 +132,14 @@ export const BacklogView: React.FC = () => {
           ))
         ) : (
           <div className="double-bezel-outer">
-            <div
-              className="double-bezel-inner"
-              style={{
-                padding: '40px 20px',
-                textAlign: 'center',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: '10px',
-              }}
-            >
-              <div
-                style={{
-                  width: '46px',
-                  height: '46px',
-                  borderRadius: '50%',
-                  background: 'var(--bg-elevated)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'var(--text-muted)',
-                }}
-              >
+            <div className={`double-bezel-inner ${styles.emptyStateInner}`}>
+              <div className={styles.emptyIconBox}>
                 <Inbox size={22} />
               </div>
-              <h4 style={{ fontSize: '15px', fontWeight: 700 }}>Seu backlog está limpo!</h4>
-              <p style={{ fontSize: '12px', color: 'var(--text-secondary)', maxWidth: '380px' }}>
-                Quando você não conseguir concluir uma tarefa do dia, você pode movê-la para cá sem culpa para realizar em outro momento.
+              <h4 className={styles.emptyTitle}>Seu backlog está limpo!</h4>
+              <p className={styles.emptyDesc}>
+                Quando você não conseguir concluir uma tarefa do dia, você pode movê-la para cá sem
+                culpa para realizar em outro momento.
               </p>
             </div>
           </div>
@@ -229,101 +148,50 @@ export const BacklogView: React.FC = () => {
 
       {/* Modal Criar Pendência */}
       {isCreateOpen && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 50,
-            backgroundColor: 'rgba(0, 0, 0, 0.65)',
-            backdropFilter: 'blur(8px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '20px',
-          }}
-          onClick={() => setIsCreateOpen(false)}
-        >
+        <div className={styles.modalOverlay} onClick={() => setIsCreateOpen(false)}>
           <div
-            className="double-bezel-outer"
-            style={{ width: '100%', maxWidth: '480px' }}
+            className={`double-bezel-outer ${styles.createModalOuter}`}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="double-bezel-inner" style={{ padding: '24px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-                <h3 style={{ fontSize: '16px', fontWeight: 800 }}>Guardar Pendência no Backlog</h3>
-                <button
-                  onClick={() => setIsCreateOpen(false)}
-                  style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}
-                >
+            <div className={`double-bezel-inner ${styles.modalInner}`}>
+              <div className={styles.modalHeader}>
+                <h3 className={styles.modalTitle}>Guardar Pendência no Backlog</h3>
+                <button onClick={() => setIsCreateOpen(false)} className={styles.modalCloseBtn}>
                   <X size={16} />
                 </button>
               </div>
 
-              <form onSubmit={handleCreateSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <form onSubmit={handleCreateSubmit} className={styles.modalForm}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, marginBottom: '6px' }}>
-                    Título da Pendência *
-                  </label>
+                  <label className={styles.formLabel}>Título da Pendência *</label>
                   <input
                     type="text"
                     required
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     placeholder="Ex: Atualizar resumo do LinkedIn com os novos projetos"
-                    style={{
-                      width: '100%',
-                      padding: '8px 12px',
-                      borderRadius: '10px',
-                      border: '1px solid var(--border-subtle)',
-                      background: 'var(--bg-primary)',
-                      color: 'var(--text-primary)',
-                      fontSize: '13px',
-                      outline: 'none',
-                    }}
+                    className={styles.formInput}
                   />
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, marginBottom: '6px' }}>
-                    Descrição
-                  </label>
+                  <label className={styles.formLabel}>Descrição</label>
                   <textarea
                     rows={2}
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder="Detalhes ou links úteis..."
-                    style={{
-                      width: '100%',
-                      padding: '8px 12px',
-                      borderRadius: '10px',
-                      border: '1px solid var(--border-subtle)',
-                      background: 'var(--bg-primary)',
-                      color: 'var(--text-primary)',
-                      fontSize: '13px',
-                      outline: 'none',
-                      resize: 'none',
-                    }}
+                    className={styles.formTextarea}
                   />
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div className={styles.formGrid2}>
                   <div>
-                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, marginBottom: '6px' }}>
-                      Categoria
-                    </label>
+                    <label className={styles.formLabel}>Categoria</label>
                     <select
                       value={categoryId}
                       onChange={(e) => setCategoryId(e.target.value)}
-                      style={{
-                        width: '100%',
-                        padding: '8px 10px',
-                        borderRadius: '10px',
-                        border: '1px solid var(--border-subtle)',
-                        background: 'var(--bg-primary)',
-                        color: 'var(--text-primary)',
-                        fontSize: '13px',
-                        outline: 'none',
-                      }}
+                      className={styles.formSelect}
                     >
                       {categories.map((c) => (
                         <option key={c.id} value={c.id}>
@@ -334,40 +202,21 @@ export const BacklogView: React.FC = () => {
                   </div>
 
                   <div>
-                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, marginBottom: '6px' }}>
-                      Tempo Estimado (min)
-                    </label>
+                    <label className={styles.formLabel}>Tempo Estimado (min)</label>
                     <input
                       type="number"
                       value={targetMinutes}
                       onChange={(e) => setTargetMinutes(Number(e.target.value))}
-                      style={{
-                        width: '100%',
-                        padding: '8px 10px',
-                        borderRadius: '10px',
-                        border: '1px solid var(--border-subtle)',
-                        background: 'var(--bg-primary)',
-                        color: 'var(--text-primary)',
-                        fontSize: '13px',
-                        outline: 'none',
-                      }}
+                      className={styles.formInput}
                     />
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '10px' }}>
+                <div className={styles.modalFooter}>
                   <button
                     type="button"
                     onClick={() => setIsCreateOpen(false)}
-                    style={{
-                      padding: '8px 14px',
-                      borderRadius: '9999px',
-                      border: '1px solid var(--border-subtle)',
-                      background: 'transparent',
-                      color: 'var(--text-secondary)',
-                      fontSize: '12px',
-                      cursor: 'pointer',
-                    }}
+                    className={styles.cancelBtn}
                   >
                     Cancelar
                   </button>
@@ -383,95 +232,47 @@ export const BacklogView: React.FC = () => {
 
       {/* Modal Promover para a Rotina de Hoje */}
       {promotingItem && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 50,
-            backgroundColor: 'rgba(0, 0, 0, 0.65)',
-            backdropFilter: 'blur(8px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '20px',
-          }}
-          onClick={() => setPromotingItem(null)}
-        >
+        <div className={styles.modalOverlay} onClick={() => setPromotingItem(null)}>
           <div
-            className="double-bezel-outer"
-            style={{ width: '100%', maxWidth: '440px' }}
+            className={`double-bezel-outer ${styles.promoteModalOuter}`}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="double-bezel-inner" style={{ padding: '24px' }}>
-              <h3 style={{ fontSize: '16px', fontWeight: 800, marginBottom: '6px' }}>
-                Agendar para a Rotina de Hoje
-              </h3>
-              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '16px' }}>
+            <div className={`double-bezel-inner ${styles.modalInner}`}>
+              <h3 className={styles.modalTitle}>Agendar para a Rotina de Hoje</h3>
+              <p className={styles.modalSubtitle}>
                 Defina em qual horário você deseja encaixar &ldquo;{promotingItem.title}&rdquo;:
               </p>
 
-              <form onSubmit={handlePromoteSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <form onSubmit={handlePromoteSubmit} className={styles.modalForm}>
+                <div className={styles.formGrid2}>
                   <div>
-                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, marginBottom: '6px' }}>
-                      Início
-                    </label>
+                    <label className={styles.formLabel}>Início</label>
                     <input
                       type="time"
                       required
                       value={scheduleStart}
                       onChange={(e) => setScheduleStart(e.target.value)}
-                      style={{
-                        width: '100%',
-                        padding: '8px 10px',
-                        borderRadius: '10px',
-                        border: '1px solid var(--border-subtle)',
-                        background: 'var(--bg-primary)',
-                        color: 'var(--text-primary)',
-                        fontSize: '13px',
-                        fontFamily: 'var(--font-mono)',
-                        outline: 'none',
-                      }}
+                      className={`${styles.formInput} ${styles.formInputTime}`}
                     />
                   </div>
 
                   <div>
-                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, marginBottom: '6px' }}>
-                      Fim
-                    </label>
+                    <label className={styles.formLabel}>Fim</label>
                     <input
                       type="time"
                       required
                       value={scheduleEnd}
                       onChange={(e) => setScheduleEnd(e.target.value)}
-                      style={{
-                        width: '100%',
-                        padding: '8px 10px',
-                        borderRadius: '10px',
-                        border: '1px solid var(--border-subtle)',
-                        background: 'var(--bg-primary)',
-                        color: 'var(--text-primary)',
-                        fontSize: '13px',
-                        fontFamily: 'var(--font-mono)',
-                        outline: 'none',
-                      }}
+                      className={`${styles.formInput} ${styles.formInputTime}`}
                     />
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '10px' }}>
+                <div className={styles.modalFooter}>
                   <button
                     type="button"
                     onClick={() => setPromotingItem(null)}
-                    style={{
-                      padding: '8px 14px',
-                      borderRadius: '9999px',
-                      border: '1px solid var(--border-subtle)',
-                      background: 'transparent',
-                      color: 'var(--text-secondary)',
-                      fontSize: '12px',
-                      cursor: 'pointer',
-                    }}
+                    className={styles.cancelBtn}
                   >
                     Cancelar
                   </button>

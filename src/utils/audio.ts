@@ -145,7 +145,7 @@ class SoundManager {
 
     const baseTime = ctx.currentTime;
     const tone1 = 587.33; // D5
-    const tone2 = 880.00; // A5
+    const tone2 = 880.0; // A5
 
     // Primeiro tom
     const osc1 = ctx.createOscillator();

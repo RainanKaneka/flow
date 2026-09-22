@@ -68,10 +68,7 @@ export const useReminderScheduler = () => {
           const category = categories.find((c) => c.id === task.categoryId);
           const categoryName = category ? category.name : 'Geral';
 
-          const title =
-            advance === 0
-              ? `Agora: ${task.title}`
-              : `Em ${advance} min: ${task.title}`;
+          const title = advance === 0 ? `Agora: ${task.title}` : `Em ${advance} min: ${task.title}`;
 
           const body = `Início às ${task.startTime} (${task.targetMinutes}m) • ${categoryName}\n${task.description || ''}`;
 
@@ -89,11 +86,5 @@ export const useReminderScheduler = () => {
     const interval = setInterval(checkReminders, 20000);
 
     return () => clearInterval(interval);
-  }, [
-    reminderSettings,
-    tasks,
-    selectedRoutineTypeId,
-    categories,
-    selectedDate,
-  ]);
+  }, [reminderSettings, tasks, selectedRoutineTypeId, categories, selectedDate]);
 };

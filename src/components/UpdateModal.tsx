@@ -147,7 +147,9 @@ export const UpdateModal: React.FC = () => {
           )}
 
           {/* Header com Ícone Glow */}
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px', marginBottom: '20px' }}>
+          <div
+            style={{ display: 'flex', alignItems: 'flex-start', gap: '16px', marginBottom: '20px' }}
+          >
             <div
               style={{
                 width: '48px',
@@ -182,7 +184,9 @@ export const UpdateModal: React.FC = () => {
                   gap: '5px',
                   padding: '3px 9px',
                   borderRadius: '9999px',
-                  backgroundColor: isInstalling ? 'rgba(99, 102, 241, 0.12)' : 'rgba(16, 185, 129, 0.12)',
+                  backgroundColor: isInstalling
+                    ? 'rgba(99, 102, 241, 0.12)'
+                    : 'rgba(16, 185, 129, 0.12)',
                   color: isInstalling ? '#818cf8' : '#10B981',
                   fontSize: '11px',
                   fontWeight: 700,
@@ -192,11 +196,25 @@ export const UpdateModal: React.FC = () => {
                 <RefreshCw size={11} />
                 {isInstalling ? 'ATUALIZAÇÃO EM ANDAMENTO' : 'NOVA ATUALIZAÇÃO DISPONÍVEL'}
               </span>
-              <h3 style={{ fontSize: '20px', fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.2 }}>
-                {isInstalling ? `Instalando Flow v${availableUpdate.latestVersion}` : availableUpdate.releaseName}
+              <h3
+                style={{
+                  fontSize: '20px',
+                  fontWeight: 800,
+                  letterSpacing: '-0.02em',
+                  lineHeight: 1.2,
+                }}
+              >
+                {isInstalling
+                  ? `Instalando Flow v${availableUpdate.latestVersion}`
+                  : availableUpdate.releaseName}
               </h3>
               <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                Versão instalada: <strong style={{ color: 'var(--text-primary)' }}>v{availableUpdate.currentVersion}</strong> ➔ Nova versão: <strong style={{ color: '#10B981' }}>v{availableUpdate.latestVersion}</strong>
+                Versão instalada:{' '}
+                <strong style={{ color: 'var(--text-primary)' }}>
+                  v{availableUpdate.currentVersion}
+                </strong>{' '}
+                ➔ Nova versão:{' '}
+                <strong style={{ color: '#10B981' }}>v{availableUpdate.latestVersion}</strong>
               </p>
             </div>
           </div>
@@ -215,7 +233,9 @@ export const UpdateModal: React.FC = () => {
                 gap: '16px',
               }}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div
+                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+              >
                 <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>
                   {installStepText}
                 </span>
@@ -247,7 +267,15 @@ export const UpdateModal: React.FC = () => {
                 />
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', color: 'var(--text-muted)' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  fontSize: '11px',
+                  color: 'var(--text-muted)',
+                }}
+              >
                 <Zap size={13} color="#10B981" />
                 <span>Atualização in-app automática: o aplicativo será reiniciado sozinho.</span>
               </div>
@@ -267,10 +295,25 @@ export const UpdateModal: React.FC = () => {
                   overflowY: 'auto',
                 }}
               >
-                <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '8px' }}>
+                <div
+                  style={{
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    color: 'var(--text-muted)',
+                    textTransform: 'uppercase',
+                    marginBottom: '8px',
+                  }}
+                >
                   Novidades e Melhorias desta Versão:
                 </div>
-                <p style={{ fontSize: '12px', lineHeight: 1.5, color: 'var(--text-secondary)', whiteSpace: 'pre-line' }}>
+                <p
+                  style={{
+                    fontSize: '12px',
+                    lineHeight: 1.5,
+                    color: 'var(--text-secondary)',
+                    whiteSpace: 'pre-line',
+                  }}
+                >
                   {availableUpdate.releaseNotes}
                 </p>
               </div>
@@ -292,7 +335,8 @@ export const UpdateModal: React.FC = () => {
               >
                 <ShieldCheck size={16} style={{ flexShrink: 0 }} />
                 <span>
-                  O processo atualiza o Flow diretamente na sua máquina, preservando todas as suas tarefas, notas e configurações com segurança.
+                  O processo atualiza o Flow diretamente na sua máquina, preservando todas as suas
+                  tarefas, notas e configurações com segurança.
                 </span>
               </div>
 

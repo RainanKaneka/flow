@@ -16,8 +16,11 @@ export const CustomTitleBar: React.FC = () => {
         .then(({ getCurrentWindow }) => {
           const win = getCurrentWindow();
           setAppWindow(win);
-          win.isMaximized().then(setIsMaximized).catch(() => {});
-          
+          win
+            .isMaximized()
+            .then(setIsMaximized)
+            .catch(() => {});
+
           const unlisten = win.onResized(async () => {
             try {
               const max = await win.isMaximized();

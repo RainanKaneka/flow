@@ -96,8 +96,8 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
               border: isCompleted
                 ? 'none'
                 : task.isGoldenRule
-                ? '2px solid var(--golden-rule)'
-                : '2px solid var(--border-focus)',
+                  ? '2px solid var(--golden-rule)'
+                  : '2px solid var(--border-focus)',
               backgroundColor: isCompleted ? 'var(--success)' : 'transparent',
               color: '#FFFFFF',
               display: 'flex',
@@ -115,7 +115,15 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
 
           {/* Details */}
           <div style={{ flex: 1 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '4px' }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                flexWrap: 'wrap',
+                marginBottom: '4px',
+              }}
+            >
               {/* Category Pill Dinâmica */}
               <span
                 style={{
@@ -218,8 +226,19 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
             </h4>
 
             {/* Badges de Especificações / Sub-tarefas / Links (RF-6) */}
-            {(checklist.length > 0 || attachments.length > 0 || timeSpentMinutes > 0 || task.richContent) && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '6px' }}>
+            {(checklist.length > 0 ||
+              attachments.length > 0 ||
+              timeSpentMinutes > 0 ||
+              task.richContent) && (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  flexWrap: 'wrap',
+                  marginBottom: '6px',
+                }}
+              >
                 {checklist.length > 0 && (
                   <span
                     onClick={() => openTaskDetail(task.id)}
@@ -229,15 +248,23 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
                       gap: '4px',
                       padding: '1px 6px',
                       borderRadius: '4px',
-                      background: completedChecklistItems === checklist.length ? 'var(--success-bg)' : 'var(--bg-elevated)',
-                      color: completedChecklistItems === checklist.length ? 'var(--success)' : 'var(--text-secondary)',
+                      background:
+                        completedChecklistItems === checklist.length
+                          ? 'var(--success-bg)'
+                          : 'var(--bg-elevated)',
+                      color:
+                        completedChecklistItems === checklist.length
+                          ? 'var(--success)'
+                          : 'var(--text-secondary)',
                       fontSize: '10px',
                       fontWeight: 600,
                       cursor: 'pointer',
                     }}
                   >
                     <CheckSquare size={10} />
-                    <span>{completedChecklistItems}/{checklist.length} passos</span>
+                    <span>
+                      {completedChecklistItems}/{checklist.length} passos
+                    </span>
                   </span>
                 )}
 
@@ -321,10 +348,21 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
               }}
             >
               {/* Horário Previsto */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: 'var(--text-secondary)' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                  color: 'var(--text-secondary)',
+                }}
+              >
                 <Clock size={13} color="var(--accent-primary)" />
                 <span>
-                  Previsto: <strong>{task.startTime} - {task.endTime}</strong> ({task.targetMinutes}m)
+                  Previsto:{' '}
+                  <strong>
+                    {task.startTime} - {task.endTime}
+                  </strong>{' '}
+                  ({task.targetMinutes}m)
                 </span>
               </div>
 

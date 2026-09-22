@@ -20,6 +20,7 @@ import {
   Sparkles,
   Save,
 } from 'lucide-react';
+import styles from './TaskDetailModal.module.css';
 
 export const TaskDetailModal: React.FC = () => {
   const selectedTaskId = useFlowStore((s) => s.selectedTaskIdForDetail);
@@ -71,7 +72,8 @@ export const TaskDetailModal: React.FC = () => {
 
   const checklist = task.checklist || [];
   const completedSubtasks = checklist.filter((item) => item.completed).length;
-  const subtaskPercentage = checklist.length > 0 ? Math.round((completedSubtasks / checklist.length) * 100) : 0;
+  const subtaskPercentage =
+    checklist.length > 0 ? Math.round((completedSubtasks / checklist.length) * 100) : 0;
   const attachments = task.attachments || [];
 
   // Salvar anotações / especificações
@@ -183,156 +185,66 @@ export const TaskDetailModal: React.FC = () => {
   };
 
   return (
-    <div
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 52,
-        backgroundColor: 'rgba(0, 0, 0, 0.7)',
-        backdropFilter: 'blur(12px)',
-        WebkitBackdropFilter: 'blur(12px)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '20px',
-      }}
-      onClick={closeTaskDetail}
-    >
+    <div className={styles.modalOverlay} onClick={closeTaskDetail}>
       <div
-        className="double-bezel-outer"
-        style={{
-          width: '100%',
-          maxWidth: '680px',
-          maxHeight: '90vh',
-          display: 'flex',
-          flexDirection: 'column',
-          boxShadow: '0 24px 60px -12px rgba(0, 0, 0, 0.5)',
-        }}
+        className={`double-bezel-outer ${styles.modalOuter}`}
         onClick={(e) => e.stopPropagation()}
       >
-        <div
-          className="double-bezel-inner"
-          style={{
-            padding: '24px 28px',
-            overflowY: 'auto',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '20px',
-          }}
-        >
+        <div className={`double-bezel-inner ${styles.modalInner}`}>
           {/* Header */}
-          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px' }}>
+          <div className={styles.headerRow}>
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '6px' }}>
+              <div className={styles.badgesRow}>
                 {/* Category badge */}
                 <span
+                  className={styles.categoryBadge}
                   style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '5px',
-                    padding: '2px 8px',
-                    borderRadius: '9999px',
-                    fontSize: '11px',
-                    fontWeight: 600,
                     color: category.color,
-                    backgroundColor: 'var(--bg-elevated)',
                     border: `1px solid ${category.color}40`,
                   }}
                 >
-                  <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: category.color }} />
+                  <div className={styles.categoryDot} style={{ backgroundColor: category.color }} />
                   <span>{category.name}</span>
                 </span>
 
                 {/* Routine Type badge */}
-                <span
-                  style={{
-                    fontSize: '11px',
-                    fontWeight: 600,
-                    padding: '2px 8px',
-                    borderRadius: '9999px',
-                    background: 'var(--bg-elevated)',
-                    color: 'var(--text-secondary)',
-                  }}
-                >
-                  {routineType?.name}
-                </span>
+                <span className={styles.routineBadge}>{routineType?.name}</span>
 
                 {/* Target Time */}
-                <span
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    fontSize: '11px',
-                    fontFamily: 'var(--font-mono)',
-                    color: 'var(--text-muted)',
-                  }}
-                >
+                <span className={styles.timeBadge}>
                   <Clock size={12} />
-                  <span>{task.startTime} - {task.endTime} ({task.targetMinutes}m)</span>
+                  <span>
+                    {task.startTime} - {task.endTime} ({task.targetMinutes}m)
+                  </span>
                 </span>
               </div>
 
-              <h2 style={{ fontSize: '20px', fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>
-                {task.title}
-              </h2>
+              <h2 className={styles.taskTitle}>{task.title}</h2>
 
-              {task.description && (
-                <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px', lineHeight: 1.4 }}>
-                  {task.description}
-                </p>
-              )}
+              {task.description && <p className={styles.taskDesc}>{task.description}</p>}
             </div>
 
             <button
               onClick={closeTaskDetail}
-              style={{
-                width: '32px',
-                height: '32px',
-                borderRadius: '50%',
-                border: 'none',
-                background: 'var(--bg-elevated)',
-                color: 'var(--text-secondary)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                flexShrink: 0,
-              }}
+              className={styles.closeBtn}
+              title="Fechar detalhes da atividade"
             >
               <X size={16} />
             </button>
           </div>
 
           {/* Banner de Ação Rápida: Iniciar Pomodoro com esta tarefa vinculada */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '12px 18px',
-              borderRadius: '14px',
-              background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.12) 0%, rgba(139, 92, 246, 0.08) 100%)',
-              border: '1px solid rgba(99, 102, 241, 0.25)',
-              flexWrap: 'wrap',
-              gap: '12px',
-            }}
-          >
+          <div className={styles.pomodoroBanner}>
             <div>
-              <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--accent-primary)' }}>
-                Foco com Pomodoro Integrado
-              </span>
-              <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+              <span className={styles.pomodoroBannerTitle}>Foco com Pomodoro Integrado</span>
+              <p className={styles.pomodoroBannerSubtitle}>
                 {timeSpentMinutes > 0
                   ? `Você já acumulou ${timeSpentMinutes} min de foco real nesta atividade hoje.`
                   : 'Cronometre seu tempo de foco real com som suave de conclusão.'}
               </p>
             </div>
 
-            <button
-              onClick={handleStartTaskPomodoro}
-              className="btn-island btn-island-primary"
-            >
+            <button onClick={handleStartTaskPomodoro} className="btn-island btn-island-primary">
               <span>Focar com Pomodoro</span>
               <div className="btn-circle-icon">
                 <Play size={13} fill="currentColor" />
@@ -341,13 +253,13 @@ export const TaskDetailModal: React.FC = () => {
           </div>
 
           {/* Seção 1: Checklist de Sub-tarefas (RF-6, RF-17) */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <div className={styles.section}>
+            <div className={styles.sectionHeader}>
+              <div className={styles.sectionHeaderTitle}>
                 <ListTodo size={16} color="var(--accent-primary)" />
-                <h4 style={{ fontSize: '14px', fontWeight: 700 }}>Checklist & Sub-tarefas</h4>
+                <h4 className={styles.sectionHeading}>Checklist & Sub-tarefas</h4>
                 {checklist.length > 0 && (
-                  <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)' }}>
+                  <span className={styles.countLabel}>
                     ({completedSubtasks}/{checklist.length})
                   </span>
                 )}
@@ -357,20 +269,7 @@ export const TaskDetailModal: React.FC = () => {
                 type="button"
                 onClick={handleDecomposeWithAi}
                 disabled={isDecomposing}
-                style={{
-                  background: 'rgba(99, 102, 241, 0.1)',
-                  border: '1px solid rgba(99, 102, 241, 0.25)',
-                  color: '#6366F1',
-                  borderRadius: '8px',
-                  padding: '4px 10px',
-                  fontSize: '11px',
-                  fontWeight: 600,
-                  cursor: isDecomposing ? 'wait' : 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '5px',
-                  transition: 'all 0.2s',
-                }}
+                className={styles.aiDecomposeBtn}
               >
                 <Sparkles size={13} className={isDecomposing ? 'animate-spin' : ''} />
                 <span>{isDecomposing ? 'Gerando com IA...' : 'Sugerir Subtarefas com IA'}</span>
@@ -379,56 +278,30 @@ export const TaskDetailModal: React.FC = () => {
 
             {/* Barra de progresso do checklist */}
             {checklist.length > 0 && (
-              <div
-                style={{
-                  width: '100%',
-                  height: '4px',
-                  backgroundColor: 'var(--bg-elevated)',
-                  borderRadius: '9999px',
-                  overflow: 'hidden',
-                }}
-              >
+              <div className={styles.progressBarTrack}>
                 <div
+                  className={styles.progressBarFill}
                   style={{
                     width: `${subtaskPercentage}%`,
-                    height: '100%',
-                    backgroundColor: subtaskPercentage === 100 ? 'var(--success)' : 'var(--accent-primary)',
-                    transition: 'width 300ms ease',
+                    backgroundColor:
+                      subtaskPercentage === 100 ? 'var(--success)' : 'var(--accent-primary)',
                   }}
                 />
               </div>
             )}
 
             {/* Itens do Checklist */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <div className={styles.checklistList}>
               {checklist.map((item) => (
-                <div
-                  key={item.id}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '8px 12px',
-                    borderRadius: '10px',
-                    background: 'var(--bg-secondary)',
-                    border: '1px solid var(--border-subtle)',
-                  }}
-                >
+                <div key={item.id} className={styles.checklistItem}>
                   <button
                     onClick={() => {
                       sounds.playCheck();
                       toggleChecklistItem(task.id, item.id);
                     }}
+                    className={styles.checklistToggleBtn}
                     style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      background: 'transparent',
-                      border: 'none',
                       color: item.completed ? 'var(--text-muted)' : 'var(--text-primary)',
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                      fontSize: '13px',
                       textDecoration: item.completed ? 'line-through' : 'none',
                     }}
                   >
@@ -442,13 +315,8 @@ export const TaskDetailModal: React.FC = () => {
 
                   <button
                     onClick={() => handleDeleteSubtask(item.id)}
-                    style={{
-                      background: 'transparent',
-                      border: 'none',
-                      color: 'var(--text-muted)',
-                      cursor: 'pointer',
-                      padding: '4px',
-                    }}
+                    className={styles.deleteSubtaskBtn}
+                    title="Remover subtarefa"
                   >
                     <Trash2 size={13} />
                   </button>
@@ -457,38 +325,21 @@ export const TaskDetailModal: React.FC = () => {
             </div>
 
             {/* Input Adicionar Sub-tarefa */}
-            <form onSubmit={handleAddSubtask} style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+            <form onSubmit={handleAddSubtask} className={styles.addSubtaskForm}>
               <input
                 type="text"
                 value={newSubtaskTitle}
                 onChange={(e) => setNewSubtaskTitle(e.target.value)}
                 placeholder="Adicionar passo ou subtarefa... (ex: Ler páginas 10-25)"
-                style={{
-                  flex: 1,
-                  padding: '8px 12px',
-                  borderRadius: '10px',
-                  border: '1px solid var(--border-subtle)',
-                  background: 'var(--bg-primary)',
-                  color: 'var(--text-primary)',
-                  fontSize: '13px',
-                  outline: 'none',
-                }}
+                className={styles.subtaskInput}
               />
               <button
                 type="submit"
                 disabled={!newSubtaskTitle.trim()}
+                className={styles.subtaskAddBtn}
                 style={{
-                  padding: '8px 14px',
-                  borderRadius: '10px',
-                  border: 'none',
-                  background: 'var(--bg-elevated)',
                   color: newSubtaskTitle.trim() ? 'var(--accent-primary)' : 'var(--text-muted)',
-                  fontSize: '12px',
-                  fontWeight: 600,
                   cursor: newSubtaskTitle.trim() ? 'pointer' : 'default',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px',
                 }}
               >
                 <Plus size={14} />
@@ -498,26 +349,16 @@ export const TaskDetailModal: React.FC = () => {
           </div>
 
           {/* Seção 2: Links, Recursos e Arquivos (RF-6) */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <div className={styles.section}>
+            <div className={styles.sectionHeader}>
+              <div className={styles.sectionHeaderTitle}>
                 <Link2 size={16} color="var(--accent-primary)" />
-                <h4 style={{ fontSize: '14px', fontWeight: 700 }}>Links e Materiais de Apoio</h4>
+                <h4 className={styles.sectionHeading}>Links e Materiais de Apoio</h4>
               </div>
 
               <button
                 onClick={() => setIsAddingLink(!isAddingLink)}
-                style={{
-                  background: 'transparent',
-                  border: 'none',
-                  color: 'var(--accent-primary)',
-                  fontSize: '12px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                }}
+                className={styles.toggleLinkBtn}
               >
                 <Plus size={13} />
                 <span>{isAddingLink ? 'Fechar' : 'Novo Link'}</span>
@@ -526,33 +367,14 @@ export const TaskDetailModal: React.FC = () => {
 
             {/* Formulário Novo Link */}
             {isAddingLink && (
-              <form
-                onSubmit={handleAddLink}
-                style={{
-                  padding: '12px',
-                  borderRadius: '12px',
-                  background: 'var(--bg-secondary)',
-                  border: '1px solid var(--border-subtle)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '10px',
-                }}
-              >
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '8px' }}>
+              <form onSubmit={handleAddLink} className={styles.addLinkForm}>
+                <div className={styles.linkInputGrid}>
                   <input
                     type="text"
                     placeholder="Título (ex: Documentação Oficial)"
                     value={newLinkTitle}
                     onChange={(e) => setNewLinkTitle(e.target.value)}
-                    style={{
-                      padding: '8px 10px',
-                      borderRadius: '8px',
-                      border: '1px solid var(--border-subtle)',
-                      background: 'var(--bg-primary)',
-                      color: 'var(--text-primary)',
-                      fontSize: '12px',
-                      outline: 'none',
-                    }}
+                    className={styles.linkInput}
                   />
                   <input
                     type="text"
@@ -560,30 +382,14 @@ export const TaskDetailModal: React.FC = () => {
                     placeholder="URL (ex: github.com ou drive.google.com)"
                     value={newLinkUrl}
                     onChange={(e) => setNewLinkUrl(e.target.value)}
-                    style={{
-                      padding: '8px 10px',
-                      borderRadius: '8px',
-                      border: '1px solid var(--border-subtle)',
-                      background: 'var(--bg-primary)',
-                      color: 'var(--text-primary)',
-                      fontSize: '12px',
-                      outline: 'none',
-                    }}
+                    className={styles.linkInput}
                   />
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                <div className={styles.linkFormActions}>
                   <button
                     type="button"
                     onClick={() => setIsAddingLink(false)}
-                    style={{
-                      padding: '4px 10px',
-                      borderRadius: '6px',
-                      border: 'none',
-                      background: 'transparent',
-                      color: 'var(--text-secondary)',
-                      fontSize: '12px',
-                      cursor: 'pointer',
-                    }}
+                    className={styles.linkCancelBtn}
                   >
                     Cancelar
                   </button>
@@ -600,48 +406,22 @@ export const TaskDetailModal: React.FC = () => {
 
             {/* Lista de links */}
             {attachments.length > 0 ? (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+              <div className={styles.attachmentsList}>
                 {attachments.map((att) => (
-                  <div
-                    key={att.id}
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      padding: '6px 12px',
-                      borderRadius: '9999px',
-                      background: 'var(--bg-secondary)',
-                      border: '1px solid var(--border-subtle)',
-                      fontSize: '12px',
-                    }}
-                  >
+                  <div key={att.id} className={styles.attachmentPill}>
                     <a
                       href={att.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '5px',
-                        color: 'var(--accent-primary)',
-                        textDecoration: 'none',
-                        fontWeight: 600,
-                      }}
+                      className={styles.attachmentLink}
                     >
                       <ExternalLink size={12} />
                       <span>{att.title}</span>
                     </a>
                     <button
                       onClick={() => handleDeleteAttachment(att.id)}
-                      style={{
-                        background: 'transparent',
-                        border: 'none',
-                        color: 'var(--text-muted)',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        padding: 0,
-                      }}
+                      className={styles.attachmentDeleteBtn}
+                      title="Remover anexo"
                     >
                       <X size={12} />
                     </button>
@@ -649,30 +429,26 @@ export const TaskDetailModal: React.FC = () => {
                 ))}
               </div>
             ) : (
-              <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontStyle: 'italic' }}>
-                Nenhum link ou arquivo anexado. Adicione URLs de artigos, repositórios ou vídeos de estudo.
+              <p className={styles.attachmentEmpty}>
+                Nenhum link ou arquivo anexado. Adicione URLs de artigos, repositórios ou vídeos de
+                estudo.
               </p>
             )}
           </div>
 
           {/* Seção 3: Anotações Livres & Roteiro Detalhado da Tarefa (RF-6) */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <div className={styles.section}>
+            <div className={styles.sectionHeader}>
+              <div className={styles.sectionHeaderTitle}>
                 <FileText size={16} color="var(--accent-primary)" />
-                <h4 style={{ fontSize: '14px', fontWeight: 700 }}>Especificações & Anotações de Estudo</h4>
+                <h4 className={styles.sectionHeading}>Especificações & Anotações de Estudo</h4>
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                {isSavedBanner && (
-                  <span style={{ fontSize: '11px', color: 'var(--success)', fontWeight: 700 }}>
-                    ✓ Salvo com sucesso!
-                  </span>
-                )}
+                {isSavedBanner && <span className={styles.savedToast}>✓ Salvo com sucesso!</span>}
                 <button
                   onClick={handleSaveContent}
-                  className="btn-island btn-island-primary"
-                  style={{ padding: '5px 12px', fontSize: '12px' }}
+                  className={`btn-island btn-island-primary ${styles.saveRichContentBtn}`}
                 >
                   <Save size={13} />
                   <span>Salvar Texto</span>
@@ -685,19 +461,7 @@ export const TaskDetailModal: React.FC = () => {
               value={richContent}
               onChange={(e) => setRichContent(e.target.value)}
               placeholder="Escreva aqui tudo o que pretende cobrir nesta tarefa: resumos, conceitos-chave, dúvidas, observações ou roteiro passo a passo..."
-              style={{
-                width: '100%',
-                padding: '12px 14px',
-                borderRadius: '12px',
-                border: '1px solid var(--border-subtle)',
-                background: 'var(--bg-primary)',
-                color: 'var(--text-primary)',
-                fontSize: '13px',
-                fontFamily: 'var(--font-sans)',
-                lineHeight: 1.5,
-                outline: 'none',
-                resize: 'vertical',
-              }}
+              className={styles.richContentTextarea}
             />
           </div>
         </div>

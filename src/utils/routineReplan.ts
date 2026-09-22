@@ -59,7 +59,9 @@ export const calculateReplanSchedule = ({
   }
 
   // Ordena tarefas cronologicamente
-  const sortedTasks = [...tasks].sort((a, b) => timeToMinutes(a.startTime) - timeToMinutes(b.startTime));
+  const sortedTasks = [...tasks].sort(
+    (a, b) => timeToMinutes(a.startTime) - timeToMinutes(b.startTime)
+  );
 
   let refMinutes = 0;
   if (afterTaskId) {

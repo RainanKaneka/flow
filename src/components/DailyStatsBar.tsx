@@ -93,10 +93,7 @@ export const DailyStatsBar: React.FC = () => {
                 width: '42px',
                 height: '42px',
                 borderRadius: '50%',
-                background:
-                  percentage === 100
-                    ? 'var(--success-bg)'
-                    : 'var(--accent-soft)',
+                background: percentage === 100 ? 'var(--success-bg)' : 'var(--accent-soft)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -147,7 +144,14 @@ export const DailyStatsBar: React.FC = () => {
           <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
             {/* Regras de ouro */}
             <div style={{ textAlign: 'right' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'flex-end' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  justifyContent: 'flex-end',
+                }}
+              >
                 <ShieldAlert size={14} color="var(--golden-rule)" />
                 <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)' }}>
                   Regras de Ouro
@@ -169,13 +173,18 @@ export const DailyStatsBar: React.FC = () => {
               <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)' }}>
                 Tarefas do Dia
               </span>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', justifyContent: 'flex-end' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'baseline',
+                  gap: '4px',
+                  justifyContent: 'flex-end',
+                }}
+              >
                 <span style={{ fontSize: '19px', fontWeight: 800, color: 'var(--text-primary)' }}>
                   {completed}
                 </span>
-                <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
-                  /{total}
-                </span>
+                <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>/{total}</span>
               </div>
             </div>
 

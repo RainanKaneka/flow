@@ -67,19 +67,6 @@ export const parseSpecificDateFromText = (
 
   const lower = text.toLowerCase();
 
-  // Caso: "amanhã"
-  if (lower.includes('amanhã') || lower.includes('amanha')) {
-    const tomorrow = new Date(now);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const y = tomorrow.getFullYear();
-    const m = String(tomorrow.getMonth() + 1).padStart(2, '0');
-    const d = String(tomorrow.getDate()).padStart(2, '0');
-    return {
-      specificDate: `${y}-${m}-${d}`,
-      formattedDate: `${d}/${m}/${y}`,
-    };
-  }
-
   // Caso: "depois de amanhã"
   if (lower.includes('depois de amanhã') || lower.includes('depois de amanha')) {
     const afterTomorrow = new Date(now);
@@ -87,6 +74,19 @@ export const parseSpecificDateFromText = (
     const y = afterTomorrow.getFullYear();
     const m = String(afterTomorrow.getMonth() + 1).padStart(2, '0');
     const d = String(afterTomorrow.getDate()).padStart(2, '0');
+    return {
+      specificDate: `${y}-${m}-${d}`,
+      formattedDate: `${d}/${m}/${y}`,
+    };
+  }
+
+  // Caso: "amanhã"
+  if (lower.includes('amanhã') || lower.includes('amanha')) {
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const y = tomorrow.getFullYear();
+    const m = String(tomorrow.getMonth() + 1).padStart(2, '0');
+    const d = String(tomorrow.getDate()).padStart(2, '0');
     return {
       specificDate: `${y}-${m}-${d}`,
       formattedDate: `${d}/${m}/${y}`,
@@ -105,7 +105,9 @@ export const parseSpecificDateFromText = (
   }
 
   // Caso: DD/MM ou DD/MM/YYYY ou DD-MM ou DD-MM-YYYY
-  const slashMatch = text.match(/(?:(?:dia|para o dia|para dia|no dia)\s*)?(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{2,4}))?/i);
+  const slashMatch = text.match(
+    /(?:(?:dia|para o dia|para dia|no dia)\s*)?(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{2,4}))?/i
+  );
   if (slashMatch) {
     const day = parseInt(slashMatch[1], 10);
     const month = parseInt(slashMatch[2], 10);
@@ -123,20 +125,34 @@ export const parseSpecificDateFromText = (
   }
 
   // Caso: "dia 25 de setembro"
-  const monthNames = [
-    'janeiro', 'fevereiro', 'março', 'marco', 'abril', 'maio', 'junho',
-    'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'
-  ];
-  const monthRegex = new RegExp(`(?:dia\\s*)?(\\d{1,2})\\s*(?:de\\s*)?(${monthNames.join('|')})(?:\\s*(?:de\\s*)?(\\d{2,4}))?`, 'i');
+  const monthMap: Record<string, number> = {
+    janeiro: 1,
+    fevereiro: 2,
+    março: 3,
+    marco: 3,
+    abril: 4,
+    maio: 5,
+    junho: 6,
+    julho: 7,
+    agosto: 8,
+    setembro: 9,
+    outubro: 10,
+    novembro: 11,
+    dezembro: 12,
+  };
+  const monthRegex = new RegExp(
+    `(?:dia\\s*)?(\\d{1,2})\\s*(?:de\\s*)?(${Object.keys(monthMap).join('|')})(?:\\s*(?:de\\s*)?(\\d{2,4}))?`,
+    'i'
+  );
   const textMonthMatch = text.match(monthRegex);
   if (textMonthMatch) {
     const day = parseInt(textMonthMatch[1], 10);
     const mName = textMonthMatch[2].toLowerCase();
-    const month = (monthNames.indexOf(mName) % 12) + 1;
+    const month = monthMap[mName];
     let year = textMonthMatch[3] ? parseInt(textMonthMatch[3], 10) : refYear;
     if (year < 100) year += 2000;
 
-    if (day >= 1 && day <= 31) {
+    if (day >= 1 && day <= 31 && month) {
       const dStr = String(day).padStart(2, '0');
       const mStr = String(month).padStart(2, '0');
       return {
@@ -154,7 +170,10 @@ export const parseSpecificDateFromText = (
  */
 export const cleanTaskTitle = (rawTitle: string): string => {
   return rawTitle
-    .replace(/^(criar|adicione|adicionar|agendar|nova tarefa)\s*(uma\s*)?(tarefa|atividade)?\s*(de\s*)?/i, '')
+    .replace(
+      /^(criar|adicione|adicionar|agendar|nova tarefa)\s*(uma\s*)?(tarefa|atividade)?\s*(de\s*)?/i,
+      ''
+    )
     .replace(/(?:para o dia|para dia|no dia|dia)\s*\d{1,2}[\/\-]\d{1,2}(?:[\/\-]\d{2,4})?/i, '')
     .replace(/(?:para|às|as)\s*\d{1,2}:\d{2}.*$/i, '')
     .replace(/(?:amanhã|amanha|hoje|depois de amanhã)/i, '')
@@ -200,7 +219,10 @@ export const fetchAvailableGeminiModels = async (
           description: m.description,
         };
       })
-      .filter((m: any) => !m.id.includes('embedding') && !m.id.includes('aqa') && m.id !== 'gemini-2.0-flash');
+      .filter(
+        (m: any) =>
+          !m.id.includes('embedding') && !m.id.includes('aqa') && m.id !== 'gemini-2.0-flash'
+      );
 
     return filtered.length > 0 ? filtered : FALLBACK_MODELS;
   } catch {
@@ -215,7 +237,12 @@ export const testGeminiApiKey = async (
   apiKey?: string,
   model: string = DEFAULT_MODEL,
   accessToken?: string
-): Promise<{ valid: boolean; recommendedModel?: string; error?: string; availableModels?: GeminiModelOption[] }> => {
+): Promise<{
+  valid: boolean;
+  recommendedModel?: string;
+  error?: string;
+  availableModels?: GeminiModelOption[];
+}> => {
   const hasKey = apiKey && apiKey.trim().length > 10;
   const hasToken = accessToken && accessToken.trim().length > 10;
 
@@ -252,8 +279,13 @@ export const testGeminiApiKey = async (
       const message = errData?.error?.message || `Erro HTTP ${res.status}`;
 
       // Se o erro for de modelo indisponível (ex: gemini-2.0-flash), tenta fallback
-      if (message.includes('no longer available') || message.includes('not found') || message.includes('deprecated')) {
-        const fallback = sanitizedModel === 'gemini-2.5-flash' ? 'gemini-1.5-flash' : 'gemini-2.5-flash';
+      if (
+        message.includes('no longer available') ||
+        message.includes('not found') ||
+        message.includes('deprecated')
+      ) {
+        const fallback =
+          sanitizedModel === 'gemini-2.5-flash' ? 'gemini-1.5-flash' : 'gemini-2.5-flash';
         const retryEndpoint = hasKey
           ? `https://generativelanguage.googleapis.com/v1beta/models/${fallback}:generateContent?key=${apiKey!.trim()}`
           : `https://generativelanguage.googleapis.com/v1beta/models/${fallback}:generateContent`;
@@ -292,7 +324,10 @@ export const testGeminiApiKey = async (
  */
 const buildSystemInstruction = (ctx: ChatContext): string => {
   const currentTasksStr = ctx.tasks
-    .map((t) => `- [${t.startTime} - ${t.endTime}] ${t.title} (${t.specificDate ? `Data: ${t.specificDate}` : 'Recorrente'})`)
+    .map(
+      (t) =>
+        `- [${t.startTime} - ${t.endTime}] ${t.title} (${t.specificDate ? `Data: ${t.specificDate}` : 'Recorrente'})`
+    )
     .join('\n');
 
   const categoriesStr = ctx.categories.map((c) => `${c.name} (id: ${c.id})`).join(', ');
@@ -375,8 +410,16 @@ const extractActionProposal = (
       const parsedFromTitle = parseSpecificDateFromText(data.title || '', ctx.selectedDate);
       const parsedFromText = parseSpecificDateFromText(text, ctx.selectedDate);
 
-      const specificDate = data.specificDate || parsedFromPrompt.specificDate || parsedFromTitle.specificDate || parsedFromText.specificDate;
-      const formattedDate = parsedFromPrompt.formattedDate || parsedFromTitle.formattedDate || parsedFromText.formattedDate || (specificDate ? specificDate.split('-').reverse().join('/') : undefined);
+      const specificDate =
+        data.specificDate ||
+        parsedFromPrompt.specificDate ||
+        parsedFromTitle.specificDate ||
+        parsedFromText.specificDate;
+      const formattedDate =
+        parsedFromPrompt.formattedDate ||
+        parsedFromTitle.formattedDate ||
+        parsedFromText.formattedDate ||
+        (specificDate ? specificDate.split('-').reverse().join('/') : undefined);
 
       let title = cleanTaskTitle(data.title || 'Nova Tarefa');
       if (!title) title = 'Nova Atividade';
@@ -385,9 +428,10 @@ const extractActionProposal = (
       const endTime = data.endTime || '10:00';
       const targetMinutes = data.targetMinutes || 60;
 
-      const summary = specificDate && formattedDate
-        ? `Agendar "${title}" para ${formattedDate} das ${startTime} às ${endTime} (${targetMinutes} min).`
-        : `Agendar "${title}" das ${startTime} às ${endTime} (${targetMinutes} min).`;
+      const summary =
+        specificDate && formattedDate
+          ? `Agendar "${title}" para ${formattedDate} das ${startTime} às ${endTime} (${targetMinutes} min).`
+          : `Agendar "${title}" das ${startTime} às ${endTime} (${targetMinutes} min).`;
 
       return {
         cleanedText,
@@ -405,7 +449,7 @@ const extractActionProposal = (
             categoryId: data.categoryId || ctx.categories[0]?.id || '',
             routineTypeId: data.routineTypeId || ctx.selectedRoutineTypeId,
             specificDate: specificDate || undefined,
-            daysOfWeek: specificDate ? [] : (data.daysOfWeek || [0, 1, 2, 3, 4, 5, 6]),
+            daysOfWeek: specificDate ? [] : data.daysOfWeek || [0, 1, 2, 3, 4, 5, 6],
             tags: ['ia-flow'],
           },
         },
@@ -446,8 +490,10 @@ const generateLocalHeuristicResponse = (prompt: string, ctx: ChatContext): ChatR
   const lower = prompt.toLowerCase();
 
   // Caso 1: Detecção de atraso na rotina (RF-16)
-  const delayMatch = lower.match(/(?:atras(?:o|ei|ou)|perdi|demorei)\s*(?:em\s*)?(\d+)\s*(?:min|minuto|m)/i) ||
-                     lower.match(/(\d+)\s*(?:min|minuto|m)\s*(?:de\s*)?atras/i);
+  const delayMatch =
+    lower.match(
+      /(?:atras(?:o|ei|ou|ado|ada)|perdi|demorei)\s*(?:em\s*)?(\d+)\s*(?:min|minuto|m)/i
+    ) || lower.match(/(\d+)\s*(?:min|minuto|m)\s*(?:de\s*)?atras/i);
 
   if (delayMatch) {
     const delayMinutes = parseInt(delayMatch[1], 10);
@@ -495,13 +541,12 @@ Você pode aplicar os novos horários abaixo diretamente nos seus hábitos de ho
     let title = cleanTaskTitle(prompt);
     if (!title) title = 'Nova Atividade';
 
-    const dateNotice = specificDate && formattedDate
-      ? ` para o dia **${formattedDate}**`
-      : '';
+    const dateNotice = specificDate && formattedDate ? ` para o dia **${formattedDate}**` : '';
 
-    const summary = specificDate && formattedDate
-      ? `Agendar "${title}" para ${formattedDate} das ${startTime} às ${endTime} (60 min).`
-      : `Agendar "${title}" das ${startTime} às ${endTime} (60 min).`;
+    const summary =
+      specificDate && formattedDate
+        ? `Agendar "${title}" para ${formattedDate} das ${startTime} às ${endTime} (60 min).`
+        : `Agendar "${title}" das ${startTime} às ${endTime} (60 min).`;
 
     return {
       content: `Perfeito! Estruturei a nova atividade **"${title}"**${dateNotice} das **${startTime} às ${endTime}**.
@@ -528,9 +573,16 @@ Confira os detalhes e clique em aplicar para agendá-la diretamente:`,
   }
 
   // Caso 3: Relatório de produtividade (RF-18)
-  if (lower.includes('relatório') || lower.includes('desempenho') || lower.includes('produtividade') || lower.includes('diagnóstico')) {
+  if (
+    lower.includes('relatório') ||
+    lower.includes('desempenho') ||
+    lower.includes('produtividade') ||
+    lower.includes('diagnóstico')
+  ) {
     const totalTasks = ctx.tasks.length;
-    const completedToday = Object.keys(ctx.logs).filter((k) => k.startsWith(ctx.selectedDate) && ctx.logs[k]?.completed).length;
+    const completedToday = Object.keys(ctx.logs).filter(
+      (k) => k.startsWith(ctx.selectedDate) && ctx.logs[k]?.completed
+    ).length;
     const completionRate = totalTasks > 0 ? Math.round((completedToday / totalTasks) * 100) : 0;
 
     return {
@@ -626,7 +678,11 @@ export const sendMessageToAssistant = async ({
       },
       {
         role: 'model',
-        parts: [{ text: 'Entendido. Agirei como Flow AI, gerando respostas elegantes e blocos ```flow-action quando for necessário criar tarefas com datas precisas ou replanejar atrasos.' }],
+        parts: [
+          {
+            text: 'Entendido. Agirei como Flow AI, gerando respostas elegantes e blocos ```flow-action quando for necessário criar tarefas com datas precisas ou replanejar atrasos.',
+          },
+        ],
       },
     ];
 
@@ -745,7 +801,11 @@ Retorne EXCLUSIVAMENTE uma lista de itens, um por linha, iniciando com "- ". Sem
     ];
   }
 
-  if (titleLower.includes('ar condicionado') || titleLower.includes('limpar') || titleLower.includes('limpeza')) {
+  if (
+    titleLower.includes('ar condicionado') ||
+    titleLower.includes('limpar') ||
+    titleLower.includes('limpeza')
+  ) {
     return [
       'Desconectar o aparelho da tomada por segurança',
       'Remover e lavar os filtros de ar com água corrente',

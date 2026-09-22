@@ -5,27 +5,27 @@
   --font-mono: 'Space Grotesk', monospace;
 
   /* LIGHT THEME (Soft Ceramic & Cream) */
-  --bg-primary: #F8F9FA;
-  --bg-secondary: #FFFFFF;
-  --bg-elevated: #F1F3F5;
-  --bg-hover: #ECEEF2;
-  
+  --bg-primary: #f8f9fa;
+  --bg-secondary: #ffffff;
+  --bg-elevated: #f1f3f5;
+  --bg-hover: #eceef2;
+
   --text-primary: #121417;
-  --text-secondary: #5F6773;
-  --text-muted: #8D96A5;
+  --text-secondary: #5f6773;
+  --text-muted: #8d96a5;
 
   --border-subtle: rgba(18, 20, 23, 0.08);
   --border-focus: rgba(18, 20, 23, 0.2);
 
-  --accent-primary: #4F46E5;
-  --accent-soft: #EEF2FF;
-  
-  --golden-rule: #D97706;
-  --golden-rule-bg: #FEF3C7;
-  
+  --accent-primary: #4f46e5;
+  --accent-soft: #eef2ff;
+
+  --golden-rule: #d97706;
+  --golden-rule-bg: #fef3c7;
+
   --success: #059669;
-  --success-bg: #D1FAE5;
-  
+  --success-bg: #d1fae5;
+
   --radius-outer: 24px;
   --radius-inner: 18px;
   --radius-pill: 9999px;
@@ -37,25 +37,25 @@
 
 .dark {
   /* DARK THEME (OLED Luxury Minimalist) */
-  --bg-primary: #08080A;
+  --bg-primary: #08080a;
   --bg-secondary: #121216;
-  --bg-elevated: #1A1A20;
-  --bg-hover: #22222B;
+  --bg-elevated: #1a1a20;
+  --bg-hover: #22222b;
 
-  --text-primary: #F4F4F6;
-  --text-secondary: #9DA3AF;
-  --text-muted: #656B77;
+  --text-primary: #f4f4f6;
+  --text-secondary: #9da3af;
+  --text-muted: #656b77;
 
   --border-subtle: rgba(255, 255, 255, 0.08);
   --border-focus: rgba(255, 255, 255, 0.2);
 
-  --accent-primary: #818CF8;
+  --accent-primary: #818cf8;
   --accent-soft: rgba(99, 102, 241, 0.12);
 
-  --golden-rule: #FBBF24;
+  --golden-rule: #fbbf24;
   --golden-rule-bg: rgba(245, 158, 11, 0.12);
 
-  --success: #34D399;
+  --success: #34d399;
   --success-bg: rgba(16, 185, 129, 0.12);
 
   --shadow-subtle: 0 8px 30px -4px rgba(0, 0, 0, 0.5);
@@ -75,7 +75,9 @@ body {
   background-color: var(--bg-primary);
   color: var(--text-primary);
   min-height: 100vh;
-  transition: background-color 400ms var(--bezier-haptic), color 400ms var(--bezier-haptic);
+  transition:
+    background-color 400ms var(--bezier-haptic),
+    color 400ms var(--bezier-haptic);
   overflow-x: hidden;
 }
 
@@ -87,7 +89,11 @@ body::before {
   left: 0;
   right: 0;
   height: 500px;
-  background: radial-gradient(circle 800px at 50% -100px, rgba(99, 102, 241, 0.05), transparent 70%);
+  background: radial-gradient(
+    circle 800px at 50% -100px,
+    rgba(99, 102, 241, 0.05),
+    transparent 70%
+  );
   pointer-events: none;
   z-index: 0;
 }
@@ -221,4 +227,3 @@ body::before {
     width: 0%;
   }
 }
-

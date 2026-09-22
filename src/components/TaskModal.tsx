@@ -51,7 +51,7 @@ export const TaskModal: React.FC = () => {
   const calculateMinutes = (start: string, end: string) => {
     const [h1, m1] = start.split(':').map(Number);
     const [h2, m2] = end.split(':').map(Number);
-    let diff = (h2 * 60 + m2) - (h1 * 60 + m1);
+    let diff = h2 * 60 + m2 - (h1 * 60 + m1);
     if (diff < 0) diff += 24 * 60; // atravessando meia noite
     return diff > 0 ? diff : 30;
   };
@@ -146,10 +146,15 @@ export const TaskModal: React.FC = () => {
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <form
+            onSubmit={handleSubmit}
+            style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}
+          >
             {/* Title */}
             <div>
-              <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, marginBottom: '6px' }}>
+              <label
+                style={{ display: 'block', fontSize: '12px', fontWeight: 600, marginBottom: '6px' }}
+              >
                 Nome da Atividade *
               </label>
               <input
@@ -174,7 +179,9 @@ export const TaskModal: React.FC = () => {
 
             {/* Description */}
             <div>
-              <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, marginBottom: '6px' }}>
+              <label
+                style={{ display: 'block', fontSize: '12px', fontWeight: 600, marginBottom: '6px' }}
+              >
                 Instruções Práticas / Descrição
               </label>
               <textarea
@@ -200,7 +207,14 @@ export const TaskModal: React.FC = () => {
             {/* Times */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
               <div>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, marginBottom: '6px' }}>
+                <label
+                  style={{
+                    display: 'block',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    marginBottom: '6px',
+                  }}
+                >
                   Horário Início
                 </label>
                 <input
@@ -223,7 +237,14 @@ export const TaskModal: React.FC = () => {
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, marginBottom: '6px' }}>
+                <label
+                  style={{
+                    display: 'block',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    marginBottom: '6px',
+                  }}
+                >
                   Horário Fim
                 </label>
                 <input
@@ -249,7 +270,14 @@ export const TaskModal: React.FC = () => {
             {/* Category & Routine Type */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
               <div>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, marginBottom: '6px' }}>
+                <label
+                  style={{
+                    display: 'block',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    marginBottom: '6px',
+                  }}
+                >
                   Categoria / Área
                 </label>
                 <select
@@ -276,7 +304,14 @@ export const TaskModal: React.FC = () => {
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, marginBottom: '6px' }}>
+                <label
+                  style={{
+                    display: 'block',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    marginBottom: '6px',
+                  }}
+                >
                   Tipo de Rotina
                 </label>
                 <select
@@ -329,7 +364,8 @@ export const TaskModal: React.FC = () => {
                   Regra de Ouro (Hábito Âncora Inegociável)
                 </span>
                 <p style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
-                  Destaca as tarefas prioritárias que sustentam o seu dia e evitam a quebra de sequência.
+                  Destaca as tarefas prioritárias que sustentam o seu dia e evitam a quebra de
+                  sequência.
                 </p>
               </div>
             </label>
@@ -361,10 +397,7 @@ export const TaskModal: React.FC = () => {
                 Cancelar
               </button>
 
-              <button
-                type="submit"
-                className="btn-island btn-island-primary"
-              >
+              <button type="submit" className="btn-island btn-island-primary">
                 <span>{editingTask ? 'Atualizar Atividade' : 'Salvar Atividade'}</span>
                 <div className="btn-circle-icon">
                   <Check size={14} strokeWidth={2.8} />

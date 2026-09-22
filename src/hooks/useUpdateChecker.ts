@@ -17,7 +17,11 @@ export const useUpdateChecker = () => {
     const timer = setTimeout(async () => {
       try {
         const update = await checkForUpdates();
-        if (update && update.hasUpdate && isNewerVersion(update.latestVersion, CURRENT_APP_VERSION)) {
+        if (
+          update &&
+          update.hasUpdate &&
+          isNewerVersion(update.latestVersion, CURRENT_APP_VERSION)
+        ) {
           setAvailableUpdate(update);
         } else {
           setAvailableUpdate(null);
