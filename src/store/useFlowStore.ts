@@ -790,6 +790,22 @@ Aqui estão algumas coisas que podemos fazer:
       }),
       {
         name: 'flow-app-v1-clean',
+        partialize: (state) => ({
+          theme: state.theme,
+          routineTypes: state.routineTypes,
+          selectedRoutineTypeId: state.selectedRoutineTypeId,
+          categories: state.categories,
+          activeCategoryIdFilter: state.activeCategoryIdFilter,
+          tasks: state.tasks,
+          logs: state.logs,
+          backlog: state.backlog,
+          notes: state.notes,
+          pomodoro: state.pomodoro,
+          reminderSettings: state.reminderSettings,
+          googleUser: state.googleUser,
+          geminiConfig: state.geminiConfig,
+          aiMessages: state.aiMessages,
+        }),
       }
     )
   )

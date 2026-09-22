@@ -49,9 +49,9 @@ class NotificationService {
 
   /**
    * Obtém o status atual de permissão de notificações
-   * No app desktop Tauri, o aplicativo tem acesso direto e irrestrito ao sistema operacional
    */
   getPermissionStatus(): NotificationPermissionStatus {
+    if (typeof window === 'undefined') return 'unsupported';
     if (isTauriEnvironment()) {
       return 'granted';
     }
@@ -66,12 +66,19 @@ class NotificationService {
     if (isTauriEnvironment()) {
       try {
         const tauri = await this.getTauriNotificationModule();
-        if (tauri && typeof tauri.requestPermission === 'function') {
-          const res = await tauri.requestPermission();
-          return res === 'granted';
+        if (tauri) {
+          if (typeof tauri.isPermissionGranted === 'function') {
+            const granted = await tauri.isPermissionGranted();
+            if (granted) return true;
+          }
+          if (typeof tauri.requestPermission === 'function') {
+            const res = await tauri.requestPermission();
+            return res === 'granted';
+          }
         }
         return true;
       } catch (e) {
+        console.warn('Erro ao solicitar permissão Tauri:', e);
         return true;
       }
     }
@@ -115,8 +122,22 @@ class NotificationService {
     if (isTauriEnvironment()) {
       try {
         const tauri = await this.getTauriNotificationModule();
-        if (tauri && typeof tauri.sendNotification === 'function') {
-          tauri.sendNotification({ title, body });
+        if (tauri) {
+          // Garante verificação e pedido prévio de permissão para o Windows Shell
+          let isGranted = false;
+          if (typeof tauri.isPermissionGranted === 'function') {
+            isGranted = await tauri.isPermissionGranted();
+          }
+          if (!isGranted && typeof tauri.requestPermission === 'function') {
+            const req = await tauri.requestPermission();
+            isGranted = req === 'granted';
+          } else {
+            isGranted = true;
+          }
+
+          if (isGranted && typeof tauri.sendNotification === 'function') {
+            tauri.sendNotification({ title, body });
+          }
         }
       } catch (e) {
         console.warn('Tentando emitir notificação nativa via Tauri plugin:', e);

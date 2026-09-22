@@ -19,6 +19,7 @@ import { NotificationSettingsModal } from '../components/NotificationSettingsMod
 import { UpdateModal } from '../components/UpdateModal';
 import { GoogleAuthModal } from '../components/GoogleAuthModal';
 import { InAppNotificationToast } from '../components/InAppNotificationToast';
+import { CustomTitleBar } from '../components/CustomTitleBar';
 import { useGlobalShortcuts } from '../hooks/useGlobalShortcuts';
 import { useReminderScheduler } from '../services/reminderScheduler';
 import { useUpdateChecker } from '../hooks/useUpdateChecker';
@@ -99,6 +100,9 @@ export default function Home() {
 
   return (
     <div style={{ minHeight: '100vh', paddingBottom: '60px' }}>
+      {/* Barra de Título Customizada Frameless (Desktop Tauri) */}
+      <CustomTitleBar />
+
       {/* Header Sticky */}
       <Header />
 

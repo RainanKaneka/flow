@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useFlowStore } from '../store/useFlowStore';
-import { checkForUpdates, CURRENT_APP_VERSION } from '../services/updateService';
+import { checkForUpdates, CURRENT_APP_VERSION, isNewerVersion } from '../services/updateService';
 
 export const useUpdateChecker = () => {
   const setAvailableUpdate = useFlowStore((s) => s.setAvailableUpdate);
@@ -17,8 +17,10 @@ export const useUpdateChecker = () => {
     const timer = setTimeout(async () => {
       try {
         const update = await checkForUpdates();
-        if (update && update.hasUpdate) {
+        if (update && update.hasUpdate && isNewerVersion(update.latestVersion, CURRENT_APP_VERSION)) {
           setAvailableUpdate(update);
+        } else {
+          setAvailableUpdate(null);
         }
       } catch (e) {
         console.warn('Erro ao verificar atualizações automáticas:', e);
@@ -34,11 +36,12 @@ export const useUpdateChecker = () => {
     setLastCheckMessage(null);
     try {
       const update = await checkForUpdates();
-      if (update && update.hasUpdate) {
+      if (update && update.hasUpdate && isNewerVersion(update.latestVersion, CURRENT_APP_VERSION)) {
         setAvailableUpdate(update);
         openUpdateModal();
         setLastCheckMessage(`Nova versão v${update.latestVersion} disponível!`);
       } else {
+        setAvailableUpdate(null);
         setLastCheckMessage(`Você já está na versão mais recente (v${CURRENT_APP_VERSION})!`);
         setTimeout(() => setLastCheckMessage(null), 5000);
       }

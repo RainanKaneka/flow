@@ -19,6 +19,7 @@ import {
   FileText,
   Bell,
 } from 'lucide-react';
+import { isNewerVersion, CURRENT_APP_VERSION } from '../services/updateService';
 
 export const Header: React.FC = () => {
   const activeView = useFlowStore((s) => s.activeView);
@@ -369,8 +370,12 @@ export const Header: React.FC = () => {
             </button>
           )}
 
-          {/* Badge de Nova Versão Disponível */}
-          {availableUpdate?.hasUpdate && (
+          {/* Badge de Nova Versão Disponível (Apenas se houver versão estritamente mais recente) */}
+          {Boolean(
+            availableUpdate?.hasUpdate &&
+            availableUpdate?.latestVersion &&
+            isNewerVersion(availableUpdate.latestVersion, CURRENT_APP_VERSION)
+          ) && (
             <button
               onClick={openUpdateModal}
               style={{
@@ -390,7 +395,7 @@ export const Header: React.FC = () => {
               title="Nova versão do Flow pronta para download! Clique para atualizar."
             >
               <Sparkles size={13} />
-              <span>Atualização v{availableUpdate.latestVersion}</span>
+              <span>Atualização v{availableUpdate?.latestVersion}</span>
             </button>
           )}
 
