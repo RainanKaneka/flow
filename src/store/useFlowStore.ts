@@ -35,7 +35,7 @@ export const useFlowStore = create<FlowStore>()(
         theme: 'dark',
 
         routineTypes: DEFAULT_ROUTINE_TYPES,
-        selectedRoutineTypeId: 'easy',
+        selectedRoutineTypeId: 'main_routine',
 
         categories: DEFAULT_CATEGORIES,
         activeCategoryIdFilter: 'all',
@@ -47,11 +47,11 @@ export const useFlowStore = create<FlowStore>()(
         // Bloco de Notas (RF-8, RF-14)
         notes: [
           {
-            id: 'note_welcome',
-            title: 'Boas-vindas ao seu Bloco de Notas',
+            id: 'welcome_note',
+            title: 'Boas-vindas ao seu Bloco de Notas!',
             content:
-              'Use este espaço para rascunhar ideias, listar tópicos ou preparar matérias. Quando estiver pronto, basta clicar em "Transformar em Tarefa" para agendá-la diretamente na sua rotina do dia!',
-            tags: ['dica', 'início'],
+              'Este é seu espaço livre para rascunhar ideias, projetos, matérias de estudo ou anotações rápidas.\n\n💡 Dica de ouro: quando uma anotação estiver pronta para ser executada, basta clicar no botão "Transformar em Tarefa" para agendá-la diretamente na sua rotina do dia!',
+            tags: ['tutorial', 'início'],
             color: '#6366F1',
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
@@ -75,6 +75,10 @@ export const useFlowStore = create<FlowStore>()(
           soundEnabled: true,
         },
         isNotificationModalOpen: false,
+
+        // Atualizações do Aplicativo (Releases)
+        availableUpdate: null,
+        isUpdateModalOpen: false,
 
         // Modais de Controle
         isTaskModalOpen: false,
@@ -634,9 +638,22 @@ export const useFlowStore = create<FlowStore>()(
         closeNotificationModal: () => {
           set({ isNotificationModalOpen: false });
         },
+
+        // Atualizações do Aplicativo
+        setAvailableUpdate: (update) => {
+          set({ availableUpdate: update, isUpdateModalOpen: !!update });
+        },
+
+        openUpdateModal: () => {
+          set({ isUpdateModalOpen: true });
+        },
+
+        closeUpdateModal: () => {
+          set({ isUpdateModalOpen: false });
+        },
       }),
       {
-        name: 'flow-routine-universal-v3',
+        name: 'flow-app-v1-clean',
       }
     )
   )

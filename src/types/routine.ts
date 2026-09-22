@@ -128,6 +128,18 @@ export interface FlowState {
   reminderSettings: ReminderSettings;
   isNotificationModalOpen: boolean;
 
+  // Atualizações do Aplicativo (Auto-Updater / Releases)
+  availableUpdate: {
+    hasUpdate: boolean;
+    currentVersion: string;
+    latestVersion: string;
+    releaseName: string;
+    releaseNotes: string;
+    downloadUrl: string;
+    releaseUrl: string;
+  } | null;
+  isUpdateModalOpen: boolean;
+
   // Modais de Controle
   isTaskModalOpen: boolean;
   editingTask: Task | null;
@@ -214,6 +226,11 @@ export interface FlowActions {
   updateReminderSettings: (updates: Partial<ReminderSettings>) => void;
   openNotificationModal: () => void;
   closeNotificationModal: () => void;
+
+  // Atualizações do Aplicativo
+  setAvailableUpdate: (update: FlowState['availableUpdate']) => void;
+  openUpdateModal: () => void;
+  closeUpdateModal: () => void;
 }
 
 export type FlowStore = FlowState & FlowActions;

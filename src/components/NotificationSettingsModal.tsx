@@ -13,13 +13,19 @@ import {
   AlertCircle,
   Command,
   Sparkles,
+  RefreshCw,
+  ArrowUpRight,
 } from 'lucide-react';
+import { useUpdateChecker } from '../hooks/useUpdateChecker';
+import { CURRENT_APP_VERSION } from '../services/updateService';
 
 export const NotificationSettingsModal: React.FC = () => {
   const isNotificationModalOpen = useFlowStore((s) => s.isNotificationModalOpen);
   const closeNotificationModal = useFlowStore((s) => s.closeNotificationModal);
   const reminderSettings = useFlowStore((s) => s.reminderSettings);
   const updateReminderSettings = useFlowStore((s) => s.updateReminderSettings);
+
+  const { isChecking, lastCheckMessage, checkManually, availableUpdate } = useUpdateChecker();
 
   const [permissionStatus, setPermissionStatus] = useState<NotificationPermissionStatus>('default');
   const [testSent, setTestSent] = useState(false);
@@ -400,6 +406,71 @@ export const NotificationSettingsModal: React.FC = () => {
                   </>
                 )}
               </button>
+            </div>
+
+            {/* Atualizações do Aplicativo (Releases) */}
+            <div
+              style={{
+                padding: '14px',
+                borderRadius: '12px',
+                backgroundColor: 'var(--bg-elevated)',
+                border: '1px solid var(--border-subtle)',
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: '10px',
+                }}
+              >
+                <div>
+                  <div style={{ fontSize: '13px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <RefreshCw size={14} color="var(--accent-primary)" />
+                    <span>Atualizações do Aplicativo</span>
+                  </div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                    Versão atual instalada: <strong>v{CURRENT_APP_VERSION}</strong>
+                  </div>
+                </div>
+
+                <button
+                  onClick={checkManually}
+                  disabled={isChecking}
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: '8px',
+                    backgroundColor: 'var(--bg-secondary)',
+                    border: '1px solid var(--border-focus)',
+                    color: 'var(--text-primary)',
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    cursor: isChecking ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    opacity: isChecking ? 0.6 : 1,
+                  }}
+                >
+                  <RefreshCw size={12} className={isChecking ? 'spin' : ''} />
+                  <span>{isChecking ? 'Verificando...' : 'Verificar Atualizações'}</span>
+                </button>
+              </div>
+
+              {lastCheckMessage && (
+                <div
+                  style={{
+                    marginTop: '8px',
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    color: availableUpdate?.hasUpdate ? '#10B981' : 'var(--text-secondary)',
+                  }}
+                >
+                  {lastCheckMessage}
+                </div>
+              )}
             </div>
 
             {/* Guia de Atalhos Globais do Sistema */}

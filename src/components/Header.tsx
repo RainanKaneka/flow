@@ -39,6 +39,8 @@ export const Header: React.FC = () => {
   const pomodoro = useFlowStore((s) => s.pomodoro);
   const reminderSettings = useFlowStore((s) => s.reminderSettings);
   const openNotificationModal = useFlowStore((s) => s.openNotificationModal);
+  const availableUpdate = useFlowStore((s) => s.availableUpdate);
+  const openUpdateModal = useFlowStore((s) => s.openUpdateModal);
 
   const pomodoroMinutes = Math.floor(pomodoro.timeLeftSeconds / 60);
   const pomodoroSeconds = pomodoro.timeLeftSeconds % 60;
@@ -336,6 +338,31 @@ export const Header: React.FC = () => {
             >
               <Timer size={13} />
               <span>{liveTimeStr}</span>
+            </button>
+          )}
+
+          {/* Badge de Nova Versão Disponível */}
+          {availableUpdate?.hasUpdate && (
+            <button
+              onClick={openUpdateModal}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '6px 12px',
+                borderRadius: '9999px',
+                border: '1px solid rgba(16, 185, 129, 0.4)',
+                background: 'rgba(16, 185, 129, 0.15)',
+                color: '#10B981',
+                fontSize: '12px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                transition: 'all 200ms',
+              }}
+              title="Nova versão do Flow pronta para download! Clique para atualizar."
+            >
+              <Sparkles size={13} />
+              <span>Atualização v{availableUpdate.latestVersion}</span>
             </button>
           )}
 

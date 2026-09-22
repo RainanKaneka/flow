@@ -15,14 +15,17 @@ import { NotepadView } from '../components/NotepadView';
 import { ManageRoutinesModal } from '../components/ManageRoutinesModal';
 import { ManageCategoriesModal } from '../components/ManageCategoriesModal';
 import { NotificationSettingsModal } from '../components/NotificationSettingsModal';
+import { UpdateModal } from '../components/UpdateModal';
 import { useGlobalShortcuts } from '../hooks/useGlobalShortcuts';
 import { useReminderScheduler } from '../services/reminderScheduler';
+import { useUpdateChecker } from '../hooks/useUpdateChecker';
 import { Sparkles, Compass, RefreshCw } from 'lucide-react';
 
 export default function Home() {
-  // Atalhos Globais de Teclado & Agendador de Lembretes Nativos (RF-12)
+  // Atalhos Globais de Teclado, Lembretes Nativos & Auto-Updater
   useGlobalShortcuts();
   useReminderScheduler();
+  useUpdateChecker();
 
   const activeView = useFlowStore((s) => s.activeView);
   const tasks = useFlowStore((s) => s.tasks);
@@ -235,6 +238,7 @@ export default function Home() {
       <ManageRoutinesModal />
       <ManageCategoriesModal />
       <NotificationSettingsModal />
+      <UpdateModal />
     </div>
   );
 }
