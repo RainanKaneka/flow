@@ -2,7 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { useFlowStore } from '../store/useFlowStore';
-import { notificationService, NotificationPermissionStatus } from '../services/notificationService';
+import {
+  notificationService,
+  NotificationPermissionStatus,
+  isTauriEnvironment,
+} from '../services/notificationService';
 import {
   Bell,
   X,
@@ -17,6 +21,7 @@ import {
   ArrowUpRight,
 } from 'lucide-react';
 import { useUpdateChecker } from '../hooks/useUpdateChecker';
+import { sounds } from '../utils/audio';
 import { CURRENT_APP_VERSION } from '../services/updateService';
 
 export const NotificationSettingsModal: React.FC = () => {
@@ -52,10 +57,10 @@ export const NotificationSettingsModal: React.FC = () => {
     if (permissionStatus !== 'granted') {
       const granted = await notificationService.requestPermission();
       setPermissionStatus(granted ? 'granted' : 'denied');
-      if (!granted) return;
+      if (!granted && !isTauriEnvironment()) return;
     }
 
-    notificationService.sendNotification({
+    await notificationService.sendNotification({
       title: 'Flow — Notificação de Teste',
       body: 'Seus lembretes de rotina do Windows estão funcionando perfeitamente!',
       playSound: reminderSettings.soundEnabled,
@@ -189,7 +194,10 @@ export const NotificationSettingsModal: React.FC = () => {
                 />
               )}
               <span style={{ fontSize: '12px', fontWeight: 600 }}>
-                {permissionStatus === 'granted' && 'Notificações Nativas Ativas'}
+                {permissionStatus === 'granted' &&
+                  (isTauriEnvironment()
+                    ? 'Notificações Nativas do Windows Ativas (Modo Desktop)'
+                    : 'Notificações Nativas Ativas')}
                 {permissionStatus === 'denied' && 'Notificações Bloqueadas no Sistema'}
                 {permissionStatus === 'default' && 'Permissão do Sistema Pendente'}
               </span>

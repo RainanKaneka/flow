@@ -18,6 +18,7 @@ import { ManageCategoriesModal } from '../components/ManageCategoriesModal';
 import { NotificationSettingsModal } from '../components/NotificationSettingsModal';
 import { UpdateModal } from '../components/UpdateModal';
 import { GoogleAuthModal } from '../components/GoogleAuthModal';
+import { InAppNotificationToast } from '../components/InAppNotificationToast';
 import { useGlobalShortcuts } from '../hooks/useGlobalShortcuts';
 import { useReminderScheduler } from '../services/reminderScheduler';
 import { useUpdateChecker } from '../hooks/useUpdateChecker';
@@ -267,6 +268,7 @@ export default function Home() {
       <NotificationSettingsModal />
       <UpdateModal />
       <GoogleAuthModal />
+      <InAppNotificationToast />
     </div>
   );
 }

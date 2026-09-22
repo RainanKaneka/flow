@@ -200,3 +200,25 @@ body::before {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--border-focus);
 }
+
+/* Animações de Toasts de Notificação Desktop */
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%) scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes toastProgress {
+  from {
+    width: 100%;
+  }
+  to {
+    width: 0%;
+  }
+}
+
