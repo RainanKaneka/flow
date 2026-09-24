@@ -90,6 +90,17 @@ vi.mock('@tauri-apps/plugin-notification', () => ({
   sendNotification: vi.fn(),
 }));
 
+vi.mock('@tauri-apps/plugin-sql', () => {
+  return {
+    default: {
+      load: vi.fn().mockResolvedValue({
+        execute: vi.fn().mockResolvedValue({ lastInsertId: 1, rowsAffected: 1 }),
+        select: vi.fn().mockResolvedValue([]),
+      }),
+    },
+  };
+});
+
 // 5. Limpeza de mocks e storage antes de cada teste
 beforeEach(() => {
   vi.clearAllMocks();

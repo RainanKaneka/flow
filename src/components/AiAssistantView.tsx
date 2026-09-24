@@ -259,7 +259,7 @@ export const AiAssistantView: React.FC = () => {
           }}
         >
           <Zap size={14} color="#F59E0B" />
-          <span>⚡ Atrasei 30 min, replanejar dia</span>
+          <span> Atrasei 30 min, replanejar dia</span>
         </button>
 
         <button
@@ -284,7 +284,7 @@ export const AiAssistantView: React.FC = () => {
           }}
         >
           <BarChart2 size={14} color="#10B981" />
-          <span>📊 Diagnóstico de Produtividade</span>
+          <span> Diagnóstico de Produtividade</span>
         </button>
 
         <button
@@ -305,7 +305,7 @@ export const AiAssistantView: React.FC = () => {
           }}
         >
           <Sparkles size={14} color="#6366F1" />
-          <span>📝 Criar tarefa Leitura às 20:00</span>
+          <span> Criar tarefa Leitura às 20:00</span>
         </button>
 
         <button
@@ -328,7 +328,7 @@ export const AiAssistantView: React.FC = () => {
           }}
         >
           <HelpCircle size={14} color="#8B5CF6" />
-          <span>🎯 O que devo priorizar agora?</span>
+          <span> O que devo priorizar agora?</span>
         </button>
       </div>
 

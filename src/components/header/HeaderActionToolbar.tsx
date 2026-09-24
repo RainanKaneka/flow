@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, Sun, Moon, Plus, Timer, Bell } from 'lucide-react';
+import { Sparkles, Sun, Moon, Plus, Timer, Bell, Database } from 'lucide-react';
 import { isNewerVersion, CURRENT_APP_VERSION } from '../../services/updateService';
 import { GoogleUser, GeminiConfig } from '../../types/routine';
 
@@ -15,6 +15,7 @@ export interface HeaderActionToolbarProps {
   onOpenGoogleAuthModal: () => void;
   reminderEnabled: boolean;
   onOpenNotificationModal: () => void;
+  onOpenBackupModal?: () => void;
   theme: 'light' | 'dark';
   onToggleTheme: () => void;
   onOpenNewTaskModal: () => void;
@@ -32,6 +33,7 @@ export const HeaderActionToolbar: React.FC<HeaderActionToolbarProps> = ({
   onOpenGoogleAuthModal,
   reminderEnabled,
   onOpenNotificationModal,
+  onOpenBackupModal,
   theme,
   onToggleTheme,
   onOpenNewTaskModal,
@@ -166,6 +168,29 @@ export const HeaderActionToolbar: React.FC<HeaderActionToolbarProps> = ({
           />
         )}
       </button>
+
+      {/* Backup do Banco de Dados SQLite */}
+      {onOpenBackupModal && (
+        <button
+          onClick={onOpenBackupModal}
+          style={{
+            width: '36px',
+            height: '36px',
+            borderRadius: '50%',
+            background: 'var(--bg-secondary)',
+            border: '1px solid var(--border-subtle)',
+            color: 'var(--text-secondary)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            transition: 'all 200ms var(--bezier-haptic)',
+          }}
+          title="Backup do Banco SQLite (Fase 2)"
+        >
+          <Database size={15} />
+        </button>
+      )}
 
       {/* Theme Toggle */}
       <button

@@ -3,5 +3,10 @@ identifier = "allow-custom-commands"
 description = "Permite comandos nativos do Flow (toasts nativos do Windows e auto-updater in-app)"
 commands.allow = [
   "show_windows_toast",
-  "apply_inapp_update"
+  "apply_inapp_update",
+  "get_default_backup_dir",
+  "pick_backup_folder",
+  "create_database_backup",
+  "list_database_backups",
+  "open_backup_folder"
 ]

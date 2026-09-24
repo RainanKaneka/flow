@@ -82,6 +82,29 @@ describe('Store Slices (Modularized Architecture)', () => {
       useFlowStore.getState().closeUpdateModal();
       expect(useFlowStore.getState().isUpdateModalOpen).toBe(false);
     });
+
+    it('deve gerenciar configurações de backup do SQLite e modal de backup', () => {
+      expect(useFlowStore.getState().isBackupModalOpen).toBe(false);
+
+      useFlowStore.getState().openBackupModal();
+      expect(useFlowStore.getState().isBackupModalOpen).toBe(true);
+
+      useFlowStore.getState().closeBackupModal();
+      expect(useFlowStore.getState().isBackupModalOpen).toBe(false);
+
+      useFlowStore.getState().updateBackupSettings({
+        folderPath: 'D:\\MeusBackups',
+        enabled: false,
+        lastBackupDate: '2026-09-23',
+        lastBackupStatus: 'success',
+      });
+
+      const settings = useFlowStore.getState().backupSettings;
+      expect(settings.folderPath).toBe('D:\\MeusBackups');
+      expect(settings.enabled).toBe(false);
+      expect(settings.lastBackupDate).toBe('2026-09-23');
+      expect(settings.lastBackupStatus).toBe('success');
+    });
   });
 
   describe('routineSlice', () => {

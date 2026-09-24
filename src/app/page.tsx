@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useMemo, useEffect } from 'react';
-import { useFlowStore } from '../store/useFlowStore';
+import React, { useMemo, useEffect, useState } from 'react';
+import { useFlowStore, initializeDbStore } from '../store/useFlowStore';
 import { Header } from '../components/Header';
 import { DailyStatsBar } from '../components/DailyStatsBar';
 import { CategoryFilter } from '../components/CategoryFilter';
@@ -16,15 +16,17 @@ import { AiAssistantView } from '../components/AiAssistantView';
 import { ManageRoutinesModal } from '../components/ManageRoutinesModal';
 import { ManageCategoriesModal } from '../components/ManageCategoriesModal';
 import { NotificationSettingsModal } from '../components/NotificationSettingsModal';
+import { BackupModal } from '../components/BackupModal';
 import { UpdateModal } from '../components/UpdateModal';
 import { GoogleAuthModal } from '../components/GoogleAuthModal';
 import { InAppNotificationToast } from '../components/InAppNotificationToast';
 import { CustomTitleBar } from '../components/CustomTitleBar';
 import { useGlobalShortcuts } from '../hooks/useGlobalShortcuts';
 import { useReminderScheduler } from '../services/reminderScheduler';
+import { useDailyBackupScheduler } from '../hooks/useDailyBackupScheduler';
 import { useUpdateChecker } from '../hooks/useUpdateChecker';
 import { ErrorBoundary } from '../components/ErrorBoundary';
-import { Sparkles, Compass, RefreshCw } from 'lucide-react';
+import { Sparkles, Compass, RefreshCw, Database } from 'lucide-react';
 
 export default function Home() {
   // Atalhos Globais de Teclado, Lembretes Nativos & Auto-Updater
@@ -41,6 +43,19 @@ export default function Home() {
   const resetToTemplate = useFlowStore((s) => s.resetToTemplate);
   const tickPomodoro = useFlowStore((s) => s.tickPomodoro);
   const isPomodoroActive = useFlowStore((s) => s.pomodoro.isActive);
+  const [isDbReady, setIsDbReady] = useState(false);
+  const openBackupModal = useFlowStore((s) => s.openBackupModal);
+  const backupSettings = useFlowStore((s) => s.backupSettings);
+
+  // Inicializa rotina diária de backup quando o banco de dados estiver pronto
+  useDailyBackupScheduler(isDbReady);
+
+  // Inicializa o Banco de Dados Nativo (Tauri SQLite)
+  useEffect(() => {
+    initializeDbStore().then(() => {
+      setIsDbReady(true);
+    });
+  }, []);
 
   // Background ticker para Pomodoro ativo (RF-7 / RF-13)
   useEffect(() => {
@@ -97,6 +112,14 @@ export default function Home() {
         return ah * 60 + am - (bh * 60 + bm);
       });
   }, [tasks, selectedRoutineTypeId, currentDayOfWeek, activeCategoryId, selectedDate]);
+
+  if (!isDbReady) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <p style={{ color: 'var(--text-secondary)' }}>Sincronizando banco de dados...</p>
+      </div>
+    );
+  }
 
   return (
     <div style={{ minHeight: '100vh', paddingBottom: '60px' }}>
@@ -264,32 +287,61 @@ export default function Home() {
             gap: '12px',
           }}
         >
-          <span>Flow App — SQLite Relacional & Rotinas Customizáveis</span>
-          <button
-            onClick={() => {
-              if (
-                window.confirm(
-                  'Deseja restaurar as rotinas e categorias padrão? Seus dados serão redefinidos para os modelos iniciais.'
-                )
-              ) {
-                resetToTemplate();
-              }
-            }}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: 'var(--text-secondary)',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              fontSize: '11px',
-              fontWeight: 600,
-            }}
-          >
-            <RefreshCw size={12} />
-            <span>Restaurar Template Padrão</span>
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span>Flow App — SQLite Relacional & Rotinas Customizáveis</span>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+            <button
+              onClick={openBackupModal}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--text-secondary)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontSize: '11px',
+                fontWeight: 600,
+              }}
+              title="Gerenciar backups do banco de dados SQLite"
+            >
+              <Database size={13} color="var(--accent-primary)" />
+              <span>
+                Backup SQLite:{' '}
+                {backupSettings?.lastBackupDate
+                  ? `Último em ${backupSettings.lastBackupDate}`
+                  : 'Configurar'}
+              </span>
+            </button>
+
+            <button
+              onClick={() => {
+                if (
+                  window.confirm(
+                    'Deseja restaurar as rotinas e categorias padrão? Seus dados serão redefinidos para os modelos iniciais.'
+                  )
+                ) {
+                  resetToTemplate();
+                }
+              }}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--text-secondary)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontSize: '11px',
+                fontWeight: 600,
+              }}
+            >
+              <RefreshCw size={12} />
+              <span>Restaurar Template Padrão</span>
+            </button>
+          </div>
         </div>
       </main>
 
@@ -299,6 +351,7 @@ export default function Home() {
       <ManageRoutinesModal />
       <ManageCategoriesModal />
       <NotificationSettingsModal />
+      <BackupModal />
       <UpdateModal />
       <GoogleAuthModal />
       <InAppNotificationToast />

@@ -1,6 +1,6 @@
 // Serviço de verificação automática de novas versões do Flow no GitHub Releases
 
-export const CURRENT_APP_VERSION = '0.2.0';
+export const CURRENT_APP_VERSION = '0.3.0';
 export const GITHUB_REPO = 'RainanKaneka/flow';
 
 export interface UpdateInfo {

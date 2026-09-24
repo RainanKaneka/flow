@@ -8,6 +8,7 @@ import { createBacklogSlice } from './slices/backlogSlice';
 import { createNotesSlice } from './slices/notesSlice';
 import { createPomodoroSlice } from './slices/pomodoroSlice';
 import { createAiSlice } from './slices/aiSlice';
+import { initDb, loadStateFromDb, syncStateToDb, runLocalStorageMigration } from '../services/dbService';
 
 export { getTodayDateString };
 
@@ -27,21 +28,70 @@ export const useFlowStore = create<FlowStore>()(
         name: 'flow-app-v1-clean',
         partialize: (state) => ({
           theme: state.theme,
-          routineTypes: state.routineTypes,
           selectedRoutineTypeId: state.selectedRoutineTypeId,
-          categories: state.categories,
           activeCategoryIdFilter: state.activeCategoryIdFilter,
-          tasks: state.tasks,
-          logs: state.logs,
-          backlog: state.backlog,
-          notes: state.notes,
           pomodoro: state.pomodoro,
           reminderSettings: state.reminderSettings,
           googleUser: state.googleUser,
           geminiConfig: state.geminiConfig,
           aiMessages: state.aiMessages,
+          backupSettings: state.backupSettings,
         }),
       }
     )
   )
 );
+
+// DB Sync Subscription
+let syncTimeout: ReturnType<typeof setTimeout> | null = null;
+let lastRelationalState: any = {};
+
+useFlowStore.subscribe(
+  (state) => state,
+  (state) => {
+    const next = {
+      routineTypes: state.routineTypes,
+      categories: state.categories,
+      tasks: state.tasks,
+      logs: state.logs,
+      backlog: state.backlog,
+      notes: state.notes,
+    };
+    
+    // Simple reference check (Zustand updates references on changes)
+    if (
+      next.routineTypes !== lastRelationalState.routineTypes ||
+      next.categories !== lastRelationalState.categories ||
+      next.tasks !== lastRelationalState.tasks ||
+      next.logs !== lastRelationalState.logs ||
+      next.backlog !== lastRelationalState.backlog ||
+      next.notes !== lastRelationalState.notes
+    ) {
+      lastRelationalState = next;
+      if (syncTimeout) clearTimeout(syncTimeout);
+      syncTimeout = setTimeout(() => {
+        syncStateToDb(next).catch(console.error);
+      }, 1000);
+    }
+  }
+);
+
+export async function initializeDbStore() {
+  try {
+    await initDb();
+    await runLocalStorageMigration();
+    
+    const dbState = await loadStateFromDb();
+    
+    if (Object.keys(dbState).length === 0) {
+      // O banco de dados é novo e retornou vazio.
+      // Sincroniza o estado inicial do Zustand (dados padrão) para o SQLite.
+      await syncStateToDb(useFlowStore.getState());
+    } else {
+      useFlowStore.setState(dbState);
+    }
+  } catch (error) {
+    console.error('Failed to initialize SQLite DB:', error);
+  }
+}
+

@@ -27,6 +27,7 @@ export const Header: React.FC = () => {
   const pomodoro = useFlowStore((s) => s.pomodoro);
   const reminderSettings = useFlowStore((s) => s.reminderSettings);
   const openNotificationModal = useFlowStore((s) => s.openNotificationModal);
+  const openBackupModal = useFlowStore((s) => s.openBackupModal);
   const availableUpdate = useFlowStore((s) => s.availableUpdate);
   const openUpdateModal = useFlowStore((s) => s.openUpdateModal);
 
@@ -90,6 +91,7 @@ export const Header: React.FC = () => {
           onOpenGoogleAuthModal={openGoogleAuthModal}
           reminderEnabled={reminderSettings.enabled}
           onOpenNotificationModal={openNotificationModal}
+          onOpenBackupModal={openBackupModal}
           theme={theme}
           onToggleTheme={toggleTheme}
           onOpenNewTaskModal={() => openTaskModal(null)}

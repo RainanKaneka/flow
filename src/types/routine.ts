@@ -128,6 +128,25 @@ export interface ReminderSettings {
   soundEnabled: boolean;
 }
 
+// Backup do Banco SQLite (Fase 2, Parte 3)
+export interface BackupInfo {
+  filePath: string;
+  fileName: string;
+  fileSizeBytes: number;
+  createdAt: string;
+}
+
+export interface BackupSettings {
+  enabled: boolean;
+  folderPath: string;
+  lastBackupDate: string | null; // YYYY-MM-DD
+  lastBackupTime: string | null; // ISO string
+  lastBackupStatus: 'success' | 'error' | null;
+  lastBackupFileName: string | null;
+  lastBackupError: string | null;
+  autoRetentionCount: number;
+}
+
 // Pomodoro Vinculado (RF-7, RF-13)
 export type PomodoroMode = 'focus' | 'shortBreak' | 'longBreak';
 
@@ -167,6 +186,10 @@ export interface FlowState {
   // Lembretes Nativos & Notificações (RF-12)
   reminderSettings: ReminderSettings;
   isNotificationModalOpen: boolean;
+
+  // Backup do Banco SQLite (Fase 2, Parte 3)
+  backupSettings: BackupSettings;
+  isBackupModalOpen: boolean;
 
   // Atualizações do Aplicativo (Auto-Updater / Releases)
   availableUpdate: {
@@ -277,6 +300,11 @@ export interface FlowActions {
   updateReminderSettings: (updates: Partial<ReminderSettings>) => void;
   openNotificationModal: () => void;
   closeNotificationModal: () => void;
+
+  // Backup do Banco SQLite (Fase 2, Parte 3)
+  updateBackupSettings: (updates: Partial<BackupSettings>) => void;
+  openBackupModal: () => void;
+  closeBackupModal: () => void;
 
   // Atualizações do Aplicativo
   setAvailableUpdate: (update: FlowState['availableUpdate']) => void;

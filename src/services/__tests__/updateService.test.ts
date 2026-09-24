@@ -41,11 +41,11 @@ describe('updateService', () => {
 
     it('deve retornar informações de atualização quando houver nova versão com asset .exe', async () => {
       const mockRelease = {
-        tag_name: 'v0.3.0',
-        name: 'Flow v0.3.0 - Grande Lançamento',
-        body: 'Notas de atualização da v0.3.0',
+        tag_name: 'v0.4.0',
+        name: 'Flow v0.4.0 - Grande Lançamento',
+        body: 'Notas de atualização da v0.4.0',
         published_at: '2026-09-22T12:00:00Z',
-        html_url: `https://github.com/${GITHUB_REPO}/releases/tag/v0.3.0`,
+        html_url: `https://github.com/${GITHUB_REPO}/releases/tag/v0.4.0`,
         assets: [
           {
             name: 'flow-installer.exe',
@@ -65,8 +65,8 @@ describe('updateService', () => {
       expect(update).not.toBeNull();
       expect(update?.hasUpdate).toBe(true);
       expect(update?.currentVersion).toBe(CURRENT_APP_VERSION);
-      expect(update?.latestVersion).toBe('0.3.0');
-      expect(update?.releaseName).toBe('Flow v0.3.0 - Grande Lançamento');
+      expect(update?.latestVersion).toBe('0.4.0');
+      expect(update?.releaseName).toBe('Flow v0.4.0 - Grande Lançamento');
       expect(update?.downloadUrl).toBe('https://github.com/releases/flow-installer.exe');
     });
 

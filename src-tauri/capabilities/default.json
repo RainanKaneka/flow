@@ -16,6 +16,10 @@
     "notification:allow-is-permission-granted",
     "opener:default",
     "opener:allow-open-url",
-    "allow-custom-commands"
+    "allow-custom-commands",
+    "sql:default",
+    "sql:allow-load",
+    "sql:allow-execute",
+    "sql:allow-select"
   ]
 }

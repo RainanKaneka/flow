@@ -5,6 +5,7 @@ import {
   Task,
   BacklogItem,
   ReminderSettings,
+  BackupSettings,
   FlowState,
 } from '../../types/routine';
 
@@ -28,6 +29,8 @@ export interface UiSliceState {
   selectedTaskIdForDetail: string | null;
   reminderSettings: ReminderSettings;
   isNotificationModalOpen: boolean;
+  backupSettings: BackupSettings;
+  isBackupModalOpen: boolean;
   availableUpdate: FlowState['availableUpdate'];
   isUpdateModalOpen: boolean;
 }
@@ -48,6 +51,9 @@ export interface UiSliceActions {
   updateReminderSettings: (updates: Partial<ReminderSettings>) => void;
   openNotificationModal: () => void;
   closeNotificationModal: () => void;
+  updateBackupSettings: (updates: Partial<BackupSettings>) => void;
+  openBackupModal: () => void;
+  closeBackupModal: () => void;
   setAvailableUpdate: (update: FlowState['availableUpdate']) => void;
   openUpdateModal: () => void;
   closeUpdateModal: () => void;
@@ -66,6 +72,18 @@ export const createUiSlice: StateCreator<FlowStore, [], [], UiSlice> = (set) => 
     soundEnabled: true,
   },
   isNotificationModalOpen: false,
+
+  backupSettings: {
+    enabled: true,
+    folderPath: '',
+    lastBackupDate: null,
+    lastBackupTime: null,
+    lastBackupStatus: null,
+    lastBackupFileName: null,
+    lastBackupError: null,
+    autoRetentionCount: 30,
+  },
+  isBackupModalOpen: false,
 
   availableUpdate: null,
   isUpdateModalOpen: false,
@@ -150,6 +168,23 @@ export const createUiSlice: StateCreator<FlowStore, [], [], UiSlice> = (set) => 
 
   closeNotificationModal: () => {
     set({ isNotificationModalOpen: false });
+  },
+
+  updateBackupSettings: (updates: Partial<BackupSettings>) => {
+    set((state) => ({
+      backupSettings: {
+        ...state.backupSettings,
+        ...updates,
+      },
+    }));
+  },
+
+  openBackupModal: () => {
+    set({ isBackupModalOpen: true });
+  },
+
+  closeBackupModal: () => {
+    set({ isBackupModalOpen: false });
   },
 
   setAvailableUpdate: (update) => {

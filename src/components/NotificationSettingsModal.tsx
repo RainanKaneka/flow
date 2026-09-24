@@ -19,6 +19,7 @@ import {
   Sparkles,
   RefreshCw,
   ArrowUpRight,
+  Database,
 } from 'lucide-react';
 import { useUpdateChecker } from '../hooks/useUpdateChecker';
 import { sounds } from '../utils/audio';
@@ -27,6 +28,8 @@ import { CURRENT_APP_VERSION } from '../services/updateService';
 export const NotificationSettingsModal: React.FC = () => {
   const isNotificationModalOpen = useFlowStore((s) => s.isNotificationModalOpen);
   const closeNotificationModal = useFlowStore((s) => s.closeNotificationModal);
+  const openBackupModal = useFlowStore((s) => s.openBackupModal);
+  const backupSettings = useFlowStore((s) => s.backupSettings);
   const reminderSettings = useFlowStore((s) => s.reminderSettings);
   const updateReminderSettings = useFlowStore((s) => s.updateReminderSettings);
 
@@ -497,6 +500,74 @@ export const NotificationSettingsModal: React.FC = () => {
                   {lastCheckMessage}
                 </div>
               )}
+            </div>
+
+            {/* Backup do Banco de Dados SQLite (Fase 2) */}
+            <div
+              style={{
+                marginTop: '10px',
+                padding: '14px',
+                borderRadius: '12px',
+                backgroundColor: 'var(--bg-elevated)',
+                border: '1px solid var(--border-subtle)',
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: '10px',
+                }}
+              >
+                <div>
+                  <div
+                    style={{
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                    }}
+                  >
+                    <Database size={14} color="var(--accent-primary)" />
+                    <span>Backup do Banco de Dados SQLite</span>
+                  </div>
+                  <div
+                    style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}
+                  >
+                    {backupSettings?.enabled ? 'Backup diário ativo' : 'Backup diário desativado'} •{' '}
+                    {backupSettings?.lastBackupDate
+                      ? `Último em ${backupSettings.lastBackupDate}`
+                      : 'Nenhum backup realizado'}
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    closeNotificationModal();
+                    openBackupModal();
+                  }}
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: '8px',
+                    backgroundColor: 'var(--bg-secondary)',
+                    border: '1px solid var(--border-focus)',
+                    color: 'var(--text-primary)',
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                  }}
+                >
+                  <Database size={12} />
+                  <span>Gerenciar Backups</span>
+                </button>
+              </div>
             </div>
 
             {/* Guia de Atalhos Globais do Sistema */}

@@ -32,3 +32,13 @@
 - [x] **Migração para CSS Modules com Estilos Scoped**: Substituição de extensos estilos inline por CSS Modules otimizados e organizados com variáveis de tema e animações suaves nos 4 componentes principais de visualização: `PomodoroView.module.css`, `NotepadView.module.css`, `BacklogView.module.css` e `TaskDetailModal.module.css`.
 - [x] **Resiliência com Error Boundaries em Todas as Views**: Criação do componente `ErrorBoundary.tsx` estilizado com a identidade visual do Flow (glassmorphism dark, ícone de alerta temático, relatório amigável do erro e botão para recarregar ou tentar novamente), blindando todas as views principais (`Timeline`, `Pomodoro`, `Backlog`, `Dashboard`, `Notepad` e `Assistente IA`) contra travamentos inesperados.
 
+## Atualizações para a versão 0.3.0 (Fase 2: Persistência Real & Backup) (Concluído)
+
+- [x] **Persistência Relacional com SQLite Real via Tauri (`@tauri-apps/plugin-sql`)**: Substituição da dependência exclusiva do localStorage por banco de dados relacional nativo `flow.db` no filesystem. Arquitetura híbrida reativa com Zustand em memória para máxima fluidez da UI síncrona e sincronização assíncrona debounced de 1s para o SQLite.
+- [x] **Migração One-Time Transparente (localStorage → SQLite)**: Script de migração que detecta dados legados existentes no `flow-app-v1-clean` do navegador e migra automaticamente tarefas, tipos de rotina, categorias, notas, backlog e histórico de conclusões direto para as tabelas relacionais do SQLite no primeiro carregamento.
+- [x] **Backup Automático Diário do Banco SQLite**: Rotina diária que verifica na inicialização do aplicativo (ou virada do dia) se já existe backup na data atual. Caso não exista, gera uma cópia de segurança atômica do banco `flow.db` no formato `flow_backup_YYYY-MM-DD.db`.
+- [x] **Pasta Local Configurável para Backups**: Comandos nativos em Rust (`get_default_backup_dir`, `pick_backup_folder`, `create_database_backup`, `list_database_backups`, `open_backup_folder`) com diálogo nativo de seleção de pastas do Windows, botão para abrir diretamente no Windows Explorer e valor padrão seguro em `Documentos/FlowBackups`.
+- [x] **Interface Dedicada de Gerenciamento (`BackupModal.tsx`)**: Modal com visual contemporâneo seguindo o design system do Flow para ativar/desativar backup automático, alterar pasta de destino, disparar snapshots manuais instantâneos ("Fazer Backup Agora") e inspecionar lista de backups encontrados com cálculo de tamanho de arquivo.
+- [x] **Suite de Testes Ampliada (169 Testes - 100% Verde)**: 19 novos testes automatizados no Vitest cobrindo `backupService`, `BackupModal` e actions da store com 0 erros de linting e compilação de produção validada.
+
+
