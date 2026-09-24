@@ -79,6 +79,16 @@ Object.defineProperty(window, 'matchMedia', {
   })),
 });
 
+// 3.1 Mock de URL.createObjectURL e URL.revokeObjectURL (evita incompatibilidade de Blob no jsdom)
+if (typeof window !== 'undefined') {
+  window.URL.createObjectURL = vi.fn().mockReturnValue('blob:mock-url');
+  window.URL.revokeObjectURL = vi.fn();
+}
+if (typeof URL !== 'undefined') {
+  URL.createObjectURL = vi.fn().mockReturnValue('blob:mock-url');
+  URL.revokeObjectURL = vi.fn();
+}
+
 // 4. Mock dos módulos Tauri
 vi.mock('@tauri-apps/api/core', () => ({
   invoke: vi.fn().mockResolvedValue(undefined),

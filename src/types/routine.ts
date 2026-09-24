@@ -147,6 +147,65 @@ export interface BackupSettings {
   autoRetentionCount: number;
 }
 
+// Exportação e Importação de Dados (Fase 2, Parte 4)
+export type BackupModalTab = 'backup' | 'export' | 'import';
+
+export interface FlowExportPayload {
+  version: string;
+  appName: 'Flow';
+  appVersion: string;
+  exportedAt: string;
+  stats: {
+    tasksCount: number;
+    completionsCount: number;
+    backlogCount: number;
+    notesCount: number;
+    routineTypesCount: number;
+    categoriesCount: number;
+  };
+  data: {
+    routineTypes: RoutineType[];
+    categories: Category[];
+    tasks: Task[];
+    logs: Record<string, TaskLog>;
+    backlog: BacklogItem[];
+    notes: Note[];
+    reminderSettings?: ReminderSettings;
+    backupSettings?: BackupSettings;
+  };
+}
+
+export type ImportMode = 'merge' | 'replace';
+
+export interface ImportValidationResult {
+  isValid: boolean;
+  error?: string;
+  warnings?: string[];
+  summary?: {
+    tasksCount: number;
+    completionsCount: number;
+    backlogCount: number;
+    notesCount: number;
+    routineTypesCount: number;
+    categoriesCount: number;
+  };
+  sanitizedData?: FlowExportPayload['data'];
+}
+
+export interface ImportExecutionResult {
+  success: boolean;
+  mode: ImportMode;
+  stats: {
+    tasks: number;
+    completions: number;
+    backlog: number;
+    notes: number;
+    routineTypes: number;
+    categories: number;
+  };
+  error?: string;
+}
+
 // Pomodoro Vinculado (RF-7, RF-13)
 export type PomodoroMode = 'focus' | 'shortBreak' | 'longBreak';
 
@@ -187,9 +246,10 @@ export interface FlowState {
   reminderSettings: ReminderSettings;
   isNotificationModalOpen: boolean;
 
-  // Backup do Banco SQLite (Fase 2, Parte 3)
+  // Backup do Banco SQLite e Export/Import (Fase 2, Partes 3 e 4)
   backupSettings: BackupSettings;
   isBackupModalOpen: boolean;
+  backupModalTab: BackupModalTab;
 
   // Atualizações do Aplicativo (Auto-Updater / Releases)
   availableUpdate: {
@@ -208,6 +268,13 @@ export interface FlowState {
   geminiConfig: GeminiConfig;
   aiMessages: AiChatMessage[];
   isGoogleAuthModalOpen: boolean;
+
+  // Snackbar Undo/Redo
+  snackbar: {
+    isOpen: boolean;
+    message: string;
+    onUndo?: () => void;
+  };
 
   // Modais de Controle
   isTaskModalOpen: boolean;
@@ -301,9 +368,10 @@ export interface FlowActions {
   openNotificationModal: () => void;
   closeNotificationModal: () => void;
 
-  // Backup do Banco SQLite (Fase 2, Parte 3)
+  // Backup do Banco SQLite e Export/Import (Fase 2, Partes 3 e 4)
   updateBackupSettings: (updates: Partial<BackupSettings>) => void;
-  openBackupModal: () => void;
+  openBackupModal: (tab?: BackupModalTab | any) => void;
+  setBackupModalTab: (tab: BackupModalTab) => void;
   closeBackupModal: () => void;
 
   // Atualizações do Aplicativo
@@ -321,6 +389,10 @@ export interface FlowActions {
   applyAiActionProposal: (proposalId: string) => void;
   openGoogleAuthModal: () => void;
   closeGoogleAuthModal: () => void;
+
+  // Snackbar Undo/Redo
+  showSnackbar: (message: string, onUndo?: () => void) => void;
+  hideSnackbar: () => void;
 }
 
 export type FlowStore = FlowState & FlowActions;

@@ -6,6 +6,7 @@ import {
   BacklogItem,
   ReminderSettings,
   BackupSettings,
+  BackupModalTab,
   FlowState,
 } from '../../types/routine';
 
@@ -31,8 +32,14 @@ export interface UiSliceState {
   isNotificationModalOpen: boolean;
   backupSettings: BackupSettings;
   isBackupModalOpen: boolean;
+  backupModalTab: BackupModalTab;
   availableUpdate: FlowState['availableUpdate'];
   isUpdateModalOpen: boolean;
+  snackbar: {
+    isOpen: boolean;
+    message: string;
+    onUndo?: () => void;
+  };
 }
 
 export interface UiSliceActions {
@@ -52,11 +59,14 @@ export interface UiSliceActions {
   openNotificationModal: () => void;
   closeNotificationModal: () => void;
   updateBackupSettings: (updates: Partial<BackupSettings>) => void;
-  openBackupModal: () => void;
+  openBackupModal: (tab?: BackupModalTab | any) => void;
+  setBackupModalTab: (tab: BackupModalTab) => void;
   closeBackupModal: () => void;
   setAvailableUpdate: (update: FlowState['availableUpdate']) => void;
   openUpdateModal: () => void;
   closeUpdateModal: () => void;
+  showSnackbar: (message: string, onUndo?: () => void) => void;
+  hideSnackbar: () => void;
 }
 
 export type UiSlice = UiSliceState & UiSliceActions;
@@ -84,9 +94,15 @@ export const createUiSlice: StateCreator<FlowStore, [], [], UiSlice> = (set) => 
     autoRetentionCount: 30,
   },
   isBackupModalOpen: false,
+  backupModalTab: 'backup',
 
   availableUpdate: null,
   isUpdateModalOpen: false,
+
+  snackbar: {
+    isOpen: false,
+    message: '',
+  },
 
   isTaskModalOpen: false,
   editingTask: null,
@@ -179,8 +195,16 @@ export const createUiSlice: StateCreator<FlowStore, [], [], UiSlice> = (set) => 
     }));
   },
 
-  openBackupModal: () => {
-    set({ isBackupModalOpen: true });
+  openBackupModal: (tab?: BackupModalTab | any) => {
+    const targetTab: BackupModalTab =
+      typeof tab === 'string' && (tab === 'export' || tab === 'import')
+        ? tab
+        : 'backup';
+    set({ isBackupModalOpen: true, backupModalTab: targetTab });
+  },
+
+  setBackupModalTab: (tab: BackupModalTab) => {
+    set({ backupModalTab: tab });
   },
 
   closeBackupModal: () => {
@@ -197,5 +221,13 @@ export const createUiSlice: StateCreator<FlowStore, [], [], UiSlice> = (set) => 
 
   closeUpdateModal: () => {
     set({ isUpdateModalOpen: false });
+  },
+
+  showSnackbar: (message: string, onUndo?: () => void) => {
+    set({ snackbar: { isOpen: true, message, onUndo } });
+  },
+
+  hideSnackbar: () => {
+    set((state) => ({ snackbar: { ...state.snackbar, isOpen: false } }));
   },
 });

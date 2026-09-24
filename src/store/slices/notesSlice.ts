@@ -56,9 +56,18 @@ export const createNotesSlice: StateCreator<FlowStore, [], [], NotesSlice> = (se
   },
 
   deleteNote: (id) => {
+    const state = get();
+    const noteToDelete = state.notes.find((n) => n.id === id);
+
     set((state) => ({
       notes: state.notes.filter((n) => n.id !== id),
     }));
+
+    if (noteToDelete) {
+      state.showSnackbar('Anotação excluída', () => {
+        set((s) => ({ notes: [noteToDelete, ...s.notes] }));
+      });
+    }
   },
 
   convertNoteToTask: (noteId, startTime, endTime, routineTypeId, categoryId) => {

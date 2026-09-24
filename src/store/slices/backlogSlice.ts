@@ -63,9 +63,18 @@ export const createBacklogSlice: StateCreator<FlowStore, [], [], BacklogSlice> =
   },
 
   deleteBacklogItem: (id: string) => {
+    const state = get();
+    const itemToDelete = state.backlog.find((b) => b.id === id);
+
     set((state) => ({
       backlog: state.backlog.filter((b) => b.id !== id),
     }));
+
+    if (itemToDelete) {
+      state.showSnackbar('Item do backlog excluído', () => {
+        set((s) => ({ backlog: [itemToDelete, ...s.backlog] }));
+      });
+    }
   },
 
   promoteBacklogToTask: (

@@ -88,6 +88,14 @@ describe('Store Slices (Modularized Architecture)', () => {
 
       useFlowStore.getState().openBackupModal();
       expect(useFlowStore.getState().isBackupModalOpen).toBe(true);
+      expect(useFlowStore.getState().backupModalTab).toBe('backup');
+
+      useFlowStore.getState().setBackupModalTab('export');
+      expect(useFlowStore.getState().backupModalTab).toBe('export');
+
+      useFlowStore.getState().openBackupModal('import');
+      expect(useFlowStore.getState().isBackupModalOpen).toBe(true);
+      expect(useFlowStore.getState().backupModalTab).toBe('import');
 
       useFlowStore.getState().closeBackupModal();
       expect(useFlowStore.getState().isBackupModalOpen).toBe(false);

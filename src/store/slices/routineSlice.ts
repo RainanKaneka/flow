@@ -22,7 +22,7 @@ export interface RoutineSliceActions {
 
 export type RoutineSlice = RoutineSliceState & RoutineSliceActions;
 
-export const createRoutineSlice: StateCreator<FlowStore, [], [], RoutineSlice> = (set) => ({
+export const createRoutineSlice: StateCreator<FlowStore, [], [], RoutineSlice> = (set, get) => ({
   routineTypes: DEFAULT_ROUTINE_TYPES,
   selectedRoutineTypeId: 'main_routine',
   categories: DEFAULT_CATEGORIES,
@@ -50,8 +50,13 @@ export const createRoutineSlice: StateCreator<FlowStore, [], [], RoutineSlice> =
   },
 
   deleteRoutineType: (id: string) => {
+    const state = get();
+    if (state.routineTypes.length <= 1) return;
+    const typeToDelete = state.routineTypes.find((t) => t.id === id);
+    const relatedTasks = state.tasks.filter((t) => t.routineTypeId === id);
+    const previousSelected = state.selectedRoutineTypeId;
+
     set((state) => {
-      if (state.routineTypes.length <= 1) return state;
       const remaining = state.routineTypes.filter((t) => t.id !== id);
       return {
         routineTypes: remaining,
@@ -60,6 +65,16 @@ export const createRoutineSlice: StateCreator<FlowStore, [], [], RoutineSlice> =
         tasks: state.tasks.filter((t) => t.routineTypeId !== id),
       };
     });
+
+    if (typeToDelete) {
+      state.showSnackbar('Rotina excluída', () => {
+        set((s) => ({
+          routineTypes: [...s.routineTypes, typeToDelete],
+          selectedRoutineTypeId: previousSelected,
+          tasks: [...s.tasks, ...relatedTasks],
+        }));
+      });
+    }
   },
 
   setCategoryIdFilter: (categoryId: string | 'all') => {
@@ -83,10 +98,15 @@ export const createRoutineSlice: StateCreator<FlowStore, [], [], RoutineSlice> =
   },
 
   deleteCategory: (id: string) => {
+    const state = get();
+    if (state.categories.length <= 1) return;
+    const catToDelete = state.categories.find((c) => c.id === id);
+    const fallbackId = state.categories.filter((c) => c.id !== id)[0].id;
+    const affectedTasks = state.tasks.filter((t) => t.categoryId === id);
+    const prevFilter = state.activeCategoryIdFilter;
+
     set((state) => {
-      if (state.categories.length <= 1) return state;
       const remaining = state.categories.filter((c) => c.id !== id);
-      const fallbackId = remaining[0].id;
       return {
         categories: remaining,
         activeCategoryIdFilter:
@@ -94,5 +114,20 @@ export const createRoutineSlice: StateCreator<FlowStore, [], [], RoutineSlice> =
         tasks: state.tasks.map((t) => (t.categoryId === id ? { ...t, categoryId: fallbackId } : t)),
       };
     });
+
+    if (catToDelete) {
+      state.showSnackbar('Categoria excluída', () => {
+        set((s) => ({
+          categories: [...s.categories, catToDelete],
+          activeCategoryIdFilter: prevFilter,
+          tasks: s.tasks.map((t) => {
+            if (affectedTasks.some((at) => at.id === t.id)) {
+              return { ...t, categoryId: id };
+            }
+            return t;
+          }),
+        }));
+      });
+    }
   },
 });

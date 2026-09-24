@@ -41,4 +41,23 @@
 - [x] **Interface Dedicada de Gerenciamento (`BackupModal.tsx`)**: Modal com visual contemporâneo seguindo o design system do Flow para ativar/desativar backup automático, alterar pasta de destino, disparar snapshots manuais instantâneos ("Fazer Backup Agora") e inspecionar lista de backups encontrados com cálculo de tamanho de arquivo.
 - [x] **Suite de Testes Ampliada (169 Testes - 100% Verde)**: 19 novos testes automatizados no Vitest cobrindo `backupService`, `BackupModal` e actions da store com 0 erros de linting e compilação de produção validada.
 
+## Atualizações da Fase 2, Parte 4: Portabilidade de Dados (Export/Import em JSON, CSV e SQL) (Concluído)
+
+- [x] **Exportação Completa em JSON Estruturado**: Serviço [exportImportService.ts](file:///c:/Users/Rainan/Desktop/Rotina/flow-app/src/services/exportImportService.ts) com função `generateJsonExport` e `downloadJsonExport` que exporta todo o ecossistema do Flow (tarefas, histórico de conclusões, notas, backlog, categorias, tipos de rotina e preferências) em um único pacote `.json` com metadados de versão e estatísticas.
+- [x] **Exportação Analítica em Planilhas CSV (Excel / Google Sheets)**: Geradores dedicados com codificação UTF-8 BOM (`\uFEFF`) e conformidade com RFC 4180 para exportação de 4 planilhas distintas:
+  - 📋 **Tarefas (`flow_tarefas_*.csv`)**: Mapeamento de rotinas, categorias, dias da semana legíveis e hábito âncora.
+  - 📊 **Histórico de Conclusões (`flow_historico_*.csv`)**: Título da tarefa resolvido, data, status de conclusão e tempo focado em minutos.
+  - 📝 **Bloco de Notas (`flow_notas_*.csv`)**: Título, conteúdo, tags, cor e timestamps.
+  - 📥 **Backlog (`flow_backlog_*.csv`)**: Itens do backlog com categoria e minutos alvo.
+  - 📦 **Download em Lote**: Botão para baixar todas as 4 planilhas CSV simultaneamente.
+- [x] **Exportação de Dump SQL Relacional**: Integração direta com `generateSqlDump` para download instantâneo de script `.sql` compatível com SQLite v3.
+- [x] **Importação Inteligente com Modos Mesclar (Merge) e Substituir (Restore)**:
+  - **Validação Antecipada**: Validação sintática e estrutural com exibição de pré-visualização (contadores de tarefas, notas e conclusões detectadas).
+  - **Modo Mesclar (Merge)**: Combina itens preservando o histórico existente e atualizando por ID (seguro).
+  - **Modo Substituir (Restore)**: Sobrescreve o banco com snapshot de segurança gerado automaticamente antes da substituição.
+  - **Importação de Tarefas via CSV**: Parser que aceita cabeçalhos em português e inglês para importar rotinas de planilhas externas.
+- [x] **Interface Unificada em Abas na Central de Dados (`BackupModal.tsx`)**: Reorganização do modal com 3 abas temáticas (`Backup SQLite`, `Exportar Dados` e `Importar Dados`) e atalho direto a partir do card no Dashboard.
+- [x] **Suite de Testes Ampliada (201 Testes - 100% Verde)**: 32 novos testes automatizados no Vitest cobrindo `exportImportService`, `BackupModal` e `DashboardSqlBackupCard`, garantindo integridade de parsing, escaping, exportação e gravação no SQLite.
+
+
 

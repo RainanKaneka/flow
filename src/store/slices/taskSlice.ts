@@ -83,6 +83,9 @@ export const createTaskSlice: StateCreator<FlowStore, [], [], TaskSlice> = (set,
   },
 
   deleteTask: (taskId: string) => {
+    const state = get();
+    const taskToDelete = state.tasks.find((t) => t.id === taskId);
+
     set((state) => ({
       tasks: state.tasks.filter((t) => t.id !== taskId),
       selectedTaskIdForDetail:
@@ -92,6 +95,12 @@ export const createTaskSlice: StateCreator<FlowStore, [], [], TaskSlice> = (set,
           ? { ...state.pomodoro, linkedTaskId: null }
           : state.pomodoro,
     }));
+
+    if (taskToDelete) {
+      state.showSnackbar('Atividade excluída', () => {
+        set((s) => ({ tasks: [...s.tasks, taskToDelete] }));
+      });
+    }
   },
 
   resetToTemplate: () => {

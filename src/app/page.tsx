@@ -20,6 +20,7 @@ import { BackupModal } from '../components/BackupModal';
 import { UpdateModal } from '../components/UpdateModal';
 import { GoogleAuthModal } from '../components/GoogleAuthModal';
 import { InAppNotificationToast } from '../components/InAppNotificationToast';
+import { Snackbar } from '../components/Snackbar';
 import { CustomTitleBar } from '../components/CustomTitleBar';
 import { useGlobalShortcuts } from '../hooks/useGlobalShortcuts';
 import { useReminderScheduler } from '../services/reminderScheduler';
@@ -293,7 +294,7 @@ export default function Home() {
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
             <button
-              onClick={openBackupModal}
+              onClick={() => openBackupModal()}
               style={{
                 background: 'transparent',
                 border: 'none',
@@ -355,6 +356,7 @@ export default function Home() {
       <UpdateModal />
       <GoogleAuthModal />
       <InAppNotificationToast />
+      <Snackbar />
     </div>
   );
 }
