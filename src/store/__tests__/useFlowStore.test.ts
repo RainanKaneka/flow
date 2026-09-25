@@ -242,13 +242,14 @@ describe('useFlowStore', () => {
       expect(backlog[0].id).toMatch(/^bk_/);
     });
 
-    it('deve mover uma tarefa do dia para o backlog', () => {
+    it('deve mover uma tarefa do dia para o backlog e removê-la da rotina ativa', () => {
       const task = useFlowStore.getState().tasks[0];
 
       useFlowStore.getState().moveTaskToBacklog(task.id);
 
-      const backlog = useFlowStore.getState().backlog;
-      expect(backlog.some((b) => b.title === task.title)).toBe(true);
+      const state = useFlowStore.getState();
+      expect(state.backlog.some((b) => b.title === task.title)).toBe(true);
+      expect(state.tasks.some((t) => t.id === task.id)).toBe(false);
     });
 
     it('deve promover um item do backlog para tarefa agendada', () => {

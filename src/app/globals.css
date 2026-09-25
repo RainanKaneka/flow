@@ -3,6 +3,7 @@
 :root {
   --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: 'Space Grotesk', monospace;
+  --titlebar-height: 0px;
 
   /* LIGHT THEME (Soft Ceramic & Cream) */
   --bg-primary: #f8f9fa;
@@ -33,6 +34,45 @@
   --bezier-haptic: cubic-bezier(0.32, 0.72, 0, 1);
   --shadow-subtle: 0 4px 20px -2px rgba(0, 0, 0, 0.03), 0 2px 6px -1px rgba(0, 0, 0, 0.02);
   --shadow-inset-highlight: inset 0 1px 1px rgba(255, 255, 255, 0.9);
+
+  /* Responsive Spacing & Layout Tokens (Fase 3, Parte 6: 1024px até 1920px) */
+  --header-padding-x: 28px;
+  --content-padding-x: 28px;
+  --content-max-width: 1040px;
+  --content-max-width-wide: 1040px;
+}
+
+/* Media Queries de Responsividade para Variáveis de Layout (1024px a 1920px) */
+@media (max-width: 1100px) {
+  :root {
+    --header-padding-x: 16px;
+    --content-padding-x: 18px;
+  }
+}
+
+@media (min-width: 1200px) {
+  :root {
+    --content-max-width: 1060px;
+    --content-max-width-wide: 1200px;
+  }
+}
+
+@media (min-width: 1440px) {
+  :root {
+    --header-padding-x: 32px;
+    --content-padding-x: 32px;
+    --content-max-width: 1100px;
+    --content-max-width-wide: 1400px;
+  }
+}
+
+@media (min-width: 1720px) {
+  :root {
+    --header-padding-x: 40px;
+    --content-padding-x: 40px;
+    --content-max-width: 1140px;
+    --content-max-width-wide: 1600px;
+  }
 }
 
 .dark {
@@ -227,3 +267,74 @@ body::before {
     width: 0%;
   }
 }
+
+/* =======================================================
+   GLOBAL PRIMARY BUTTON UTILITY
+   ======================================================= */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--accent-primary) 0%, #6366f1 100%);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 200ms var(--bezier-haptic);
+  box-shadow: 0 2px 10px rgba(99, 102, 241, 0.28);
+  user-select: none;
+}
+
+.btn-primary:hover {
+  filter: brightness(1.12);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.45);
+}
+
+.btn-primary:active {
+  transform: scale(0.98);
+}
+
+/* =======================================================
+   RESPONSIVE CONTAINERS & UTILITIES (1024px - 1920px)
+   ======================================================= */
+.responsive-main {
+  width: 100%;
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  transition: max-width 250ms var(--bezier-haptic);
+}
+
+.responsive-main-wide {
+  max-width: var(--content-max-width-wide);
+}
+
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+@media (max-width: 1200px) {
+  .hide-on-compact-desktop {
+    display: none !important;
+  }
+  .show-on-compact-desktop {
+    display: inline !important;
+  }
+}
+
+@media (min-width: 1201px) {
+  .show-on-compact-desktop {
+    display: none !important;
+  }
+}
+
+

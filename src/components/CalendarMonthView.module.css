@@ -1,0 +1,538 @@
+.container {
+  padding: 8px var(--content-padding-x, 28px) 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  animation: fadeIn 250ms cubic-bezier(0.32, 0.72, 0, 1) forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Header & Controles de Mês */
+.headerCard {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-outer);
+  padding: 18px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.topControls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.navGroup {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.monthTitle {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+  min-width: 190px;
+}
+
+.navBtn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.navBtn:hover {
+  background: var(--bg-hover);
+  border-color: var(--border-focus);
+  color: var(--text-primary);
+}
+
+.todayBtn {
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.todayBtn:hover {
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+  color: #FFFFFF;
+}
+
+/* Métricas do Mês */
+.monthStatsRow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.statBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+}
+
+.statBadge strong {
+  color: var(--text-primary);
+}
+
+/* Grade do Calendário */
+.calendarGridContainer {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-outer);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.weekdayHeader {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  background: var(--bg-elevated);
+  border-bottom: 1px solid var(--border-subtle);
+  padding: 10px 0;
+  text-align: center;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.weekdayLabel {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  min-width: 0;
+  padding: 0 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.daysGrid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 1px;
+  background: var(--border-subtle);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Célula de cada dia */
+.dayCell {
+  min-height: 100px;
+  background: var(--bg-secondary);
+  padding: 8px 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  cursor: pointer;
+  transition: all 180ms ease;
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.dayCell:hover {
+  background: var(--bg-elevated);
+}
+
+.dayCellOtherMonth {
+  opacity: 0.38;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.dayCellToday {
+  background: rgba(99, 102, 241, 0.05);
+}
+
+.dayCellSelected {
+  background: rgba(99, 102, 241, 0.12) !important;
+  box-shadow: inset 0 0 0 2px var(--accent-primary);
+}
+
+.cellTopRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.dayNumber {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  flex-shrink: 0;
+}
+
+.todayIndicatorBadge {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  background: var(--accent-primary);
+  color: #FFFFFF;
+  padding: 1px 4px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.perfectDayBadge {
+  font-size: 10px;
+  color: var(--success);
+  flex-shrink: 0;
+}
+
+/* Resumo de Completude do Dia */
+.dayProgressRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--text-muted);
+  min-width: 0;
+  gap: 2px;
+}
+
+.miniProgressBar {
+  width: 100%;
+  height: 3px;
+  background: var(--bg-elevated);
+  border-radius: 9999px;
+  overflow: hidden;
+  margin-top: 2px;
+}
+
+.miniProgressFill {
+  height: 100%;
+  border-radius: 9999px;
+  transition: width 300ms ease;
+}
+
+/* Prévia das Tarefas na Célula */
+.taskListPreview {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: 4px;
+  min-width: 0;
+  width: 100%;
+  overflow: hidden;
+}
+
+.taskPill {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--bg-elevated);
+  font-size: 10px;
+  color: var(--text-secondary);
+  overflow: hidden;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.taskPillText {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: block;
+}
+
+.taskPillCompleted {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+
+.taskDot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.moreTasksText {
+  font-size: 9px;
+  color: var(--text-muted);
+  font-style: italic;
+  padding-left: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Painel de Detalhes do Dia Selecionado */
+.selectedDayInspector {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-outer);
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.inspectorHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.inspectorTitle {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.inspectorActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.actionBtnSecondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: 8px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 150ms ease;
+  user-select: none;
+}
+
+.actionBtnSecondary:hover {
+  background: var(--bg-hover);
+  border-color: var(--border-focus);
+  color: var(--text-primary);
+}
+
+.actionBtnPrimary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--accent-primary) 0%, #6366f1 100%);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 200ms var(--bezier-haptic);
+  box-shadow: 0 2px 10px rgba(99, 102, 241, 0.28);
+  user-select: none;
+}
+
+.actionBtnPrimary:hover {
+  filter: brightness(1.12);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.45);
+}
+
+.actionBtnPrimary:active {
+  transform: scale(0.98);
+}
+
+.inspectorTasksList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.inspectorTaskItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-inner);
+  gap: 12px;
+}
+
+.inspectorTaskInfo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+}
+
+.inspectorTaskTime {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.inspectorTaskActions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.rowActionBtn {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 150ms var(--bezier-haptic);
+}
+
+.rowActionBtn:hover {
+  background: var(--bg-hover);
+  border-color: var(--border-focus);
+  color: var(--text-primary);
+  transform: translateY(-1px);
+}
+
+.rowActionBtn:active {
+  transform: scale(0.95);
+}
+
+.rowActionBtnDanger {
+  color: #ef4444;
+}
+
+.rowActionBtnDanger:hover {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.35);
+  color: #ef4444;
+}
+
+/* =======================================================
+   RESPONSIVIDADE: TELAS DE 1024px ATÉ 1920px
+   ======================================================= */
+
+/* Compact Desktop (1024px a 1180px) */
+@media (max-width: 1180px) {
+  .dayCell {
+    min-height: 88px;
+    padding: 6px 4px;
+    gap: 4px;
+  }
+
+  .monthTitle {
+    font-size: 16px;
+    min-width: 160px;
+  }
+
+  .weekdayLabel {
+    font-size: 10px;
+    letter-spacing: 0.02em;
+  }
+
+  .todayIndicatorBadge {
+    font-size: 8px;
+    padding: 1px 3px;
+  }
+
+  .taskPill {
+    font-size: 9.5px;
+    padding: 1px 4px;
+  }
+}
+
+/* Widescreen / 1440p (1440px a 1719px) */
+@media (min-width: 1440px) {
+  .dayCell {
+    min-height: 120px;
+    padding: 10px 8px;
+    gap: 6px;
+  }
+
+  .monthTitle {
+    font-size: 20px;
+  }
+
+  .inspectorTasksList {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+}
+
+/* Ultra-Wide / 1080p Expanded (1720px a 1920px+) */
+@media (min-width: 1720px) {
+  .dayCell {
+    min-height: 140px;
+    padding: 12px 10px;
+    gap: 7px;
+  }
+
+  .dayNumber {
+    font-size: 14px;
+  }
+
+  .taskPill {
+    font-size: 11px;
+    padding: 2px 6px;
+  }
+
+  .taskDot {
+    width: 6px;
+    height: 6px;
+  }
+}
+
+

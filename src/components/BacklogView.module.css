@@ -1,5 +1,5 @@
 .container {
-  padding: 20px 28px;
+  padding: 20px var(--content-padding-x, 28px);
   display: flex;
   flex-direction: column;
   gap: 20px;

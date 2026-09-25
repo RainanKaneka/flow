@@ -65,7 +65,7 @@ export const DailyStatsBar: React.FC = () => {
     <div
       className="double-bezel-outer"
       style={{
-        margin: '24px 28px 16px',
+        margin: '24px var(--content-padding-x, 28px) 16px',
       }}
     >
       <div

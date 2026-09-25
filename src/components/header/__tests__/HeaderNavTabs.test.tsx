@@ -18,6 +18,8 @@ describe('HeaderNavTabs', () => {
     );
 
     expect(screen.getByText('Rotina')).toBeInTheDocument();
+    expect(screen.getByText('Cronograma')).toBeInTheDocument();
+    expect(screen.getByText('Calendário')).toBeInTheDocument();
     expect(screen.getByText('Pomodoro')).toBeInTheDocument();
     expect(screen.getByText('Notas')).toBeInTheDocument();
     expect(screen.getByText('Backlog')).toBeInTheDocument();

@@ -14,12 +14,19 @@ export async function getDb(): Promise<Database> {
   return dbInstance;
 }
 
+export function resetDbInstanceForTesting(): void {
+  dbInstance = null;
+}
+
 /**
  * Inicializa o banco de dados executando o schema
  */
 export async function initDb(): Promise<void> {
   const db = await getDb();
   
+  // Habilita a verificação de integridade referencial no SQLite
+  await db.execute('PRAGMA foreign_keys = ON;');
+
   // O SQLite via tauri-plugin pode ter problemas com múltiplas instruções
   // em uma única chamada execute(), então dividimos pelo ';'
   const statements = SQLITE_SCHEMA.split(';')
@@ -28,6 +35,21 @@ export async function initDb(): Promise<void> {
 
   for (const statement of statements) {
     await db.execute(statement);
+  }
+
+  // Garante que a coluna specific_date existe na tabela tasks
+  try {
+    await db.execute('ALTER TABLE tasks ADD COLUMN specific_date TEXT;');
+  } catch (_) {
+    // Coluna já existe
+  }
+
+  // Auto-recuperação preventiva: remove registros órfãos que possam ter sobrado no banco
+  try {
+    await db.execute('DELETE FROM task_completions WHERE task_id NOT IN (SELECT id FROM tasks);');
+    await db.execute('DELETE FROM backlog WHERE category_id NOT IN (SELECT id FROM categories);');
+  } catch (e) {
+    console.warn('[dbService] Limpeza preventiva inicial ignorada:', e);
   }
 }
 
@@ -76,20 +98,24 @@ export async function loadStateFromDb(): Promise<Partial<FlowState>> {
     richContent: t.rich_content,
     attachments: JSON.parse(t.attachments || '[]'),
     checklist: JSON.parse(t.checklist || '[]'),
+    specificDate: t.specific_date || undefined,
   }));
 
-  // 4. Completions (Logs)
+  // 4. Completions (Logs) - Filtra apenas logs pertencentes a tarefas válidas
+  const validTaskIds = new Set(tasks.map((t) => t.id));
   const logsRaw = await db.select<any[]>('SELECT * FROM task_completions');
   const logs: Record<string, TaskLog> = {};
   logsRaw.forEach((l) => {
-    logs[l.id] = {
-      id: l.id,
-      taskId: l.task_id,
-      date: l.date,
-      completed: Boolean(l.completed),
-      completedAt: l.completed_at,
-      timeSpentMinutes: l.time_spent_minutes || 0,
-    };
+    if (validTaskIds.has(l.task_id)) {
+      logs[l.id] = {
+        id: l.id,
+        taskId: l.task_id,
+        date: l.date,
+        completed: Boolean(l.completed),
+        completedAt: l.completed_at,
+        timeSpentMinutes: l.time_spent_minutes || 0,
+      };
+    }
   });
 
   // 5. Backlog
@@ -136,119 +162,273 @@ export async function loadStateFromDb(): Promise<Partial<FlowState>> {
 
 /**
  * Sincroniza o estado em memória para o SQLite nativo.
- * Utiliza INSERT OR REPLACE para upsert e deleções para remover órfãos.
+ * Garante a ordem correta de inserção (Pais -> Filhos) e
+ * deleção (Filhos -> Pais) para que a integridade referencial
+ * (FOREIGN KEY constraint - erro 787) nunca seja violada.
  */
 export async function syncStateToDb(state: Partial<FlowState>): Promise<void> {
   const db = await getDb();
 
-  // Função auxiliar para gerar lista de placeholders '?, ?, ?'
-  const placeholders = (count: number) => Array(count).fill('$1').map((_, i) => '$' + (i + 1)).join(', ');
+  // Função auxiliar para gerar lista de placeholders '$1, $2, $3'
+  const placeholders = (count: number) =>
+    Array(count)
+      .fill('$1')
+      .map((_, i) => '$' + (i + 1))
+      .join(', ');
 
-  // Routine Types
-  if (state.routineTypes) {
-    for (const rt of state.routineTypes) {
-      await db.execute(
-        `INSERT OR REPLACE INTO routine_types (id, name, description, philosophy, color) VALUES ($1, $2, $3, $4, $5)`,
-        [rt.id, rt.name, rt.description || null, rt.philosophy || null, rt.color || null]
-      );
-    }
-    if (state.routineTypes.length > 0) {
-      const ids = state.routineTypes.map(r => r.id);
-      await db.execute(`DELETE FROM routine_types WHERE id NOT IN (${placeholders(ids.length)})`, ids);
-    } else {
-      await db.execute(`DELETE FROM routine_types`);
-    }
-  }
-
-  // Categories
-  if (state.categories) {
-    for (const c of state.categories) {
-      await db.execute(
-        `INSERT OR REPLACE INTO categories (id, name, color, icon) VALUES ($1, $2, $3, $4)`,
-        [c.id, c.name, c.color, c.icon || null]
-      );
-    }
-    if (state.categories.length > 0) {
-      const ids = state.categories.map(c => c.id);
-      await db.execute(`DELETE FROM categories WHERE id NOT IN (${placeholders(ids.length)})`, ids);
-    } else {
-      await db.execute(`DELETE FROM categories`);
-    }
-  }
-
-  // Tasks
-  if (state.tasks) {
-    for (const t of state.tasks) {
-      await db.execute(
-        `INSERT OR REPLACE INTO tasks (id, title, description, start_time, end_time, routine_type_id, category_id, is_golden_rule, days_of_week, target_minutes, tags, notes, is_custom, rich_content, attachments, checklist) 
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
-        [
-          t.id, t.title, t.description || null, t.startTime, t.endTime, t.routineTypeId, t.categoryId,
-          t.isGoldenRule ? 1 : 0, JSON.stringify(t.daysOfWeek), t.targetMinutes, JSON.stringify(t.tags || []),
-          t.notes || null, t.isCustom ? 1 : 0, t.richContent || null, JSON.stringify(t.attachments || []),
-          JSON.stringify(t.checklist || [])
-        ]
-      );
-    }
-    if (state.tasks.length > 0) {
-      const ids = state.tasks.map(t => t.id);
-      await db.execute(`DELETE FROM tasks WHERE id NOT IN (${placeholders(ids.length)})`, ids);
-    } else {
-      await db.execute(`DELETE FROM tasks`);
-    }
-  }
-
-  // Completions (Logs)
-  if (state.logs) {
-    const logsArr = Object.values(state.logs);
-    for (const log of logsArr) {
-      if (!log.completed && (!log.timeSpentMinutes || log.timeSpentMinutes <= 0)) {
-        continue;
+  try {
+    // ----------------------------------------------------
+    // ETAPA 1: UPSERT DE TABELAS PAI (routine_types, categories)
+    // ----------------------------------------------------
+    if (state.routineTypes) {
+      for (const rt of state.routineTypes) {
+        await db.execute(
+          `INSERT OR REPLACE INTO routine_types (id, name, description, philosophy, color) VALUES ($1, $2, $3, $4, $5)`,
+          [rt.id, rt.name, rt.description || null, rt.philosophy || null, rt.color || null]
+        );
       }
-      await db.execute(
-        `INSERT OR REPLACE INTO task_completions (id, task_id, date, completed, completed_at, time_spent_minutes) VALUES ($1, $2, $3, $4, $5, $6)`,
-        [log.id, log.taskId, log.date, log.completed ? 1 : 0, log.completedAt || null, log.timeSpentMinutes || 0]
-      );
     }
-    const validLogs = logsArr.filter(l => l.completed || (l.timeSpentMinutes && l.timeSpentMinutes > 0));
-    if (validLogs.length > 0) {
-      const ids = validLogs.map(l => l.id);
-      await db.execute(`DELETE FROM task_completions WHERE id NOT IN (${placeholders(ids.length)})`, ids);
-    } else {
-      await db.execute(`DELETE FROM task_completions`);
-    }
-  }
 
-  // Backlog
-  if (state.backlog) {
-    for (const b of state.backlog) {
-      await db.execute(
-        `INSERT OR REPLACE INTO backlog (id, title, description, category_id, target_minutes, tags, notes, created_at, original_task_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-        [b.id, b.title, b.description || null, b.categoryId, b.targetMinutes, JSON.stringify(b.tags || []), b.notes || null, b.createdAt, b.originalTaskId || null]
-      );
+    if (state.categories) {
+      for (const c of state.categories) {
+        await db.execute(
+          `INSERT OR REPLACE INTO categories (id, name, color, icon) VALUES ($1, $2, $3, $4)`,
+          [c.id, c.name, c.color, c.icon || null]
+        );
+      }
     }
-    if (state.backlog.length > 0) {
-      const ids = state.backlog.map(b => b.id);
-      await db.execute(`DELETE FROM backlog WHERE id NOT IN (${placeholders(ids.length)})`, ids);
-    } else {
-      await db.execute(`DELETE FROM backlog`);
-    }
-  }
 
-  // Notes
-  if (state.notes) {
-    for (const n of state.notes) {
-      await db.execute(
-        `INSERT OR REPLACE INTO notes (id, title, content, tags, color, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-        [n.id, n.title, n.content || '', JSON.stringify(n.tags || []), n.color || null, n.createdAt, n.updatedAt]
+    const validRoutineTypeIds = new Set(
+      (state.routineTypes && state.routineTypes.length > 0 ? state.routineTypes : []).map((r) => r.id)
+    );
+    const validCategoryIds = new Set(
+      (state.categories && state.categories.length > 0 ? state.categories : []).map((c) => c.id)
+    );
+    const fallbackRoutineTypeId = state.routineTypes?.[0]?.id || 'main_routine';
+    const fallbackCategoryId = state.categories?.[0]?.id || 'geral';
+
+    // ----------------------------------------------------
+    // ETAPA 2: UPSERT DE TAREFAS (tasks)
+    // ----------------------------------------------------
+    const validTaskIds = new Set((state.tasks || []).map((t) => t.id));
+
+    if (state.tasks) {
+      for (const t of state.tasks) {
+        const routineTypeId =
+          validRoutineTypeIds.size > 0 && !validRoutineTypeIds.has(t.routineTypeId)
+            ? fallbackRoutineTypeId
+            : t.routineTypeId;
+        const categoryId =
+          validCategoryIds.size > 0 && !validCategoryIds.has(t.categoryId)
+            ? fallbackCategoryId
+            : t.categoryId;
+
+        await db.execute(
+          `INSERT OR REPLACE INTO tasks (id, title, description, start_time, end_time, routine_type_id, category_id, is_golden_rule, days_of_week, target_minutes, tags, notes, is_custom, rich_content, attachments, checklist, specific_date) 
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)`,
+          [
+            t.id,
+            t.title,
+            t.description || null,
+            t.startTime,
+            t.endTime,
+            routineTypeId,
+            categoryId,
+            t.isGoldenRule ? 1 : 0,
+            JSON.stringify(t.daysOfWeek),
+            t.targetMinutes,
+            JSON.stringify(t.tags || []),
+            t.notes || null,
+            t.isCustom ? 1 : 0,
+            t.richContent || null,
+            JSON.stringify(t.attachments || []),
+            JSON.stringify(t.checklist || []),
+            t.specificDate || null,
+          ]
+        );
+      }
+    }
+
+    // ----------------------------------------------------
+    // ETAPA 3: UPSERT DE ITENS DO BACKLOG
+    // ----------------------------------------------------
+    if (state.backlog) {
+      for (const b of state.backlog) {
+        const categoryId =
+          validCategoryIds.size > 0 && !validCategoryIds.has(b.categoryId)
+            ? fallbackCategoryId
+            : b.categoryId;
+
+        await db.execute(
+          `INSERT OR REPLACE INTO backlog (id, title, description, category_id, target_minutes, tags, notes, created_at, original_task_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+          [
+            b.id,
+            b.title,
+            b.description || null,
+            categoryId,
+            b.targetMinutes,
+            JSON.stringify(b.tags || []),
+            b.notes || null,
+            b.createdAt,
+            b.originalTaskId || null,
+          ]
+        );
+      }
+    }
+
+    // ----------------------------------------------------
+    // ETAPA 4: UPSERT DE NOTAS (notes)
+    // ----------------------------------------------------
+    if (state.notes) {
+      for (const n of state.notes) {
+        await db.execute(
+          `INSERT OR REPLACE INTO notes (id, title, content, tags, color, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+          [
+            n.id,
+            n.title,
+            n.content || '',
+            JSON.stringify(n.tags || []),
+            n.color || null,
+            n.createdAt,
+            n.updatedAt,
+          ]
+        );
+      }
+    }
+
+    // ----------------------------------------------------
+    // ETAPA 5: UPSERT DE COMPLETIONS (task_completions)
+    // Insere APENAS logs cujas tarefas existem em tasks!
+    // ----------------------------------------------------
+    if (state.logs) {
+      const logsArr = Object.values(state.logs);
+      for (const log of logsArr) {
+        // Se a tarefa não existe no estado ativo, não insere na tabela para evitar erro 787
+        if (state.tasks && !validTaskIds.has(log.taskId)) {
+          continue;
+        }
+        if (!log.completed && (!log.timeSpentMinutes || log.timeSpentMinutes <= 0)) {
+          continue;
+        }
+        await db.execute(
+          `INSERT OR REPLACE INTO task_completions (id, task_id, date, completed, completed_at, time_spent_minutes) VALUES ($1, $2, $3, $4, $5, $6)`,
+          [
+            log.id,
+            log.taskId,
+            log.date,
+            log.completed ? 1 : 0,
+            log.completedAt || null,
+            log.timeSpentMinutes || 0,
+          ]
+        );
+      }
+    }
+
+    // ========================================================
+    // DELEÇÕES ORDENADAS (FILHO -> PAI):
+    // ========================================================
+
+    // ETAPA 6: Limpeza de task_completions (FILHO DE tasks)
+    // Remove qualquer completion que aponte para uma tarefa que não existe mais
+    if (state.tasks) {
+      if (validTaskIds.size > 0) {
+        const ids = Array.from(validTaskIds);
+        await db.execute(
+          `DELETE FROM task_completions WHERE task_id NOT IN (${placeholders(ids.length)})`,
+          ids
+        );
+      } else {
+        await db.execute(`DELETE FROM task_completions`);
+      }
+    }
+
+    // Remove logs desmarcados ou removidos da store
+    if (state.logs) {
+      const activeLogs = Object.values(state.logs).filter(
+        (l) => (!state.tasks || validTaskIds.has(l.taskId)) && (l.completed || (l.timeSpentMinutes && l.timeSpentMinutes > 0))
       );
+      if (activeLogs.length > 0) {
+        const ids = activeLogs.map((l) => l.id);
+        await db.execute(
+          `DELETE FROM task_completions WHERE id NOT IN (${placeholders(ids.length)})`,
+          ids
+        );
+      } else {
+        await db.execute(`DELETE FROM task_completions`);
+      }
     }
-    if (state.notes.length > 0) {
-      const ids = state.notes.map(n => n.id);
-      await db.execute(`DELETE FROM notes WHERE id NOT IN (${placeholders(ids.length)})`, ids);
-    } else {
-      await db.execute(`DELETE FROM notes`);
+
+    // ETAPA 7: Limpeza de tasks (PAI de task_completions, FILHO de routine_types e categories)
+    // Como os task_completions filhos já foram apagados na Etapa 6, esta deleção nunca falhará com erro 787!
+    if (state.tasks) {
+      if (state.tasks.length > 0) {
+        const ids = state.tasks.map((t) => t.id);
+        await db.execute(
+          `DELETE FROM tasks WHERE id NOT IN (${placeholders(ids.length)})`,
+          ids
+        );
+      } else {
+        await db.execute(`DELETE FROM tasks`);
+      }
     }
+
+    // ETAPA 8: Limpeza de backlog (FILHO de categories)
+    if (state.backlog) {
+      if (state.backlog.length > 0) {
+        const ids = state.backlog.map((b) => b.id);
+        await db.execute(
+          `DELETE FROM backlog WHERE id NOT IN (${placeholders(ids.length)})`,
+          ids
+        );
+      } else {
+        await db.execute(`DELETE FROM backlog`);
+      }
+    }
+
+    // ETAPA 9: Limpeza de categories e routine_types (PAIS de tasks e backlog)
+    if (state.categories) {
+      if (state.categories.length > 0) {
+        const ids = state.categories.map((c) => c.id);
+        await db.execute(
+          `DELETE FROM categories WHERE id NOT IN (${placeholders(ids.length)})`,
+          ids
+        );
+      } else {
+        await db.execute(`DELETE FROM categories`);
+      }
+    }
+
+    if (state.routineTypes) {
+      if (state.routineTypes.length > 0) {
+        const ids = state.routineTypes.map((r) => r.id);
+        await db.execute(
+          `DELETE FROM routine_types WHERE id NOT IN (${placeholders(ids.length)})`,
+          ids
+        );
+      } else {
+        await db.execute(`DELETE FROM routine_types`);
+      }
+    }
+
+    // ETAPA 10: Limpeza de notes
+    if (state.notes) {
+      if (state.notes.length > 0) {
+        const ids = state.notes.map((n) => n.id);
+        await db.execute(
+          `DELETE FROM notes WHERE id NOT IN (${placeholders(ids.length)})`,
+          ids
+        );
+      } else {
+        await db.execute(`DELETE FROM notes`);
+      }
+    }
+  } catch (error) {
+    console.warn('[dbService] Erro ao sincronizar estado com o SQLite (tratado com recuperação):', error);
+    try {
+      // Auto-reparação: purga quaisquer registros órfãos que possam ter causado conflito
+      await db.execute('DELETE FROM task_completions WHERE task_id NOT IN (SELECT id FROM tasks);');
+      await db.execute('DELETE FROM backlog WHERE category_id NOT IN (SELECT id FROM categories);');
+    } catch (_) {}
   }
 }
 
@@ -278,7 +458,7 @@ export async function runLocalStorageMigration(): Promise<void> {
         if (state.notes && state.notes.length > 0) payloadToSync.notes = state.notes;
 
         if (Object.keys(payloadToSync).length > 0) {
-          console.log('Migrando dados legados do localStorage para o SQLite...');
+          console.warn('[dbService] Migrando dados legados do localStorage para o SQLite...');
           await syncStateToDb(payloadToSync);
         }
       }

@@ -36,6 +36,8 @@ export const useFlowStore = create<FlowStore>()(
           geminiConfig: state.geminiConfig,
           aiMessages: state.aiMessages,
           backupSettings: state.backupSettings,
+          hasCompletedOnboarding: state.hasCompletedOnboarding,
+          userProfile: state.userProfile,
         }),
       }
     )
@@ -70,7 +72,9 @@ useFlowStore.subscribe(
       lastRelationalState = next;
       if (syncTimeout) clearTimeout(syncTimeout);
       syncTimeout = setTimeout(() => {
-        syncStateToDb(next).catch(console.error);
+        syncStateToDb(next).catch((err) => {
+          console.warn('[useFlowStore] Falha no sync com SQLite:', err);
+        });
       }, 1000);
     }
   }

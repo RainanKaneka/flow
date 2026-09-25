@@ -3,11 +3,12 @@
 import React, { useState, useEffect } from 'react';
 import { useFlowStore } from '../store/useFlowStore';
 import { Task } from '../types/routine';
-import { X, Check, Clock, Calendar, Sparkles } from 'lucide-react';
+import { X, Check, Calendar, RotateCw } from 'lucide-react';
 
 export const TaskModal: React.FC = () => {
   const isOpen = useFlowStore((s) => s.isTaskModalOpen);
   const editingTask = useFlowStore((s) => s.editingTask);
+  const selectedDate = useFlowStore((s) => s.selectedDate);
   const routineTypes = useFlowStore((s) => s.routineTypes);
   const selectedRoutineTypeId = useFlowStore((s) => s.selectedRoutineTypeId);
   const categories = useFlowStore((s) => s.categories);
@@ -22,17 +23,47 @@ export const TaskModal: React.FC = () => {
   const [categoryId, setCategoryId] = useState('');
   const [isGoldenRule, setIsGoldenRule] = useState(false);
   const [notes, setNotes] = useState('');
+  const [frequencyScope, setFrequencyScope] = useState<'single_day' | 'all_days'>('single_day');
+  const [targetDate, setTargetDate] = useState<string>('');
 
   useEffect(() => {
-    if (editingTask) {
-      setTitle(editingTask.title);
-      setDescription(editingTask.description);
-      setStartTime(editingTask.startTime);
-      setEndTime(editingTask.endTime);
-      setRoutineTypeId(editingTask.routineTypeId);
-      setCategoryId(editingTask.categoryId);
+    const initialDate = editingTask?.specificDate || selectedDate;
+    setTargetDate(initialDate);
+
+    if (editingTask && editingTask.id) {
+      setTitle(editingTask.title ?? '');
+      setDescription(editingTask.description ?? '');
+      setStartTime(editingTask.startTime || '14:00');
+      setEndTime(editingTask.endTime || '15:00');
+      setRoutineTypeId(editingTask.routineTypeId || selectedRoutineTypeId || routineTypes[0]?.id || '');
+      setCategoryId(editingTask.categoryId || categories[0]?.id || '');
       setIsGoldenRule(!!editingTask.isGoldenRule);
       setNotes(editingTask.notes || '');
+
+      if (editingTask.specificDate) {
+        setFrequencyScope('single_day');
+        setTargetDate(editingTask.specificDate);
+      } else if (editingTask.daysOfWeek && editingTask.daysOfWeek.length === 7) {
+        setFrequencyScope('all_days');
+      } else {
+        setFrequencyScope('all_days');
+      }
+    } else if (editingTask) {
+      setTitle(editingTask.title ?? '');
+      setDescription(editingTask.description ?? '');
+      setStartTime(editingTask.startTime || '09:00');
+      setEndTime(editingTask.endTime || '10:00');
+      setRoutineTypeId(editingTask.routineTypeId || selectedRoutineTypeId || routineTypes[0]?.id || '');
+      setCategoryId(editingTask.categoryId || categories[0]?.id || '');
+      setIsGoldenRule(!!editingTask.isGoldenRule);
+      setNotes(editingTask.notes || '');
+
+      if (editingTask.specificDate) {
+        setFrequencyScope('single_day');
+        setTargetDate(editingTask.specificDate);
+      } else {
+        setFrequencyScope('single_day');
+      }
     } else {
       setTitle('');
       setDescription('');
@@ -42,15 +73,29 @@ export const TaskModal: React.FC = () => {
       setCategoryId(categories[0]?.id || '');
       setIsGoldenRule(false);
       setNotes('');
+      setFrequencyScope('single_day');
+      setTargetDate(selectedDate);
     }
-  }, [editingTask, selectedRoutineTypeId, routineTypes, categories, isOpen]);
+  }, [editingTask, selectedRoutineTypeId, routineTypes, categories, isOpen, selectedDate]);
 
   if (!isOpen) return null;
 
+  const formatFriendlyDate = (dateStr: string) => {
+    if (!dateStr) return '';
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const dateObj = new Date(y, m - 1, d);
+    const weekday = dateObj.toLocaleDateString('pt-BR', { weekday: 'short' });
+    const dayAndMonth = dateObj.toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: 'short',
+    });
+    return `${weekday.toUpperCase()}, ${dayAndMonth}`;
+  };
+
   // Calcular targetMinutes
   const calculateMinutes = (start: string, end: string) => {
-    const [h1, m1] = start.split(':').map(Number);
-    const [h2, m2] = end.split(':').map(Number);
+    const [h1, m1] = (start || '09:00').split(':').map(Number);
+    const [h2, m2] = (end || '10:00').split(':').map(Number);
     let diff = h2 * 60 + m2 - (h1 * 60 + m1);
     if (diff < 0) diff += 24 * 60; // atravessando meia noite
     return diff > 0 ? diff : 30;
@@ -58,23 +103,41 @@ export const TaskModal: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim()) return;
+    const cleanTitle = (title || '').trim();
+    if (!cleanTitle) return;
 
     const matchedCat = categories.find((c) => c.id === categoryId);
 
+    // Determina os dias da semana e data específica
+    let finalDaysOfWeek: number[];
+    let finalSpecificDate: string | undefined;
+
+    if (frequencyScope === 'single_day') {
+      const dateToUse = targetDate || selectedDate;
+      finalSpecificDate = dateToUse;
+      const [y, m, d] = dateToUse.split('-').map(Number);
+      const dayOfWeek = new Date(y, m - 1, d).getDay();
+      finalDaysOfWeek = [dayOfWeek];
+    } else {
+      // Para todos os dias
+      finalSpecificDate = undefined;
+      finalDaysOfWeek = [0, 1, 2, 3, 4, 5, 6];
+    }
+
     saveTask({
-      id: editingTask?.id,
-      title: title.trim(),
-      description: description.trim(),
-      startTime,
-      endTime,
-      routineTypeId: routineTypeId || selectedRoutineTypeId,
-      categoryId: categoryId || categories[0]?.id,
-      isGoldenRule,
-      daysOfWeek: [1, 2, 3, 4, 5],
+      id: editingTask?.id || undefined,
+      title: cleanTitle,
+      description: (description || '').trim(),
+      startTime: startTime || '09:00',
+      endTime: endTime || '10:00',
+      routineTypeId: routineTypeId || selectedRoutineTypeId || routineTypes[0]?.id || '',
+      categoryId: categoryId || categories[0]?.id || '',
+      isGoldenRule: !!isGoldenRule,
+      daysOfWeek: finalDaysOfWeek,
       targetMinutes: calculateMinutes(startTime, endTime),
-      tags: matchedCat ? [matchedCat.name] : [],
-      notes: notes.trim() || undefined,
+      tags: matchedCat ? [matchedCat.name] : (editingTask?.tags || []),
+      notes: (notes || '').trim() || undefined,
+      specificDate: finalSpecificDate,
     });
   };
 
@@ -120,10 +183,16 @@ export const TaskModal: React.FC = () => {
           >
             <div>
               <h3 style={{ fontSize: '18px', fontWeight: 800, letterSpacing: '-0.02em' }}>
-                {editingTask ? 'Editar Atividade' : 'Nova Atividade da Rotina'}
+                {editingTask?.id
+                  ? 'Editar Atividade'
+                  : editingTask?.specificDate
+                    ? 'Nova Atividade no Calendário'
+                    : 'Nova Atividade da Rotina'}
               </h3>
               <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                Organize seu dia em blocos claros de foco
+                {editingTask?.specificDate
+                  ? `Agendando atividade para o dia ${editingTask.specificDate}`
+                  : 'Organize seu dia em blocos claros de foco'}
               </p>
             </div>
             <button
@@ -202,6 +271,168 @@ export const TaskModal: React.FC = () => {
                   resize: 'none',
                 }}
               />
+            </div>
+
+            {/* Frequência da Atividade: Só para este dia vs Para todos os dias */}
+            <div>
+              <label
+                style={{
+                  display: 'block',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  marginBottom: '6px',
+                  color: 'var(--text-primary)',
+                }}
+              >
+                Frequência da Atividade *
+              </label>
+              <div
+                data-testid="task-frequency-selector"
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr',
+                  gap: '10px',
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => setFrequencyScope('single_day')}
+                  data-testid="freq-single-day-btn"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    padding: '10px 12px',
+                    borderRadius: '12px',
+                    border: '1px solid',
+                    borderColor:
+                      frequencyScope === 'single_day'
+                        ? 'var(--accent-primary)'
+                        : 'var(--border-subtle)',
+                    background:
+                      frequencyScope === 'single_day'
+                        ? 'rgba(99, 102, 241, 0.12)'
+                        : 'var(--bg-primary)',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  <Calendar
+                    size={16}
+                    color={
+                      frequencyScope === 'single_day'
+                        ? 'var(--accent-primary)'
+                        : 'var(--text-secondary)'
+                    }
+                  />
+                  <div>
+                    <span
+                      style={{
+                        display: 'block',
+                        fontSize: '12px',
+                        fontWeight: 700,
+                        color:
+                          frequencyScope === 'single_day'
+                            ? 'var(--accent-primary)'
+                            : 'var(--text-primary)',
+                      }}
+                    >
+                      Só para o dia
+                    </span>
+                    <span style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>
+                      {targetDate ? formatFriendlyDate(targetDate) : 'Data específica'}
+                    </span>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setFrequencyScope('all_days')}
+                  data-testid="freq-all-days-btn"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    padding: '10px 12px',
+                    borderRadius: '12px',
+                    border: '1px solid',
+                    borderColor:
+                      frequencyScope === 'all_days'
+                        ? 'var(--accent-primary)'
+                        : 'var(--border-subtle)',
+                    background:
+                      frequencyScope === 'all_days'
+                        ? 'rgba(99, 102, 241, 0.12)'
+                        : 'var(--bg-primary)',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  <RotateCw
+                    size={16}
+                    color={
+                      frequencyScope === 'all_days'
+                        ? 'var(--accent-primary)'
+                        : 'var(--text-secondary)'
+                    }
+                  />
+                  <div>
+                    <span
+                      style={{
+                        display: 'block',
+                        fontSize: '12px',
+                        fontWeight: 700,
+                        color:
+                          frequencyScope === 'all_days'
+                            ? 'var(--accent-primary)'
+                            : 'var(--text-primary)',
+                      }}
+                    >
+                      Para todos os dias
+                    </span>
+                    <span style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>
+                      Repete diariamente
+                    </span>
+                  </div>
+                </button>
+              </div>
+
+              {/* Ajuste de data caso "Só para o dia" esteja selecionado */}
+              {frequencyScope === 'single_day' && (
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    marginTop: '8px',
+                    padding: '6px 12px',
+                    background: 'var(--bg-elevated)',
+                    borderRadius: '8px',
+                    border: '1px solid var(--border-subtle)',
+                  }}
+                >
+                  <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                    Aplicar na data:
+                  </span>
+                  <input
+                    type="date"
+                    value={targetDate}
+                    onChange={(e) => setTargetDate(e.target.value)}
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      color: 'var(--text-primary)',
+                      fontSize: '12px',
+                      fontFamily: 'var(--font-sans)',
+                      fontWeight: 600,
+                      outline: 'none',
+                      cursor: 'pointer',
+                    }}
+                  />
+                </div>
+              )}
             </div>
 
             {/* Times */}
@@ -398,7 +629,7 @@ export const TaskModal: React.FC = () => {
               </button>
 
               <button type="submit" className="btn-island btn-island-primary">
-                <span>{editingTask ? 'Atualizar Atividade' : 'Salvar Atividade'}</span>
+                <span>{editingTask?.id ? 'Atualizar Atividade' : 'Salvar Atividade'}</span>
                 <div className="btn-circle-icon">
                   <Check size={14} strokeWidth={2.8} />
                 </div>

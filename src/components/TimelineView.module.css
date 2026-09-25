@@ -1,0 +1,430 @@
+.container {
+  padding: 8px var(--content-padding-x, 28px) 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  animation: fadeIn 250ms cubic-bezier(0.32, 0.72, 0, 1) forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Header de Resumo da Timeline */
+.overviewCard {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-outer);
+  padding: 18px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.overviewHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.titleGroup {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.iconCircle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mainTitle {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+
+.subtitle {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.statsRow {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.statBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+}
+
+.statBadge strong {
+  color: var(--text-primary);
+}
+
+.progressBarContainer {
+  height: 6px;
+  background: var(--bg-elevated);
+  border-radius: 9999px;
+  overflow: hidden;
+  position: relative;
+}
+
+.progressBarFill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-primary), #10B981);
+  border-radius: 9999px;
+  transition: width 400ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* Timeline Vertical Spine */
+.timelineTrack {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 8px;
+}
+
+.verticalSpine {
+  position: absolute;
+  top: 12px;
+  bottom: 12px;
+  left: 74px;
+  width: 2px;
+  background: var(--border-subtle);
+  z-index: 1;
+}
+
+/* Indicador de Agora (Real-time Live Line) */
+.nowMarkerRow {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 3;
+  margin: 4px 0;
+}
+
+.nowTimeBadge {
+  width: 66px;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent-primary);
+  letter-spacing: -0.02em;
+}
+
+.nowDot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent-primary);
+  border: 3px solid var(--bg-primary);
+  box-shadow: 0 0 10px var(--accent-primary);
+  z-index: 4;
+  animation: pulseNow 2s infinite ease-in-out;
+  flex-shrink: 0;
+  margin-left: 2px;
+}
+
+@keyframes pulseNow {
+  0% {
+    box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(99, 102, 241, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(99, 102, 241, 0);
+  }
+}
+
+.nowLine {
+  flex: 1;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent-primary) 0%, transparent 95%);
+}
+
+.nowLabel {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: #FFFFFF;
+  background: var(--accent-primary);
+  padding: 2px 7px;
+  border-radius: 9999px;
+  text-transform: uppercase;
+}
+
+/* Linha da Atividade na Timeline */
+.timelineRow {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  z-index: 2;
+}
+
+.timeCol {
+  width: 66px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  padding-top: 14px;
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+}
+
+.timeStart {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.timeEnd {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.timeDuration {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--accent-primary);
+  background: var(--accent-soft);
+  padding: 1px 5px;
+  border-radius: 4px;
+  margin-top: 4px;
+}
+
+/* Nó Conector no Eixo Vertical */
+.spineNode {
+  position: relative;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--bg-primary);
+  border: 2px solid var(--border-focus);
+  margin-top: 15px;
+  flex-shrink: 0;
+  z-index: 3;
+  transition: all 200ms ease;
+  margin-left: 2px;
+}
+
+.spineNodeActive {
+  background: var(--accent-primary);
+  border-color: #FFFFFF;
+  box-shadow: 0 0 10px rgba(99, 102, 241, 0.6);
+}
+
+.spineNodeCompleted {
+  background: var(--success);
+  border-color: var(--success);
+}
+
+/* Card da Tarefa na Timeline */
+.timelineCard {
+  flex: 1;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-inner);
+  padding: 16px 20px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  transition: all 200ms cubic-bezier(0.32, 0.72, 0, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.timelineCard:hover {
+  border-color: var(--border-focus);
+  transform: translateX(2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.timelineCardActive {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 1px var(--accent-primary), 0 8px 24px rgba(99, 102, 241, 0.2);
+}
+
+.timelineCardCompleted {
+  opacity: 0.72;
+  background: var(--bg-elevated);
+}
+
+.categoryColorStripe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 4px;
+}
+
+/* Linha de Intervalo Livre (Structured Break) */
+.intervalRow {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  z-index: 2;
+  margin: 2px 0;
+}
+
+.intervalTimeCol {
+  width: 66px;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.intervalNode {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--bg-elevated);
+  border: 2px dashed var(--border-subtle);
+  margin-left: 4px;
+  flex-shrink: 0;
+  z-index: 3;
+}
+
+.intervalCard {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px dashed var(--border-subtle);
+  border-radius: 12px;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--text-muted);
+  font-size: 12px;
+  transition: all 180ms ease;
+}
+
+.intervalCard:hover {
+  background: var(--bg-elevated);
+  border-color: var(--border-focus);
+  color: var(--text-secondary);
+}
+
+.intervalCardActive {
+  border-color: rgba(99, 102, 241, 0.4);
+  background: rgba(99, 102, 241, 0.05);
+}
+
+.addInIntervalBtn {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 150ms ease;
+}
+
+.addInIntervalBtn:hover {
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+  color: #FFFFFF;
+}
+
+/* Controles de alternância de visualização */
+.viewSwitchGroup {
+  display: inline-flex;
+  align-items: center;
+  background: var(--bg-elevated);
+  padding: 3px;
+  border-radius: 9999px;
+  border: 1px solid var(--border-subtle);
+  gap: 2px;
+}
+
+.viewSwitchBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 9999px;
+  border: none;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  background: transparent;
+  color: var(--text-secondary);
+  transition: all 180ms ease;
+}
+
+.viewSwitchBtnActive {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+/* =======================================================
+   RESPONSIVIDADE: TELAS DE 1024px ATÉ 1920px
+   ======================================================= */
+@media (max-width: 1180px) {
+  .timeBlockCard {
+    padding: 10px 12px;
+    gap: 8px;
+  }
+
+  .blockTitle {
+    font-size: 13px;
+  }
+}
+
+@media (min-width: 1440px) {
+  .timeBlockCard {
+    padding: 14px 18px;
+    gap: 14px;
+  }
+
+  .blockTitle {
+    font-size: 15px;
+  }
+}
+

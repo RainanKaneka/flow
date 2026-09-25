@@ -95,7 +95,7 @@ export const DashboardView: React.FC = () => {
       : `Últimos ${selectedRangePreset} dias`;
 
   return (
-    <div style={{ padding: '20px 28px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+    <div style={{ padding: '20px var(--content-padding-x, 28px)', display: 'flex', flexDirection: 'column', gap: '24px' }}>
       {/* Barra de Filtro de Intervalo Temporal (Update 0.1.6) */}
       <DashboardRangeFilter
         selectedRangePreset={selectedRangePreset}

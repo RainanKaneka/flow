@@ -5,7 +5,9 @@ import { useFlowStore, initializeDbStore } from '../store/useFlowStore';
 import { Header } from '../components/Header';
 import { DailyStatsBar } from '../components/DailyStatsBar';
 import { CategoryFilter } from '../components/CategoryFilter';
-import { TaskCard } from '../components/TaskCard';
+import { TaskStream } from '../components/TaskStream';
+import { TimelineView } from '../components/TimelineView';
+import { CalendarMonthView } from '../components/CalendarMonthView';
 import { TaskModal } from '../components/TaskModal';
 import { TaskDetailModal } from '../components/TaskDetailModal';
 import { DashboardView } from '../components/DashboardView';
@@ -20,6 +22,8 @@ import { BackupModal } from '../components/BackupModal';
 import { UpdateModal } from '../components/UpdateModal';
 import { GoogleAuthModal } from '../components/GoogleAuthModal';
 import { InAppNotificationToast } from '../components/InAppNotificationToast';
+import { OnboardingWizard } from '../components/OnboardingWizard';
+import { GlobalSearchModal } from '../components/GlobalSearchModal';
 import { Snackbar } from '../components/Snackbar';
 import { CustomTitleBar } from '../components/CustomTitleBar';
 import { useGlobalShortcuts } from '../hooks/useGlobalShortcuts';
@@ -27,7 +31,7 @@ import { useReminderScheduler } from '../services/reminderScheduler';
 import { useDailyBackupScheduler } from '../hooks/useDailyBackupScheduler';
 import { useUpdateChecker } from '../hooks/useUpdateChecker';
 import { ErrorBoundary } from '../components/ErrorBoundary';
-import { Sparkles, Compass, RefreshCw, Database } from 'lucide-react';
+import { Sparkles, Compass, RefreshCw, Database, Clock, List } from 'lucide-react';
 
 export default function Home() {
   // Atalhos Globais de Teclado, Lembretes Nativos & Auto-Updater
@@ -44,8 +48,11 @@ export default function Home() {
   const resetToTemplate = useFlowStore((s) => s.resetToTemplate);
   const tickPomodoro = useFlowStore((s) => s.tickPomodoro);
   const isPomodoroActive = useFlowStore((s) => s.pomodoro.isActive);
+  const routineViewMode = useFlowStore((s) => s.routineViewMode || 'stream');
+  const setRoutineViewMode = useFlowStore((s) => s.setRoutineViewMode);
   const [isDbReady, setIsDbReady] = useState(false);
   const openBackupModal = useFlowStore((s) => s.openBackupModal);
+  const openOnboardingModal = useFlowStore((s) => s.openOnboardingModal);
   const backupSettings = useFlowStore((s) => s.backupSettings);
 
   // Inicializa rotina diária de backup quando o banco de dados estiver pronto
@@ -122,6 +129,8 @@ export default function Home() {
     );
   }
 
+  const isWideView = ['calendar', 'timeline', 'dashboard', 'notes'].includes(activeView);
+
   return (
     <div style={{ minHeight: '100vh', paddingBottom: '60px' }}>
       {/* Barra de Título Customizada Frameless (Desktop Tauri) */}
@@ -130,7 +139,10 @@ export default function Home() {
       {/* Header Sticky */}
       <Header />
 
-      <main style={{ maxWidth: '1000px', margin: '0 auto' }}>
+      <main
+        data-testid="app-main-container"
+        className={`responsive-main ${isWideView ? 'responsive-main-wide' : ''}`}
+      >
         {/* Renderização Condicional da View Selecionada com Isolamento de Falhas */}
         {activeView === 'dashboard' && (
           <ErrorBoundary viewName="Painel de Métricas">
@@ -162,13 +174,25 @@ export default function Home() {
           </ErrorBoundary>
         )}
 
+        {activeView === 'timeline' && (
+          <ErrorBoundary viewName="Cronograma Visual">
+            <TimelineView showViewToggle={false} />
+          </ErrorBoundary>
+        )}
+
+        {activeView === 'calendar' && (
+          <ErrorBoundary viewName="Calendário Mensal">
+            <CalendarMonthView />
+          </ErrorBoundary>
+        )}
+
         {activeView === 'routine' && (
           <ErrorBoundary viewName="Rotina Diária">
             {/* Daily Stats Bar */}
             <DailyStatsBar />
 
             {/* Philosophy Card - Dinâmico por Tipo de Rotina */}
-            <div style={{ padding: '0 28px 12px' }}>
+            <div style={{ padding: '0 var(--content-padding-x, 28px) 12px' }}>
               <div
                 style={{
                   padding: '12px 18px',
@@ -210,66 +234,77 @@ export default function Home() {
             {/* Category Filters */}
             <CategoryFilter />
 
-            {/* Tasks Stream */}
-            <div
-              style={{
-                padding: '8px 28px',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '12px',
-              }}
-            >
-              {filteredTasks.length > 0 ? (
-                filteredTasks.map((task) => <TaskCard key={task.id} task={task} />)
-              ) : (
+            {/* Alternância entre Fluxo de Tarefas e Cronograma Visual */}
+            {routineViewMode === 'timeline' ? (
+              <TimelineView showViewToggle={true} />
+            ) : (
+              <div style={{ padding: '8px var(--content-padding-x, 28px)' }}>
                 <div
-                  className="double-bezel-outer"
                   style={{
-                    textAlign: 'center',
-                    padding: '40px 20px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'flex-end',
+                    marginBottom: '8px',
                   }}
                 >
                   <div
-                    className="double-bezel-inner"
+                    data-testid="routine-mode-switch"
                     style={{
-                      padding: '36px 20px',
-                      display: 'flex',
-                      flexDirection: 'column',
+                      display: 'inline-flex',
                       alignItems: 'center',
-                      gap: '12px',
+                      background: 'var(--bg-elevated)',
+                      padding: '2px',
+                      borderRadius: '9999px',
+                      border: '1px solid var(--border-subtle)',
+                      gap: '2px',
                     }}
                   >
-                    <div
+                    <button
+                      type="button"
+                      onClick={() => setRoutineViewMode?.('stream')}
                       style={{
-                        width: '48px',
-                        height: '48px',
-                        borderRadius: '50%',
-                        background: 'var(--bg-elevated)',
-                        display: 'flex',
+                        display: 'inline-flex',
                         alignItems: 'center',
-                        justifyContent: 'center',
-                        color: 'var(--text-muted)',
+                        gap: '5px',
+                        padding: '4px 10px',
+                        borderRadius: '9999px',
+                        border: 'none',
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        background: 'var(--bg-secondary)',
+                        color: 'var(--text-primary)',
                       }}
                     >
-                      <Sparkles size={22} />
-                    </div>
-                    <h4 style={{ fontSize: '16px', fontWeight: 700 }}>
-                      Nenhuma atividade encontrada neste filtro
-                    </h4>
-                    <p
+                      <List size={12} />
+                      <span>Lista</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setRoutineViewMode?.('timeline')}
                       style={{
-                        fontSize: '13px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '5px',
+                        padding: '4px 10px',
+                        borderRadius: '9999px',
+                        border: 'none',
+                        fontSize: '11px',
+                        fontWeight: 500,
+                        cursor: 'pointer',
+                        background: 'transparent',
                         color: 'var(--text-secondary)',
-                        maxWidth: '400px',
                       }}
                     >
-                      Não há atividades para a categoria selecionada neste dia. Você pode alternar o
-                      filtro ou adicionar uma nova atividade personalizada.
-                    </p>
+                      <Clock size={12} />
+                      <span>Cronograma</span>
+                    </button>
                   </div>
                 </div>
-              )}
-            </div>
+
+                <TaskStream tasks={filteredTasks} />
+              </div>
+            )}
           </ErrorBoundary>
         )}
 
@@ -277,7 +312,7 @@ export default function Home() {
         <div
           style={{
             marginTop: '36px',
-            padding: '16px 28px',
+            padding: '16px var(--content-padding-x, 28px)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -315,6 +350,25 @@ export default function Home() {
                   ? `Último em ${backupSettings.lastBackupDate}`
                   : 'Configurar'}
               </span>
+            </button>
+
+            <button
+              onClick={() => openOnboardingModal()}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--text-secondary)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontSize: '11px',
+                fontWeight: 600,
+              }}
+              title="Personalizar rotina inicial, objetivo e preferências no Onboarding Wizard"
+            >
+              <Sparkles size={12} color="var(--accent-primary)" />
+              <span>Setup Inicial & Templates</span>
             </button>
 
             <button
@@ -357,6 +411,8 @@ export default function Home() {
       <GoogleAuthModal />
       <InAppNotificationToast />
       <Snackbar />
+      <OnboardingWizard />
+      <GlobalSearchModal />
     </div>
   );
 }

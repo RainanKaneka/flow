@@ -34,6 +34,8 @@ export const Header: React.FC = () => {
   const googleUser = useFlowStore((s) => s.googleUser);
   const geminiConfig = useFlowStore((s) => s.geminiConfig);
   const openGoogleAuthModal = useFlowStore((s) => s.openGoogleAuthModal);
+  const openOnboardingModal = useFlowStore((s) => s.openOnboardingModal);
+  const openGlobalSearch = useFlowStore((s) => s.openGlobalSearch);
 
   const pomodoroMinutes = Math.floor(pomodoro.timeLeftSeconds / 60);
   const pomodoroSeconds = pomodoro.timeLeftSeconds % 60;
@@ -43,13 +45,13 @@ export const Header: React.FC = () => {
     <header
       style={{
         position: 'sticky',
-        top: 0,
+        top: 'var(--titlebar-height, 0px)',
         zIndex: 40,
         backdropFilter: 'blur(20px)',
         WebkitBackdropFilter: 'blur(20px)',
         backgroundColor: theme === 'dark' ? 'rgba(8, 8, 10, 0.85)' : 'rgba(248, 249, 250, 0.88)',
         borderBottom: '1px solid var(--border-subtle)',
-        padding: '12px 28px',
+        padding: '12px var(--header-padding-x, 28px)',
         display: 'flex',
         flexDirection: 'column',
         gap: '12px',
@@ -92,6 +94,8 @@ export const Header: React.FC = () => {
           reminderEnabled={reminderSettings.enabled}
           onOpenNotificationModal={openNotificationModal}
           onOpenBackupModal={openBackupModal}
+          onOpenOnboardingModal={openOnboardingModal}
+          onOpenGlobalSearch={openGlobalSearch}
           theme={theme}
           onToggleTheme={toggleTheme}
           onOpenNewTaskModal={() => openTaskModal(null)}

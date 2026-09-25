@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, Sun, Moon, Plus, Timer, Bell, Database } from 'lucide-react';
+import { Sparkles, Sun, Moon, Plus, Timer, Bell, Database, Search } from 'lucide-react';
 import { isNewerVersion, CURRENT_APP_VERSION } from '../../services/updateService';
 import { GoogleUser, GeminiConfig } from '../../types/routine';
 
@@ -16,6 +16,8 @@ export interface HeaderActionToolbarProps {
   reminderEnabled: boolean;
   onOpenNotificationModal: () => void;
   onOpenBackupModal?: () => void;
+  onOpenOnboardingModal?: () => void;
+  onOpenGlobalSearch?: () => void;
   theme: 'light' | 'dark';
   onToggleTheme: () => void;
   onOpenNewTaskModal: () => void;
@@ -34,6 +36,8 @@ export const HeaderActionToolbar: React.FC<HeaderActionToolbarProps> = ({
   reminderEnabled,
   onOpenNotificationModal,
   onOpenBackupModal,
+  onOpenOnboardingModal,
+  onOpenGlobalSearch,
   theme,
   onToggleTheme,
   onOpenNewTaskModal,
@@ -192,6 +196,70 @@ export const HeaderActionToolbar: React.FC<HeaderActionToolbarProps> = ({
         </button>
       )}
 
+      {/* Onboarding Wizard / Setup de Rotinas */}
+      {onOpenOnboardingModal && (
+        <button
+          onClick={onOpenOnboardingModal}
+          style={{
+            width: '36px',
+            height: '36px',
+            borderRadius: '50%',
+            background: 'var(--bg-secondary)',
+            border: '1px solid var(--border-subtle)',
+            color: 'var(--accent-primary)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            transition: 'all 200ms var(--bezier-haptic)',
+          }}
+          title="Setup Inicial & Templates de Rotina (Fase 3)"
+        >
+          <Sparkles size={15} />
+        </button>
+      )}
+
+      {/* Pesquisa Global / Command Palette (Fase 3, Parte 5) */}
+      {onOpenGlobalSearch && (
+        <button
+          onClick={onOpenGlobalSearch}
+          style={{
+            height: '36px',
+            padding: '0 12px',
+            borderRadius: '9999px',
+            background: 'var(--bg-secondary)',
+            border: '1px solid var(--border-subtle)',
+            color: 'var(--text-secondary)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            cursor: 'pointer',
+            transition: 'all 200ms var(--bezier-haptic)',
+            fontSize: '12px',
+            fontWeight: 500,
+          }}
+          title="Pesquisa Global de Tarefas, Notas e Configurações [Atalho: Ctrl+K / Cmd+K]"
+          data-testid="header-global-search-btn"
+        >
+          <Search size={14} color="var(--accent-primary)" />
+          <span className="hide-on-compact-desktop" style={{ color: 'var(--text-muted)' }}>Buscar...</span>
+          <kbd
+            style={{
+              fontSize: '10px',
+              fontWeight: 700,
+              padding: '2px 5px',
+              borderRadius: '4px',
+              background: 'rgba(255, 255, 255, 0.08)',
+              border: '1px solid var(--border-subtle)',
+              color: 'var(--text-secondary)',
+              fontFamily: 'var(--font-mono)',
+            }}
+          >
+            Ctrl+K
+          </kbd>
+        </button>
+      )}
+
       {/* Theme Toggle */}
       <button
         onClick={onToggleTheme}
@@ -219,7 +287,8 @@ export const HeaderActionToolbar: React.FC<HeaderActionToolbarProps> = ({
         className="btn-island btn-island-primary"
         title="Nova Atividade [Atalho: Ctrl+N]"
       >
-        <span>Nova Atividade</span>
+        <span className="hide-on-compact-desktop">Nova Atividade</span>
+        <span className="show-on-compact-desktop">Nova</span>
         <div className="btn-circle-icon">
           <Plus size={13} strokeWidth={2.6} />
         </div>

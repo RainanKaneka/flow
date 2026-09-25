@@ -18,13 +18,32 @@ import {
   Link2,
   CheckSquare,
   Timer,
+  GripVertical,
 } from 'lucide-react';
 
 interface TaskCardProps {
   task: Task;
+  isDragging?: boolean;
+  isDragOver?: boolean;
+  onDragStart?: (e: React.DragEvent, taskId: string) => void;
+  onDragOver?: (e: React.DragEvent, taskId: string) => void;
+  onDragLeave?: (e: React.DragEvent, taskId: string) => void;
+  onDrop?: (e: React.DragEvent, taskId: string) => void;
+  onDragEnd?: (e: React.DragEvent) => void;
+  onShiftTime?: (deltaMinutes: number) => void;
 }
 
-export const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
+export const TaskCard: React.FC<TaskCardProps> = ({
+  task,
+  isDragging,
+  isDragOver,
+  onDragStart,
+  onDragOver,
+  onDragLeave,
+  onDrop,
+  onDragEnd,
+  onShiftTime,
+}) => {
   const selectedDate = useFlowStore((s) => s.selectedDate);
   const logs = useFlowStore((s) => s.logs);
   const categories = useFlowStore((s) => s.categories);
@@ -35,6 +54,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
   const setActiveView = useFlowStore((s) => s.setActiveView);
   const deleteTask = useFlowStore((s) => s.deleteTask);
   const moveTaskToBacklog = useFlowStore((s) => s.moveTaskToBacklog);
+  const storeShiftTaskTime = useFlowStore((s) => s.shiftTaskTime);
 
   const [isBacklogModalOpen, setIsBacklogModalOpen] = useState(false);
 
@@ -63,13 +83,37 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
     toggleTaskCompletion(task.id, selectedDate);
   };
 
+  const handleShiftTime = (delta: number) => {
+    if (onShiftTime) {
+      onShiftTime(delta);
+    } else {
+      storeShiftTaskTime(task.id, delta);
+    }
+  };
+
   return (
     <div
       className="double-bezel-outer"
+      draggable={!isCompleted}
+      onDragStart={(e) => onDragStart?.(e, task.id)}
+      onDragOver={(e) => onDragOver?.(e, task.id)}
+      onDragLeave={(e) => onDragLeave?.(e, task.id)}
+      onDrop={(e) => onDrop?.(e, task.id)}
+      onDragEnd={onDragEnd}
+      data-testid={`task-card-${task.id}`}
       style={{
-        transition: 'all 280ms cubic-bezier(0.32, 0.72, 0, 1)',
-        opacity: isCompleted ? 0.75 : 1,
-        borderColor: task.isGoldenRule && !isCompleted ? 'rgba(245, 158, 11, 0.25)' : undefined,
+        transition: 'all 240ms cubic-bezier(0.32, 0.72, 0, 1)',
+        opacity: isDragging ? 0.45 : isCompleted ? 0.75 : 1,
+        borderColor: isDragOver
+          ? 'var(--accent-primary)'
+          : task.isGoldenRule && !isCompleted
+            ? 'rgba(245, 158, 11, 0.25)'
+            : undefined,
+        transform: isDragging ? 'scale(0.99)' : isDragOver ? 'translateY(2px)' : undefined,
+        boxShadow: isDragOver
+          ? '0 0 0 2px var(--accent-primary), 0 8px 24px rgba(99, 102, 241, 0.25)'
+          : undefined,
+        cursor: isCompleted ? 'default' : 'grab',
       }}
     >
       <div
@@ -79,12 +123,44 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
           display: 'flex',
           alignItems: 'flex-start',
           justifyContent: 'space-between',
-          gap: '16px',
+          gap: '14px',
           backgroundColor: isCompleted ? 'var(--bg-elevated)' : 'var(--bg-secondary)',
         }}
       >
-        {/* Left Checkbox & Time Indicator */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px', flex: 1 }}>
+        {/* Left Drag Handle, Checkbox & Time Indicator */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', flex: 1 }}>
+          {/* Drag Grip Handle */}
+          <div
+            data-testid={`drag-handle-${task.id}`}
+            title="Arraste para reordenar atividade e recalcular horários"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'var(--text-muted)',
+              cursor: isCompleted ? 'default' : 'grab',
+              padding: '2px',
+              borderRadius: '4px',
+              marginTop: '5px',
+              opacity: isCompleted ? 0.2 : 0.6,
+              transition: 'opacity 150ms ease, color 150ms ease',
+            }}
+            onMouseEnter={(e) => {
+              if (!isCompleted) {
+                e.currentTarget.style.opacity = '1';
+                e.currentTarget.style.color = 'var(--accent-primary)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isCompleted) {
+                e.currentTarget.style.opacity = '0.6';
+                e.currentTarget.style.color = 'var(--text-muted)';
+              }
+            }}
+          >
+            <GripVertical size={16} />
+          </div>
+
           {/* Haptic Checkbox */}
           <button
             onClick={handleCheck}
@@ -364,6 +440,63 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
                   </strong>{' '}
                   ({task.targetMinutes}m)
                 </span>
+
+                {/* Botões de ajuste rápido de horário */}
+                {!isCompleted && (
+                  <div
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      marginLeft: '4px',
+                    }}
+                  >
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleShiftTime(-15);
+                      }}
+                      title="Adiantar horário em 15 minutos (-15m)"
+                      aria-label="Adiantar 15 minutos"
+                      style={{
+                        padding: '1px 6px',
+                        fontSize: '10px',
+                        fontWeight: 600,
+                        borderRadius: '4px',
+                        border: '1px solid var(--border-subtle)',
+                        background: 'var(--bg-elevated)',
+                        color: 'var(--text-secondary)',
+                        cursor: 'pointer',
+                        transition: 'all 150ms ease',
+                      }}
+                    >
+                      -15m
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleShiftTime(15);
+                      }}
+                      title="Postergar horário em 15 minutos (+15m)"
+                      aria-label="Postergar 15 minutos"
+                      style={{
+                        padding: '1px 6px',
+                        fontSize: '10px',
+                        fontWeight: 600,
+                        borderRadius: '4px',
+                        border: '1px solid var(--border-subtle)',
+                        background: 'var(--bg-elevated)',
+                        color: 'var(--text-secondary)',
+                        cursor: 'pointer',
+                        transition: 'all 150ms ease',
+                      }}
+                    >
+                      +15m
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Horário Real de Conclusão */}
@@ -474,27 +607,25 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
             <Edit2 size={13} />
           </button>
 
-          {task.isCustom && (
-            <button
-              onClick={() => deleteTask(task.id)}
-              title="Excluir atividade customizada"
-              style={{
-                width: '30px',
-                height: '30px',
-                borderRadius: '8px',
-                border: 'none',
-                background: 'rgba(239, 68, 68, 0.1)',
-                color: '#EF4444',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                transition: 'all 200ms',
-              }}
-            >
-              <Trash2 size={13} />
-            </button>
-          )}
+          <button
+            onClick={() => deleteTask(task.id)}
+            title="Excluir atividade"
+            style={{
+              width: '30px',
+              height: '30px',
+              borderRadius: '8px',
+              border: 'none',
+              background: 'rgba(239, 68, 68, 0.1)',
+              color: '#EF4444',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              transition: 'all 200ms',
+            }}
+          >
+            <Trash2 size={13} />
+          </button>
         </div>
       </div>
 

@@ -50,6 +50,17 @@ describe('Store Slices (Modularized Architecture)', () => {
       expect(useFlowStore.getState().selectedTaskIdForDetail).toBe('task_xyz');
       useFlowStore.getState().closeTaskDetail();
       expect(useFlowStore.getState().selectedTaskIdForDetail).toBeNull();
+
+      // Modal de Pesquisa Global (Command Palette)
+      expect(useFlowStore.getState().isGlobalSearchOpen).toBe(false);
+      useFlowStore.getState().openGlobalSearch();
+      expect(useFlowStore.getState().isGlobalSearchOpen).toBe(true);
+      useFlowStore.getState().closeGlobalSearch();
+      expect(useFlowStore.getState().isGlobalSearchOpen).toBe(false);
+      useFlowStore.getState().toggleGlobalSearch();
+      expect(useFlowStore.getState().isGlobalSearchOpen).toBe(true);
+      useFlowStore.getState().toggleGlobalSearch();
+      expect(useFlowStore.getState().isGlobalSearchOpen).toBe(false);
     });
 
     it('deve atualizar configurações de lembrete e modal de notificações', () => {
@@ -232,22 +243,65 @@ describe('Store Slices (Modularized Architecture)', () => {
   });
 
   describe('backlogSlice & Cross-Slice Interactions', () => {
-    it('deve mover tarefa para o backlog e remover log da data', () => {
+    it('deve mover tarefa para o backlog e remover todos os logs de todas as datas, suportando Undo', () => {
       const task = useFlowStore.getState().tasks[0];
-      const selectedDate = useFlowStore.getState().selectedDate;
+      const date1 = '2026-09-24';
+      const date2 = '2026-09-25';
 
-      // Completa primeiro para gerar log
-      useFlowStore.getState().toggleTaskCompletion(task.id, selectedDate);
-      const key = `${selectedDate}_${task.id}`;
-      expect(useFlowStore.getState().logs[key]?.completed).toBe(true);
+      // Completa em duas datas diferentes
+      useFlowStore.getState().toggleTaskCompletion(task.id, date1);
+      useFlowStore.getState().toggleTaskCompletion(task.id, date2);
+      expect(useFlowStore.getState().logs[`${date1}_${task.id}`]?.completed).toBe(true);
+      expect(useFlowStore.getState().logs[`${date2}_${task.id}`]?.completed).toBe(true);
 
       // Move para backlog
-      useFlowStore.getState().moveTaskToBacklog(task.id, selectedDate);
+      useFlowStore.getState().moveTaskToBacklog(task.id, date1);
 
-      expect(useFlowStore.getState().logs[key]).toBeUndefined();
+      // Todos os logs da tarefa devem ter sido removidos para evitar órfãos no banco
+      expect(useFlowStore.getState().logs[`${date1}_${task.id}`]).toBeUndefined();
+      expect(useFlowStore.getState().logs[`${date2}_${task.id}`]).toBeUndefined();
       const inBacklog = useFlowStore.getState().backlog.find((b) => b.originalTaskId === task.id);
       expect(inBacklog).toBeDefined();
       expect(inBacklog?.title).toBe(task.title);
+
+      // Dispara o Undo da snackbar
+      const snackbar = useFlowStore.getState().snackbar;
+      expect(snackbar.isOpen).toBe(true);
+      expect(snackbar.onUndo).toBeDefined();
+      snackbar.onUndo!();
+
+      // Tarefa e logs devem ser restaurados
+      expect(useFlowStore.getState().tasks.some((t) => t.id === task.id)).toBe(true);
+      expect(useFlowStore.getState().logs[`${date1}_${task.id}`]?.completed).toBe(true);
+      expect(useFlowStore.getState().logs[`${date2}_${task.id}`]?.completed).toBe(true);
+      expect(useFlowStore.getState().backlog.find((b) => b.id === inBacklog!.id)).toBeUndefined();
+    });
+
+    it('deve excluir tarefa e remover todos os seus logs, suportando restauração por Undo', () => {
+      const task = useFlowStore.getState().tasks[0];
+      const date1 = '2026-09-20';
+      const date2 = '2026-09-21';
+
+      useFlowStore.getState().toggleTaskCompletion(task.id, date1);
+      useFlowStore.getState().toggleTaskCompletion(task.id, date2);
+      expect(useFlowStore.getState().logs[`${date1}_${task.id}`]?.completed).toBe(true);
+      expect(useFlowStore.getState().logs[`${date2}_${task.id}`]?.completed).toBe(true);
+
+      // Exclui tarefa
+      useFlowStore.getState().deleteTask(task.id);
+
+      expect(useFlowStore.getState().tasks.some((t) => t.id === task.id)).toBe(false);
+      expect(useFlowStore.getState().logs[`${date1}_${task.id}`]).toBeUndefined();
+      expect(useFlowStore.getState().logs[`${date2}_${task.id}`]).toBeUndefined();
+
+      // Executa Undo
+      const snackbar = useFlowStore.getState().snackbar;
+      expect(snackbar.isOpen).toBe(true);
+      snackbar.onUndo!();
+
+      expect(useFlowStore.getState().tasks.some((t) => t.id === task.id)).toBe(true);
+      expect(useFlowStore.getState().logs[`${date1}_${task.id}`]?.completed).toBe(true);
+      expect(useFlowStore.getState().logs[`${date2}_${task.id}`]?.completed).toBe(true);
     });
 
     it('deve promover item do backlog para tarefa agendada', () => {

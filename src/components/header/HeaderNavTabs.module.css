@@ -1,0 +1,66 @@
+.container {
+  display: flex;
+  align-items: center;
+  background: var(--bg-elevated);
+  padding: 3px;
+  border-radius: 9999px;
+  border: 1px solid var(--border-subtle);
+  gap: 2px;
+  max-width: 100%;
+  overflow-x: auto;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  white-space: nowrap;
+}
+
+.container::-webkit-scrollbar {
+  display: none;
+}
+
+.tabBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 13px;
+  border-radius: 9999px;
+  border: none;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  background-color: transparent;
+  color: var(--text-secondary);
+  box-shadow: none;
+  transition: all 200ms var(--bezier-haptic);
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.tabBtnActive {
+  background-color: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06) !important;
+  font-weight: 700 !important;
+}
+
+.tabBtn:hover:not(.tabBtnActive) {
+  color: var(--text-primary);
+  background-color: var(--bg-hover);
+}
+
+.tabCountBadge {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 9999px;
+  font-weight: 700;
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+}
+
+/* Responsividade para telas de 1024px até 1240px */
+@media (max-width: 1240px) {
+  .tabBtn {
+    padding: 5px 9px;
+    gap: 4px;
+    font-size: 11.5px;
+  }
+}

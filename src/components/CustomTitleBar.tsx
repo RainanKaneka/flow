@@ -12,6 +12,9 @@ export const CustomTitleBar: React.FC = () => {
   useEffect(() => {
     if (isTauri()) {
       setIsDesktop(true);
+      if (typeof document !== 'undefined') {
+        document.documentElement.style.setProperty('--titlebar-height', '32px');
+      }
       import('@tauri-apps/api/window')
         .then(({ getCurrentWindow }) => {
           const win = getCurrentWindow();
@@ -35,6 +38,12 @@ export const CustomTitleBar: React.FC = () => {
         .catch((err) => {
           console.warn('Falha ao carregar Tauri Window API:', err);
         });
+
+      return () => {
+        if (typeof document !== 'undefined') {
+          document.documentElement.style.setProperty('--titlebar-height', '0px');
+        }
+      };
     }
   }, []);
 
@@ -85,9 +94,10 @@ export const CustomTitleBar: React.FC = () => {
         justifyContent: 'space-between',
         userSelect: 'none',
         WebkitUserSelect: 'none',
-        borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
-        zIndex: 9999,
-        position: 'relative',
+        borderBottom: '1px solid var(--border-subtle)',
+        zIndex: 50,
+        position: 'sticky',
+        top: 0,
       }}
     >
       {/* Área Esquerda: Indicador sutil e minimalista (sem título poluído) */}

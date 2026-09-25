@@ -8,7 +8,10 @@ import {
   BackupSettings,
   BackupModalTab,
   FlowState,
+  UserProfile,
+  OnboardingData,
 } from '../../types/routine';
+import { ROUTINE_TEMPLATES } from '../../data/routineTemplates';
 
 export const getTodayDateString = (): string => {
   const today = new Date();
@@ -20,6 +23,7 @@ export const getTodayDateString = (): string => {
 
 export interface UiSliceState {
   activeView: AppView;
+  routineViewMode: 'stream' | 'timeline';
   selectedDate: string;
   theme: 'dark' | 'light';
   isTaskModalOpen: boolean;
@@ -40,12 +44,20 @@ export interface UiSliceState {
     message: string;
     onUndo?: () => void;
   };
+  hasCompletedOnboarding: boolean;
+  userProfile: UserProfile | null;
+  isOnboardingModalOpen: boolean;
+  isGlobalSearchOpen: boolean;
 }
 
 export interface UiSliceActions {
   setActiveView: (view: AppView) => void;
+  setRoutineViewMode: (mode: 'stream' | 'timeline') => void;
   setDate: (date: string) => void;
   toggleTheme: () => void;
+  openGlobalSearch: () => void;
+  closeGlobalSearch: () => void;
+  toggleGlobalSearch: () => void;
   openTaskModal: (task?: Task | null) => void;
   closeTaskModal: () => void;
   openManageRoutinesModal: () => void;
@@ -67,14 +79,23 @@ export interface UiSliceActions {
   closeUpdateModal: () => void;
   showSnackbar: (message: string, onUndo?: () => void) => void;
   hideSnackbar: () => void;
+  completeOnboarding: (data: OnboardingData) => void;
+  updateUserProfile: (profile: Partial<UserProfile>) => void;
+  openOnboardingModal: () => void;
+  closeOnboardingModal: () => void;
 }
 
 export type UiSlice = UiSliceState & UiSliceActions;
 
-export const createUiSlice: StateCreator<FlowStore, [], [], UiSlice> = (set) => ({
+export const createUiSlice: StateCreator<FlowStore, [], [], UiSlice> = (set, get) => ({
   activeView: 'routine',
+  routineViewMode: 'stream',
   selectedDate: getTodayDateString(),
   theme: 'dark',
+
+  hasCompletedOnboarding: false,
+  userProfile: null,
+  isOnboardingModalOpen: false,
 
   reminderSettings: {
     enabled: true,
@@ -110,9 +131,26 @@ export const createUiSlice: StateCreator<FlowStore, [], [], UiSlice> = (set) => 
   isManageRoutinesModalOpen: false,
   isManageCategoriesModalOpen: false,
   selectedTaskIdForDetail: null,
+  isGlobalSearchOpen: false,
+
+  openGlobalSearch: () => {
+    set({ isGlobalSearchOpen: true });
+  },
+
+  closeGlobalSearch: () => {
+    set({ isGlobalSearchOpen: false });
+  },
+
+  toggleGlobalSearch: () => {
+    set((state) => ({ isGlobalSearchOpen: !state.isGlobalSearchOpen }));
+  },
 
   setActiveView: (view: AppView) => {
     set({ activeView: view });
+  },
+
+  setRoutineViewMode: (mode: 'stream' | 'timeline') => {
+    set({ routineViewMode: mode });
   },
 
   setDate: (date: string) => {
@@ -229,5 +267,68 @@ export const createUiSlice: StateCreator<FlowStore, [], [], UiSlice> = (set) => 
 
   hideSnackbar: () => {
     set((state) => ({ snackbar: { ...state.snackbar, isOpen: false } }));
+  },
+
+  completeOnboarding: (data: OnboardingData) => {
+    const template =
+      ROUTINE_TEMPLATES.find((t) => t.id === data.templateId) || ROUTINE_TEMPLATES[0];
+
+    if (typeof document !== 'undefined') {
+      if (data.theme === 'dark') {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    }
+
+    const pomodoroDurationSeconds = (data.pomodoroDurationMinutes || 25) * 60;
+    const userName = data.name.trim() || 'Usuário';
+
+    set((state) => ({
+      hasCompletedOnboarding: true,
+      userProfile: {
+        name: userName,
+        objective: data.objective,
+      },
+      isOnboardingModalOpen: false,
+      theme: data.theme,
+      // Injeta a estrutura de rotina, categorias e tarefas do template escolhido
+      routineTypes: [template.routineType],
+      selectedRoutineTypeId: template.routineType.id,
+      categories: template.categories,
+      tasks: template.tasks,
+      logs: {},
+      pomodoro: {
+        ...state.pomodoro,
+        totalDurationSeconds: pomodoroDurationSeconds,
+        timeLeftSeconds: pomodoroDurationSeconds,
+        mode: 'focus',
+        linkedTaskId: null,
+      },
+      reminderSettings: {
+        ...state.reminderSettings,
+        enabled: data.remindersEnabled,
+        advanceMinutes: data.reminderAdvanceMinutes,
+        soundEnabled: data.soundEnabled,
+      },
+    }));
+
+    get().showSnackbar(`Bem-vindo ao Flow, ${userName}! Sua rotina está pronta.`);
+  },
+
+  updateUserProfile: (updates: Partial<UserProfile>) => {
+    set((state) => ({
+      userProfile: state.userProfile
+        ? { ...state.userProfile, ...updates }
+        : { name: '', objective: '', ...updates },
+    }));
+  },
+
+  openOnboardingModal: () => {
+    set({ isOnboardingModalOpen: true });
+  },
+
+  closeOnboardingModal: () => {
+    set({ isOnboardingModalOpen: false });
   },
 });

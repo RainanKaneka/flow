@@ -1,6 +1,7 @@
 import React from 'react';
 import { AppView } from '../../types/routine';
-import { CheckCircle2, Timer, FileText, Inbox, BarChart2, Sparkles } from 'lucide-react';
+import { CheckCircle2, Timer, FileText, Inbox, BarChart2, Sparkles, Clock, Calendar } from 'lucide-react';
+import styles from './HeaderNavTabs.module.css';
 
 export interface HeaderNavTabsProps {
   activeView: AppView;
@@ -21,59 +22,44 @@ export const HeaderNavTabs: React.FC<HeaderNavTabsProps> = ({
 }) => {
   return (
     <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        background: 'var(--bg-elevated)',
-        padding: '3px',
-        borderRadius: '9999px',
-        border: '1px solid var(--border-subtle)',
-        gap: '2px',
-      }}
+      data-testid="header-nav-tabs"
+      className={styles.container}
     >
       {/* 1: Rotina Tab */}
       <button
         onClick={() => onSelectView('routine')}
         title="Rotina [Atalho: 1]"
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px',
-          padding: '6px 14px',
-          borderRadius: '9999px',
-          border: 'none',
-          fontSize: '12px',
-          fontWeight: activeView === 'routine' ? 700 : 500,
-          cursor: 'pointer',
-          backgroundColor: activeView === 'routine' ? 'var(--bg-secondary)' : 'transparent',
-          color: activeView === 'routine' ? 'var(--text-primary)' : 'var(--text-secondary)',
-          boxShadow: activeView === 'routine' ? '0 2px 8px rgba(0,0,0,0.06)' : 'none',
-          transition: 'all 200ms var(--bezier-haptic)',
-        }}
+        className={`${styles.tabBtn} ${activeView === 'routine' ? styles.tabBtnActive : ''}`}
       >
         <CheckCircle2 size={13} />
         <span>Rotina</span>
+      </button>
+
+      {/* 7: Cronograma Tab (Structured Timeline) */}
+      <button
+        onClick={() => onSelectView('timeline')}
+        title="Cronograma Visual [Atalho: 7]"
+        className={`${styles.tabBtn} ${activeView === 'timeline' ? styles.tabBtnActive : ''}`}
+      >
+        <Clock size={13} />
+        <span>Cronograma</span>
+      </button>
+
+      {/* 8: Calendário Tab */}
+      <button
+        onClick={() => onSelectView('calendar')}
+        title="Calendário Mensal [Atalho: 8]"
+        className={`${styles.tabBtn} ${activeView === 'calendar' ? styles.tabBtnActive : ''}`}
+      >
+        <Calendar size={13} />
+        <span>Calendário</span>
       </button>
 
       {/* 2: Pomodoro Tab */}
       <button
         onClick={() => onSelectView('pomodoro')}
         title="Pomodoro [Atalho: 2]"
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px',
-          padding: '6px 14px',
-          borderRadius: '9999px',
-          border: 'none',
-          fontSize: '12px',
-          fontWeight: activeView === 'pomodoro' ? 700 : 500,
-          cursor: 'pointer',
-          backgroundColor: activeView === 'pomodoro' ? 'var(--bg-secondary)' : 'transparent',
-          color: activeView === 'pomodoro' ? 'var(--text-primary)' : 'var(--text-secondary)',
-          boxShadow: activeView === 'pomodoro' ? '0 2px 8px rgba(0,0,0,0.06)' : 'none',
-          transition: 'all 200ms var(--bezier-haptic)',
-        }}
+        className={`${styles.tabBtn} ${activeView === 'pomodoro' ? styles.tabBtnActive : ''}`}
       >
         <Timer size={13} color={pomodoroActive ? 'var(--accent-primary)' : undefined} />
         <span>Pomodoro</span>
@@ -98,35 +84,12 @@ export const HeaderNavTabs: React.FC<HeaderNavTabsProps> = ({
       <button
         onClick={() => onSelectView('notes')}
         title="Notas [Atalho: 3]"
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px',
-          padding: '6px 14px',
-          borderRadius: '9999px',
-          border: 'none',
-          fontSize: '12px',
-          fontWeight: activeView === 'notes' ? 700 : 500,
-          cursor: 'pointer',
-          backgroundColor: activeView === 'notes' ? 'var(--bg-secondary)' : 'transparent',
-          color: activeView === 'notes' ? 'var(--text-primary)' : 'var(--text-secondary)',
-          boxShadow: activeView === 'notes' ? '0 2px 8px rgba(0,0,0,0.06)' : 'none',
-          transition: 'all 200ms var(--bezier-haptic)',
-        }}
+        className={`${styles.tabBtn} ${activeView === 'notes' ? styles.tabBtnActive : ''}`}
       >
         <FileText size={13} />
         <span>Notas</span>
         {notesCount > 0 && (
-          <span
-            style={{
-              fontSize: '10px',
-              padding: '1px 6px',
-              borderRadius: '9999px',
-              background: 'var(--bg-secondary)',
-              color: 'var(--text-muted)',
-              fontWeight: 700,
-            }}
-          >
+          <span className={styles.tabCountBadge}>
             {notesCount}
           </span>
         )}
@@ -136,21 +99,7 @@ export const HeaderNavTabs: React.FC<HeaderNavTabsProps> = ({
       <button
         onClick={() => onSelectView('backlog')}
         title="Backlog [Atalho: 4]"
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px',
-          padding: '6px 14px',
-          borderRadius: '9999px',
-          border: 'none',
-          fontSize: '12px',
-          fontWeight: activeView === 'backlog' ? 700 : 500,
-          cursor: 'pointer',
-          backgroundColor: activeView === 'backlog' ? 'var(--bg-secondary)' : 'transparent',
-          color: activeView === 'backlog' ? 'var(--text-primary)' : 'var(--text-secondary)',
-          boxShadow: activeView === 'backlog' ? '0 2px 8px rgba(0,0,0,0.06)' : 'none',
-          transition: 'all 200ms var(--bezier-haptic)',
-        }}
+        className={`${styles.tabBtn} ${activeView === 'backlog' ? styles.tabBtnActive : ''}`}
       >
         <Inbox size={13} />
         <span>Backlog</span>
@@ -174,21 +123,7 @@ export const HeaderNavTabs: React.FC<HeaderNavTabsProps> = ({
       <button
         onClick={() => onSelectView('dashboard')}
         title="Dashboard [Atalho: 5]"
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px',
-          padding: '6px 14px',
-          borderRadius: '9999px',
-          border: 'none',
-          fontSize: '12px',
-          fontWeight: activeView === 'dashboard' ? 700 : 500,
-          cursor: 'pointer',
-          backgroundColor: activeView === 'dashboard' ? 'var(--bg-secondary)' : 'transparent',
-          color: activeView === 'dashboard' ? 'var(--text-primary)' : 'var(--text-secondary)',
-          boxShadow: activeView === 'dashboard' ? '0 2px 8px rgba(0,0,0,0.06)' : 'none',
-          transition: 'all 200ms var(--bezier-haptic)',
-        }}
+        className={`${styles.tabBtn} ${activeView === 'dashboard' ? styles.tabBtnActive : ''}`}
       >
         <BarChart2 size={13} />
         <span>Dashboard</span>
@@ -198,21 +133,8 @@ export const HeaderNavTabs: React.FC<HeaderNavTabsProps> = ({
       <button
         onClick={() => onSelectView('ai')}
         title="Assistente IA Copilot [Atalho: 6]"
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px',
-          padding: '6px 14px',
-          borderRadius: '9999px',
-          border: 'none',
-          fontSize: '12px',
-          fontWeight: activeView === 'ai' ? 700 : 500,
-          cursor: 'pointer',
-          backgroundColor: activeView === 'ai' ? 'var(--bg-secondary)' : 'transparent',
-          color: activeView === 'ai' ? '#6366F1' : 'var(--text-secondary)',
-          boxShadow: activeView === 'ai' ? '0 2px 8px rgba(99,102,241,0.15)' : 'none',
-          transition: 'all 200ms var(--bezier-haptic)',
-        }}
+        className={`${styles.tabBtn} ${activeView === 'ai' ? styles.tabBtnActive : ''}`}
+        style={activeView === 'ai' ? { color: '#6366F1' } : undefined}
       >
         <Sparkles size={13} color="#6366F1" />
         <span>IA</span>

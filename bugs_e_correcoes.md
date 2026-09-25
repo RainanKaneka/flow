@@ -59,5 +59,16 @@
 - [x] **Interface Unificada em Abas na Central de Dados (`BackupModal.tsx`)**: Reorganização do modal com 3 abas temáticas (`Backup SQLite`, `Exportar Dados` e `Importar Dados`) e atalho direto a partir do card no Dashboard.
 - [x] **Suite de Testes Ampliada (201 Testes - 100% Verde)**: 32 novos testes automatizados no Vitest cobrindo `exportImportService`, `BackupModal` e `DashboardSqlBackupCard`, garantindo integridade de parsing, escaping, exportação e gravação no SQLite.
 
+## Atualizações para a versão 0.4.0 (Fase 3: UX de Classe Mundial) (Concluído)
 
-
+- [x] **Parte 1 — Onboarding Wizard**: Setup interativo de boas-vindas com 4 etapas (nome, objetivo, seleção de template de rotina e preferências de foco) e inicialização automática com banco de dados pronto.
+- [x] **Parte 2 — Drag-and-Drop & Reorganização Rápida**: Reordenação intuitiva de tarefas no fluxo diário, com ajuste instantâneo de horários e botões rápidos de ±15 min.
+- [x] **Parte 3 — Timeline Visual (Cronograma Estilo Structured)**: Vista cronológica vertical com blocos de tempo das 00:00 às 24:00, indicador em tempo real da hora atual, marcações visuais de hábitos essenciais (Regras de Ouro) e alternância fluida entre lista e cronograma.
+- [x] **Parte 4 — Calendário Mensal Completo**: Navegação de mês mostrando dias do mês, taxa de completude por dia, pílulas de tarefas em miniatura, inspetor detalhado do dia selecionado, ações de mover para o backlog e exclusão com diálogo de confirmação seguro.
+- [x] **Parte 5 — Pesquisa Global (Command Palette — Ctrl+K / Cmd+K)**: Modal universal de busca rápida para tarefas, notas, rotinas e configurações do sistema com atalhos de teclado (`↑`, `↓`, `Enter`, `Esc`), filtros por categoria e feedback sonoro.
+- [x] **Parte 6 — Responsividade Básica (1024px até 1920px)**:
+  - Tokens dinâmicos de layout e paddings fluidos (`--header-padding-x`, `--content-padding-x`, `--content-max-width`, `--content-max-width-wide`).
+  - Modo expandido (`.responsive-main-wide`) para Calendário, Cronograma, Dashboard e Notas em telas widescreen e Full HD.
+  - Abas de navegação responsivas com módulo CSS (`HeaderNavTabs.module.css`), suporte a rolagem oculta e adaptação para displays compactos ($\le 1240px$).
+  - Toolbar de ações com colapso responsivo de rótulos em telas menores que 1200px.
+- [x] **Suite de Testes de Software**: 298 testes automatizados em 41 arquivos de teste com 100% de aprovação e build de produção validado com 0 erros.

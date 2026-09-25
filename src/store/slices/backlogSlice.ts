@@ -1,5 +1,5 @@
 import { StateCreator } from 'zustand';
-import { FlowStore, BacklogItem, Task } from '../../types/routine';
+import { FlowStore, BacklogItem, Task, TaskLog } from '../../types/routine';
 
 export interface BacklogSliceState {
   backlog: BacklogItem[];
@@ -22,13 +22,10 @@ export type BacklogSlice = BacklogSliceState & BacklogSliceActions;
 export const createBacklogSlice: StateCreator<FlowStore, [], [], BacklogSlice> = (set, get) => ({
   backlog: [],
 
-  moveTaskToBacklog: (taskId: string, targetDate?: string) => {
+  moveTaskToBacklog: (taskId: string, _targetDate?: string) => {
     const state = get();
     const task = state.tasks.find((t) => t.id === taskId);
     if (!task) return;
-
-    const date = targetDate || state.selectedDate;
-    const key = `${date}_${taskId}`;
 
     const newBacklogItem: BacklogItem = {
       id: `bk_${Date.now()}`,
@@ -42,12 +39,35 @@ export const createBacklogSlice: StateCreator<FlowStore, [], [], BacklogSlice> =
       originalTaskId: task.id,
     };
 
-    const updatedLogs = { ...state.logs };
-    delete updatedLogs[key];
+    // Remove todos os logs associados a esta tarefa para prevenir erros de FK no SQLite
+    const removedLogs: Record<string, TaskLog> = {};
+    const remainingLogs: Record<string, TaskLog> = {};
+    Object.entries(state.logs).forEach(([key, log]) => {
+      if (log.taskId === taskId || key.endsWith(`_${taskId}`)) {
+        removedLogs[key] = log;
+      } else {
+        remainingLogs[key] = log;
+      }
+    });
 
     set({
+      tasks: state.tasks.filter((t) => t.id !== taskId),
       backlog: [newBacklogItem, ...state.backlog],
-      logs: updatedLogs,
+      logs: remainingLogs,
+      selectedTaskIdForDetail:
+        state.selectedTaskIdForDetail === taskId ? null : state.selectedTaskIdForDetail,
+      pomodoro:
+        state.pomodoro.linkedTaskId === taskId
+          ? { ...state.pomodoro, linkedTaskId: null }
+          : state.pomodoro,
+    });
+
+    state.showSnackbar('Atividade movida para o Backlog', () => {
+      set((s) => ({
+        tasks: [...s.tasks, task],
+        backlog: s.backlog.filter((b) => b.id !== newBacklogItem.id),
+        logs: { ...s.logs, ...removedLogs },
+      }));
     });
   },
 
@@ -87,7 +107,17 @@ export const createBacklogSlice: StateCreator<FlowStore, [], [], BacklogSlice> =
     const item = state.backlog.find((b) => b.id === backlogId);
     if (!item) return;
 
-    const targetTypeId = routineTypeId || state.selectedRoutineTypeId;
+    const targetTypeId =
+      (routineTypeId && state.routineTypes.some((r) => r.id === routineTypeId) ? routineTypeId : null) ||
+      (state.selectedRoutineTypeId && state.routineTypes.some((r) => r.id === state.selectedRoutineTypeId) ? state.selectedRoutineTypeId : null) ||
+      state.routineTypes[0]?.id ||
+      'main_routine';
+
+    const targetCategoryId =
+      (item.categoryId && state.categories.some((c) => c.id === item.categoryId) ? item.categoryId : null) ||
+      state.categories[0]?.id ||
+      'geral';
+
     const [y, m, d] = state.selectedDate.split('-').map(Number);
     const dayOfWeek = new Date(y, m - 1, d).getDay();
 
@@ -98,7 +128,7 @@ export const createBacklogSlice: StateCreator<FlowStore, [], [], BacklogSlice> =
       startTime,
       endTime,
       routineTypeId: targetTypeId,
-      categoryId: item.categoryId,
+      categoryId: targetCategoryId,
       daysOfWeek: [dayOfWeek],
       targetMinutes: item.targetMinutes,
       tags: [...item.tags, 'Do Backlog'],

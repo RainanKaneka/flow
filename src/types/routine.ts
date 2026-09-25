@@ -1,4 +1,4 @@
-export type AppView = 'routine' | 'dashboard' | 'backlog' | 'pomodoro' | 'notes' | 'ai';
+export type AppView = 'routine' | 'timeline' | 'calendar' | 'dashboard' | 'backlog' | 'pomodoro' | 'notes' | 'ai';
 
 // Integração Google & Agente de IA com Gemini (RF-15, RF-16, RF-17, RF-18, RF-19)
 export interface GoogleUserProfile {
@@ -218,8 +218,25 @@ export interface PomodoroState {
   completedSessions: number;
 }
 
+export interface UserProfile {
+  name: string;
+  objective: string;
+}
+
+export interface OnboardingData {
+  name: string;
+  objective: string;
+  templateId: string;
+  theme: 'dark' | 'light';
+  pomodoroDurationMinutes: number;
+  remindersEnabled: boolean;
+  reminderAdvanceMinutes: number;
+  soundEnabled: boolean;
+}
+
 export interface FlowState {
   activeView: AppView;
+  routineViewMode?: 'stream' | 'timeline';
   selectedDate: string; // YYYY-MM-DD
   theme: 'dark' | 'light';
 
@@ -269,6 +286,11 @@ export interface FlowState {
   aiMessages: AiChatMessage[];
   isGoogleAuthModalOpen: boolean;
 
+  // Onboarding Wizard & Perfil do Usuário (Fase 3, Parte 1)
+  hasCompletedOnboarding: boolean;
+  userProfile: UserProfile | null;
+  isOnboardingModalOpen: boolean;
+
   // Snackbar Undo/Redo
   snackbar: {
     isOpen: boolean;
@@ -285,12 +307,21 @@ export interface FlowState {
 
   // Modal de Especificações / Página Interna da Tarefa (RF-6)
   selectedTaskIdForDetail: string | null;
+
+  // Pesquisa Global / Command Palette (Fase 3, Parte 5)
+  isGlobalSearchOpen: boolean;
 }
 
 export interface FlowActions {
   setActiveView: (view: AppView) => void;
+  setRoutineViewMode?: (mode: 'stream' | 'timeline') => void;
   setDate: (date: string) => void;
   toggleTheme: () => void;
+
+  // Pesquisa Global / Command Palette (Fase 3, Parte 5)
+  openGlobalSearch: () => void;
+  closeGlobalSearch: () => void;
+  toggleGlobalSearch: () => void;
 
   // Tipos de Rotina
   selectRoutineType: (id: string) => void;
@@ -393,6 +424,20 @@ export interface FlowActions {
   // Snackbar Undo/Redo
   showSnackbar: (message: string, onUndo?: () => void) => void;
   hideSnackbar: () => void;
+
+  // Onboarding Wizard & Perfil do Usuário (Fase 3, Parte 1)
+  completeOnboarding: (data: OnboardingData) => void;
+  updateUserProfile: (profile: Partial<UserProfile>) => void;
+  openOnboardingModal: () => void;
+  closeOnboardingModal: () => void;
+
+  // Drag-and-Drop & Reordenação de Tarefas (Fase 3, Parte 2)
+  reorderTasks: (
+    sourceTaskId: string,
+    targetTaskId: string,
+    filteredTaskIds?: string[]
+  ) => void;
+  shiftTaskTime: (taskId: string, deltaMinutes: number) => void;
 }
 
 export type FlowStore = FlowState & FlowActions;

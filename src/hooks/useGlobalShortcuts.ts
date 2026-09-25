@@ -13,6 +13,9 @@ export const useGlobalShortcuts = () => {
   const closeManageRoutinesModal = useFlowStore((s) => s.closeManageRoutinesModal);
   const closeManageCategoriesModal = useFlowStore((s) => s.closeManageCategoriesModal);
   const closeGoogleAuthModal = useFlowStore((s) => s.closeGoogleAuthModal);
+  const isGlobalSearchOpen = useFlowStore((s) => s.isGlobalSearchOpen);
+  const closeGlobalSearch = useFlowStore((s) => s.closeGlobalSearch);
+  const toggleGlobalSearch = useFlowStore((s) => s.toggleGlobalSearch);
 
   const pomodoro = useFlowStore((s) => s.pomodoro);
   const startPomodoro = useFlowStore((s) => s.startPomodoro);
@@ -27,17 +30,12 @@ export const useGlobalShortcuts = () => {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Ignora atalhos de navegação simples se o usuário estiver digitando em campos de texto
-      const target = e.target as HTMLElement | null;
-      const isInputFocused =
-        target &&
-        (target.tagName === 'INPUT' ||
-          target.tagName === 'TEXTAREA' ||
-          target.tagName === 'SELECT' ||
-          target.isContentEditable);
-
       // Atalho de fechar modal (Escape) - sempre funciona
       if (e.key === 'Escape') {
+        if (isGlobalSearchOpen) {
+          closeGlobalSearch();
+          return;
+        }
         if (isTaskModalOpen) closeTaskModal();
         if (selectedTaskIdForDetail) closeTaskDetail();
         if (isNotificationModalOpen) closeNotificationModal();
@@ -47,12 +45,28 @@ export const useGlobalShortcuts = () => {
         return;
       }
 
+      // Atalho Ctrl+K / Cmd+K para Pesquisa Global (Command Palette)
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        toggleGlobalSearch();
+        return;
+      }
+
       // Atalho Ctrl+N / Cmd+N para Nova Atividade
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'n' && !e.shiftKey) {
         e.preventDefault();
         openTaskModal(null);
         return;
       }
+
+      // Ignora atalhos de navegação simples se o usuário estiver digitando em campos de texto
+      const target = e.target as HTMLElement | null;
+      const isInputFocused =
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.tagName === 'SELECT' ||
+          target.isContentEditable);
 
       // Se o usuário estiver digitando em um input, não dispara teclas alfanuméricas simples
       if (isInputFocused) return;
@@ -95,6 +109,14 @@ export const useGlobalShortcuts = () => {
             e.preventDefault();
             setActiveView('ai');
             break;
+          case '7':
+            e.preventDefault();
+            setActiveView('timeline');
+            break;
+          case '8':
+            e.preventDefault();
+            setActiveView('calendar');
+            break;
           default:
             break;
         }
@@ -111,6 +133,8 @@ export const useGlobalShortcuts = () => {
     isNotificationModalOpen,
     isManageRoutinesModalOpen,
     isManageCategoriesModalOpen,
+    isGoogleAuthModalOpen,
+    isGlobalSearchOpen,
     setActiveView,
     openTaskModal,
     closeTaskModal,
@@ -118,6 +142,9 @@ export const useGlobalShortcuts = () => {
     closeNotificationModal,
     closeManageRoutinesModal,
     closeManageCategoriesModal,
+    closeGoogleAuthModal,
+    closeGlobalSearch,
+    toggleGlobalSearch,
     startPomodoro,
     pausePomodoro,
   ]);

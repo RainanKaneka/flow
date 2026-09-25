@@ -75,8 +75,16 @@ export const createNotesSlice: StateCreator<FlowStore, [], [], NotesSlice> = (se
     const note = state.notes.find((n) => n.id === noteId);
     if (!note) return;
 
-    const targetTypeId = routineTypeId || state.selectedRoutineTypeId;
-    const targetCatId = categoryId || state.categories[0]?.id || 'focus';
+    const targetTypeId =
+      (routineTypeId && state.routineTypes.some((r) => r.id === routineTypeId) ? routineTypeId : null) ||
+      (state.selectedRoutineTypeId && state.routineTypes.some((r) => r.id === state.selectedRoutineTypeId) ? state.selectedRoutineTypeId : null) ||
+      state.routineTypes[0]?.id ||
+      'main_routine';
+
+    const targetCatId =
+      (categoryId && state.categories.some((c) => c.id === categoryId) ? categoryId : null) ||
+      state.categories[0]?.id ||
+      'geral';
 
     const [y, m, d] = state.selectedDate.split('-').map(Number);
     const dayOfWeek = new Date(y, m - 1, d).getDay();

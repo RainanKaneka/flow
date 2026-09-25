@@ -154,7 +154,7 @@ export const AiAssistantView: React.FC = () => {
   };
 
   return (
-    <div style={{ padding: '0 28px 40px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+    <div style={{ padding: '0 var(--content-padding-x, 28px) 40px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
       {/* Top Banner de Conexão Google & Modelo Gemini (RF-19) */}
       <div
         style={{

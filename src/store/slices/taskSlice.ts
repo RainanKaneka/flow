@@ -5,6 +5,8 @@ import {
   DEFAULT_CATEGORIES,
   DEFAULT_TASKS,
 } from '../../data/initialRoutine';
+import { reorderAndRescheduleTasks, shiftTaskTime } from '../../utils/taskReorder';
+import { timeToMinutes } from '../../utils/routineReplan';
 
 export interface TaskSliceState {
   tasks: Task[];
@@ -25,6 +27,12 @@ export interface TaskSliceActions {
     }
   ) => void;
   toggleChecklistItem: (taskId: string, itemId: string) => void;
+  reorderTasks: (
+    sourceTaskId: string,
+    targetTaskId: string,
+    filteredTaskIds?: string[]
+  ) => void;
+  shiftTaskTime: (taskId: string, deltaMinutes: number) => void;
 }
 
 export type TaskSlice = TaskSliceState & TaskSliceActions;
@@ -62,14 +70,28 @@ export const createTaskSlice: StateCreator<FlowStore, [], [], TaskSlice> = (set,
 
   saveTask: (taskData) => {
     set((state) => {
+      const defaultRoutineTypeId =
+        state.routineTypes[0]?.id || DEFAULT_ROUTINE_TYPES[0].id;
+      const defaultCategoryId =
+        state.categories[0]?.id || DEFAULT_CATEGORIES[0].id;
+
       if (taskData.id) {
         const updatedTasks = state.tasks.map((t) =>
-          t.id === taskData.id ? ({ ...t, ...taskData } as Task) : t
+          t.id === taskData.id
+            ? ({
+                ...t,
+                ...taskData,
+                routineTypeId: taskData.routineTypeId || t.routineTypeId || defaultRoutineTypeId,
+                categoryId: taskData.categoryId || t.categoryId || defaultCategoryId,
+              } as Task)
+            : t
         );
         return { tasks: updatedTasks, isTaskModalOpen: false, editingTask: null };
       } else {
         const newTask: Task = {
           ...taskData,
+          routineTypeId: taskData.routineTypeId || defaultRoutineTypeId,
+          categoryId: taskData.categoryId || defaultCategoryId,
           id: `task_${Date.now()}`,
           isCustom: true,
         } as Task;
@@ -85,9 +107,22 @@ export const createTaskSlice: StateCreator<FlowStore, [], [], TaskSlice> = (set,
   deleteTask: (taskId: string) => {
     const state = get();
     const taskToDelete = state.tasks.find((t) => t.id === taskId);
+    if (!taskToDelete) return;
+
+    // Remove todos os logs associados a esta tarefa para evitar erros de FK e registros órfãos
+    const removedLogs: Record<string, TaskLog> = {};
+    const remainingLogs: Record<string, TaskLog> = {};
+    Object.entries(state.logs).forEach(([key, log]) => {
+      if (log.taskId === taskId || key.endsWith(`_${taskId}`)) {
+        removedLogs[key] = log;
+      } else {
+        remainingLogs[key] = log;
+      }
+    });
 
     set((state) => ({
       tasks: state.tasks.filter((t) => t.id !== taskId),
+      logs: remainingLogs,
       selectedTaskIdForDetail:
         state.selectedTaskIdForDetail === taskId ? null : state.selectedTaskIdForDetail,
       pomodoro:
@@ -96,11 +131,12 @@ export const createTaskSlice: StateCreator<FlowStore, [], [], TaskSlice> = (set,
           : state.pomodoro,
     }));
 
-    if (taskToDelete) {
-      state.showSnackbar('Atividade excluída', () => {
-        set((s) => ({ tasks: [...s.tasks, taskToDelete] }));
-      });
-    }
+    state.showSnackbar('Atividade excluída', () => {
+      set((s) => ({
+        tasks: [...s.tasks, taskToDelete],
+        logs: { ...s.logs, ...removedLogs },
+      }));
+    });
   },
 
   resetToTemplate: () => {
@@ -139,5 +175,67 @@ export const createTaskSlice: StateCreator<FlowStore, [], [], TaskSlice> = (set,
         return { ...t, checklist };
       }),
     }));
+  },
+
+  reorderTasks: (
+    sourceTaskId: string,
+    targetTaskId: string,
+    filteredTaskIds?: string[]
+  ) => {
+    const state = get();
+    if (sourceTaskId === targetTaskId) return;
+
+    // Snapshot anterior para Undo
+    const previousTasks = [...state.tasks];
+
+    // Obter a lista ordenada de tarefas afetadas
+    let listToReorder: Task[];
+    if (filteredTaskIds && filteredTaskIds.length > 0) {
+      listToReorder = filteredTaskIds
+        .map((id) => state.tasks.find((t) => t.id === id))
+        .filter((t): t is Task => !!t);
+    } else {
+      listToReorder = [...state.tasks].sort(
+        (a, b) => timeToMinutes(a.startTime) - timeToMinutes(b.startTime)
+      );
+    }
+
+    const { updatedTasks, hasChanges } = reorderAndRescheduleTasks(
+      listToReorder,
+      sourceTaskId,
+      targetTaskId
+    );
+
+    if (!hasChanges) return;
+
+    // Mescla tarefas atualizadas de volta na store global
+    const updatedMap = new Map(updatedTasks.map((t) => [t.id, t]));
+    const nextTasks = state.tasks.map((t) => updatedMap.get(t.id) || t);
+
+    set({ tasks: nextTasks });
+
+    state.showSnackbar('Ordem e horários das atividades atualizados', () => {
+      set({ tasks: previousTasks });
+    });
+  },
+
+  shiftTaskTime: (taskId: string, deltaMinutes: number) => {
+    const state = get();
+    const task = state.tasks.find((t) => t.id === taskId);
+    if (!task) return;
+
+    const previousTasks = [...state.tasks];
+    const shifted = shiftTaskTime(task, deltaMinutes);
+
+    set({
+      tasks: state.tasks.map((t) => (t.id === taskId ? shifted : t)),
+    });
+
+    state.showSnackbar(
+      `Horário ajustado (${deltaMinutes > 0 ? `+${deltaMinutes}` : deltaMinutes} min)`,
+      () => {
+        set({ tasks: previousTasks });
+      }
+    );
   },
 });
