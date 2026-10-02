@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useFlowStore } from '../store/useFlowStore';
 import { sendMessageToAssistant } from '../services/geminiService';
+import { getValidGoogleAccessToken } from '../services/googleAuthService';
 import { sounds } from '../utils/audio';
 import {
   Sparkles,
@@ -102,12 +103,14 @@ export const AiAssistantView: React.FC = () => {
         content: m.content,
       }));
 
+      const validAccessToken = await getValidGoogleAccessToken();
+
       const response = await sendMessageToAssistant({
         prompt: text,
         history,
         context: chatContext,
         apiKey: geminiConfig.apiKey,
-        accessToken: googleUser?.accessToken,
+        accessToken: validAccessToken || googleUser?.accessToken,
         model: geminiConfig.model,
       });
 

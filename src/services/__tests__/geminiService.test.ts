@@ -7,10 +7,21 @@ import {
   testGeminiApiKey,
   sendMessageToAssistant,
   decomposeTaskWithGemini,
+  getAiProxyEndpoint,
+  getActiveFirebaseIdToken,
+  callGeminiViaProxy,
   DEFAULT_MODEL,
   FALLBACK_MODELS,
   ChatContext,
 } from '../geminiService';
+import * as firebaseConfig from '../firebaseConfig';
+import { useFlowStore } from '../../store/useFlowStore';
+
+vi.mock('../firebaseConfig', () => ({
+  getActiveFirebaseConfig: vi.fn(),
+  getFirebaseAuthInstance: vi.fn(),
+  isFirebaseConfigured: vi.fn(),
+}));
 
 describe('geminiService', () => {
   describe('normalizeModelName', () => {
@@ -363,6 +374,453 @@ Boa execução!`,
       expect(subtasks[0]).toBe('Passo 1: Revisar requisitos');
 
       globalThis.fetch = originalFetch;
+    });
+  });
+
+  describe('getAiProxyEndpoint', () => {
+    const originalEnv = process.env;
+
+    beforeEach(() => {
+      process.env = { ...originalEnv };
+      (firebaseConfig.getActiveFirebaseConfig as any).mockReturnValue({
+        apiKey: 'test-key',
+        authDomain: 'test-proj.firebaseapp.com',
+        projectId: 'flow-test-proj',
+      });
+    });
+
+    afterEach(() => {
+      process.env = originalEnv;
+    });
+
+    it('deve respeitar variável NEXT_PUBLIC_AI_PROXY_URL customizada', () => {
+      process.env.NEXT_PUBLIC_AI_PROXY_URL = 'https://custom-gateway.internal/aiProxy';
+      expect(getAiProxyEndpoint()).toBe('https://custom-gateway.internal/aiProxy');
+    });
+
+    it('deve gerar endpoint padrão de produção no Cloud Functions baseado no projectId', () => {
+      delete process.env.NEXT_PUBLIC_AI_PROXY_URL;
+      delete process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR;
+      expect(getAiProxyEndpoint()).toBe(
+        'https://southamerica-east1-flow-test-proj.cloudfunctions.net/aiProxy'
+      );
+    });
+
+    it('deve gerar endpoint local do emulador quando NEXT_PUBLIC_USE_FIREBASE_EMULATOR for true', () => {
+      delete process.env.NEXT_PUBLIC_AI_PROXY_URL;
+      process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR = 'true';
+      expect(getAiProxyEndpoint()).toBe(
+        'http://127.0.0.1:5001/flow-test-proj/southamerica-east1/aiProxy'
+      );
+    });
+  });
+
+  describe('getActiveFirebaseIdToken', () => {
+    it('deve retornar o token quando usuário estiver autenticado no Firebase Auth', async () => {
+      const mockGetIdToken = vi.fn().mockResolvedValue('jwt-mock-token-123');
+      (firebaseConfig.getFirebaseAuthInstance as any).mockReturnValue({
+        currentUser: { uid: 'user-1', getIdToken: mockGetIdToken },
+      });
+
+      const token = await getActiveFirebaseIdToken();
+      expect(token).toBe('jwt-mock-token-123');
+      expect(mockGetIdToken).toHaveBeenCalledTimes(1);
+    });
+
+    it('deve retornar null se não houver currentUser ou instância auth', async () => {
+      (firebaseConfig.getFirebaseAuthInstance as any).mockReturnValue(null);
+      expect(await getActiveFirebaseIdToken()).toBeNull();
+
+      (firebaseConfig.getFirebaseAuthInstance as any).mockReturnValue({ currentUser: null });
+      expect(await getActiveFirebaseIdToken()).toBeNull();
+    });
+  });
+
+  describe('callGeminiViaProxy', () => {
+    const originalFetch = globalThis.fetch;
+
+    beforeEach(() => {
+      globalThis.fetch = vi.fn();
+      (firebaseConfig.getActiveFirebaseConfig as any).mockReturnValue({
+        projectId: 'flow-test-proj',
+      });
+    });
+
+    afterEach(() => {
+      globalThis.fetch = originalFetch;
+    });
+
+    it('deve chamar o endpoint do proxy com Bearer token e headers corretos', async () => {
+      (globalThis.fetch as any).mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: new Headers({
+          'x-ai-quota-used': '5',
+          'x-ai-quota-limit': '1000',
+          'x-ai-tokens-consumed': '42',
+        }),
+        json: async () => ({
+          candidates: [{ content: { parts: [{ text: 'Resposta proxy sucesso' }] } }],
+        }),
+      });
+
+      const result = await callGeminiViaProxy({
+        contents: [{ parts: [{ text: 'Olá Flow' }] }],
+        model: 'gemini-2.5-flash',
+        idToken: 'token-jwt-secret',
+        isDevPremium: true,
+      });
+
+      expect(result.ok).toBe(true);
+      expect(result.candidateText).toBe('Resposta proxy sucesso');
+      expect(result.quota).toEqual({ used: 5, monthlyLimit: 1000, totalTokensConsumed: 42 });
+
+      expect(globalThis.fetch).toHaveBeenCalledWith(
+        'https://southamerica-east1-flow-test-proj.cloudfunctions.net/aiProxy',
+        expect.objectContaining({
+          method: 'POST',
+          headers: expect.objectContaining({
+            Authorization: 'Bearer token-jwt-secret',
+            'x-dev-premium': 'true',
+          }),
+        })
+      );
+    });
+
+    it('deve sincronizar a quota no Zustand store a partir dos headers de resposta', async () => {
+      useFlowStore.setState({
+        userProfile: {
+          name: 'Rainan',
+          objective: 'focus',
+          plan: 'premium',
+          aiQuota: {
+            monthlyLimit: 1000,
+            used: 10,
+            resetDate: '2026-10-01',
+            totalTokensConsumed: 500,
+          },
+        },
+      });
+
+      (globalThis.fetch as any).mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: new Headers({
+          'x-ai-quota-used': '11',
+          'x-ai-quota-limit': '1000',
+          'x-ai-tokens-consumed': '60',
+        }),
+        json: async () => ({
+          candidates: [{ content: { parts: [{ text: 'OK' }] } }],
+        }),
+      });
+
+      await callGeminiViaProxy({
+        contents: [{ parts: [{ text: 'Teste quota' }] }],
+        idToken: 'token-test',
+      });
+
+      const updatedProfile = useFlowStore.getState().userProfile;
+      expect(updatedProfile?.aiQuota?.used).toBe(11);
+      expect(updatedProfile?.aiQuota?.totalTokensConsumed).toBe(560);
+    });
+
+    it('deve identificar erro 429 como quotaExceeded', async () => {
+      (globalThis.fetch as any).mockResolvedValueOnce({
+        ok: false,
+        status: 429,
+        headers: new Headers({
+          'x-ai-quota-used': '1000',
+          'x-ai-quota-limit': '1000',
+        }),
+        json: async () => ({ error: 'Quota mensal esgotada' }),
+      });
+
+      const res = await callGeminiViaProxy({
+        contents: [{ parts: [{ text: 'Mais uma mensagem' }] }],
+        idToken: 'token-test',
+      });
+
+      expect(res.ok).toBe(false);
+      expect(res.status).toBe(429);
+      expect(res.quotaExceeded).toBe(true);
+    });
+
+    it('deve tratar erro 403 de usuário não premium', async () => {
+      (globalThis.fetch as any).mockResolvedValueOnce({
+        ok: false,
+        status: 403,
+        headers: new Headers(),
+        json: async () => ({ error: 'Recurso exclusivo Premium' }),
+      });
+
+      const res = await callGeminiViaProxy({
+        contents: [{ parts: [{ text: 'Mensagem' }] }],
+        idToken: 'token-test',
+      });
+
+      expect(res.ok).toBe(false);
+      expect(res.status).toBe(403);
+      expect(res.error).toBe('Recurso exclusivo Premium');
+    });
+
+    it('deve capturar falhas de rede com elegância sem quebrar a execução', async () => {
+      (globalThis.fetch as any).mockRejectedValueOnce(new Error('Network error'));
+
+      const res = await callGeminiViaProxy({
+        contents: [{ parts: [{ text: 'Mensagem' }] }],
+        idToken: 'token-test',
+      });
+
+      expect(res.ok).toBe(false);
+      expect(res.status).toBe(0);
+      expect(res.error).toBe('Network error');
+    });
+  });
+
+  describe('sendMessageToAssistant - Roteamento Premium via aiProxy & Fallbacks', () => {
+    const originalFetch = globalThis.fetch;
+
+    const mockCtx: ChatContext = {
+      selectedDate: '2026-09-22',
+      selectedRoutineTypeId: 'main',
+      routineTypes: [{ id: 'main', name: 'Principal', description: '', color: '#000', icon: 'zap' }],
+      categories: [{ id: 'c1', name: 'Work', color: '#111' }],
+      tasks: [],
+      logs: {},
+      backlogCount: 0,
+      totalPomodoroMinutes: 25,
+    };
+
+    beforeEach(() => {
+      globalThis.fetch = vi.fn();
+      (firebaseConfig.getActiveFirebaseConfig as any).mockReturnValue({
+        projectId: 'flow-test-proj',
+      });
+      (firebaseConfig.getFirebaseAuthInstance as any).mockReturnValue({
+        currentUser: {
+          uid: 'user-premium-1',
+          getIdToken: vi.fn().mockResolvedValue('firebase-valid-id-token'),
+        },
+      });
+      useFlowStore.setState({
+        userProfile: {
+          name: 'Usuário Premium',
+          objective: 'focus',
+          plan: 'premium',
+          aiQuota: {
+            monthlyLimit: 1000,
+            used: 50,
+            resetDate: '2026-10-01',
+            totalTokensConsumed: 1200,
+          },
+        },
+      });
+    });
+
+    afterEach(() => {
+      globalThis.fetch = originalFetch;
+    });
+
+    it('deve rotear através do aiProxy quando plano for Premium e houver token do Firebase', async () => {
+      (globalThis.fetch as any).mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: new Headers({
+          'x-ai-quota-used': '51',
+          'x-ai-quota-limit': '1000',
+          'x-ai-tokens-consumed': '30',
+        }),
+        json: async () => ({
+          candidates: [
+            {
+              content: {
+                parts: [{ text: 'Resposta direta do Flow Proxy para assinante Premium!' }],
+              },
+            },
+          ],
+        }),
+      });
+
+      const res = await sendMessageToAssistant({
+        prompt: 'Qual minha próxima tarefa?',
+        history: [],
+        context: mockCtx,
+      });
+
+      expect(res.content).toBe('Resposta direta do Flow Proxy para assinante Premium!');
+      expect(globalThis.fetch).toHaveBeenCalledWith(
+        'https://southamerica-east1-flow-test-proj.cloudfunctions.net/aiProxy',
+        expect.objectContaining({
+          method: 'POST',
+          headers: expect.objectContaining({
+            Authorization: 'Bearer firebase-valid-id-token',
+          }),
+        })
+      );
+    });
+
+    it('deve retornar mensagem clara de quota esgotada quando proxy retornar 429 e não houver chave pessoal', async () => {
+      (globalThis.fetch as any).mockResolvedValueOnce({
+        ok: false,
+        status: 429,
+        headers: new Headers({
+          'x-ai-quota-used': '1000',
+          'x-ai-quota-limit': '1000',
+        }),
+        json: async () => ({ error: 'Quota mensal esgotada' }),
+      });
+
+      const res = await sendMessageToAssistant({
+        prompt: 'Replanejar minha rotina',
+        history: [],
+        context: mockCtx,
+      });
+
+      expect(res.content).toContain('Limite Mensal de IA Atingido');
+      expect(res.content).toContain('2026-10-01');
+      expect(res.content).toContain('Chave de API Google Gemini pessoal');
+    });
+
+    it('deve fazer fallback transparente para chave pessoal do usuário se quota Premium estiver esgotada mas apiKey for informada', async () => {
+      // 1ª chamada: aiProxy retorna 429
+      (globalThis.fetch as any).mockResolvedValueOnce({
+        ok: false,
+        status: 429,
+        headers: new Headers({
+          'x-ai-quota-used': '1000',
+          'x-ai-quota-limit': '1000',
+        }),
+        json: async () => ({ error: 'Quota mensal esgotada' }),
+      });
+
+      // 2ª chamada: fallback direto para a API do Gemini com a chave pessoal
+      (globalThis.fetch as any).mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: new Headers(),
+        json: async () => ({
+          candidates: [
+            {
+              content: {
+                parts: [{ text: 'Resposta processada via chave pessoal de fallback!' }],
+              },
+            },
+          ],
+        }),
+      });
+
+      const res = await sendMessageToAssistant({
+        prompt: 'Como priorizar hoje?',
+        history: [],
+        context: mockCtx,
+        apiKey: 'minha-chave-pessoal-12345678',
+      });
+
+      expect(res.content).toBe('Resposta processada via chave pessoal de fallback!');
+      expect(globalThis.fetch).toHaveBeenCalledTimes(2);
+    });
+
+    it('deve fazer fallback para resposta heurística local caso o proxy falhe e não haja chave pessoal', async () => {
+      (globalThis.fetch as any).mockRejectedValueOnce(new Error('Proxy timeout'));
+
+      const res = await sendMessageToAssistant({
+        prompt: 'Estou atrasado 30 minutos',
+        history: [],
+        context: mockCtx,
+      });
+
+      expect(res.actionProposal).toBeDefined();
+      expect(res.actionProposal?.type).toBe('replan_schedule');
+    });
+  });
+
+  describe('decomposeTaskWithGemini - Roteamento Premium via aiProxy & Fallbacks', () => {
+    const originalFetch = globalThis.fetch;
+
+    beforeEach(() => {
+      globalThis.fetch = vi.fn();
+      (firebaseConfig.getActiveFirebaseConfig as any).mockReturnValue({
+        projectId: 'flow-test-proj',
+      });
+      (firebaseConfig.getFirebaseAuthInstance as any).mockReturnValue({
+        currentUser: {
+          uid: 'user-premium-1',
+          getIdToken: vi.fn().mockResolvedValue('firebase-valid-id-token'),
+        },
+      });
+      useFlowStore.setState({
+        userProfile: {
+          name: 'Usuário Premium',
+          objective: 'focus',
+          plan: 'premium',
+        },
+      });
+    });
+
+    afterEach(() => {
+      globalThis.fetch = originalFetch;
+    });
+
+    it('deve decompor tarefas via aiProxy quando usuário for Premium', async () => {
+      (globalThis.fetch as any).mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: new Headers(),
+        json: async () => ({
+          candidates: [
+            {
+              content: {
+                parts: [
+                  {
+                    text: '- Subtarefa 1 via proxy\n- Subtarefa 2 via proxy\n- Subtarefa 3 via proxy',
+                  },
+                ],
+              },
+            },
+          ],
+        }),
+      });
+
+      const items = await decomposeTaskWithGemini({
+        task: {
+          id: 't-premium',
+          routineTypeId: 'main',
+          title: 'Organizar lançamento',
+          targetMinutes: 60,
+          daysOfWeek: [1],
+          categoryId: 'c1',
+          startTime: '10:00',
+          endTime: '11:00',
+        },
+      });
+
+      expect(items).toHaveLength(3);
+      expect(items[0]).toBe('Subtarefa 1 via proxy');
+      expect(globalThis.fetch).toHaveBeenCalledWith(
+        'https://southamerica-east1-flow-test-proj.cloudfunctions.net/aiProxy',
+        expect.anything()
+      );
+    });
+
+    it('deve usar fallback heurístico se chamada ao proxy falhar', async () => {
+      (globalThis.fetch as any).mockRejectedValueOnce(new Error('Erro proxy'));
+
+      const items = await decomposeTaskWithGemini({
+        task: {
+          id: 't-study',
+          routineTypeId: 'main',
+          title: 'Estudar Arquitetura Cloud',
+          targetMinutes: 60,
+          daysOfWeek: [1],
+          categoryId: 'c1',
+          startTime: '10:00',
+          endTime: '11:00',
+        },
+      });
+
+      expect(items.length).toBeGreaterThanOrEqual(3);
+      expect(items.some((i) => i.includes('distrações') || i.includes('material'))).toBe(true);
     });
   });
 });

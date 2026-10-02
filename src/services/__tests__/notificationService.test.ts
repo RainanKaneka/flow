@@ -7,6 +7,7 @@ describe('notificationService', () => {
     delete (window as any).__TAURI__;
     delete (window as any).__TAURI_INTERNALS__;
     delete (window as any).__TAURI_METADATA__;
+    notificationService.clearDeduplicationCache();
   });
 
   describe('isTauriEnvironment', () => {
@@ -75,9 +76,27 @@ describe('notificationService', () => {
       expect(mockToastListener).toHaveBeenCalledTimes(1);
       expect(mockToastListener).toHaveBeenCalledWith(payload);
 
-      // Desinscreve e verifica que não recebe mais notificações
+      // Desinscreve e verifica que não recebe mais notificações (mesmo com payload diferente)
       unsubscribe();
+      notificationService.clearDeduplicationCache();
+      await notificationService.sendNotification({ ...payload, title: 'Outro Título' });
+      expect(mockToastListener).toHaveBeenCalledTimes(1);
+    });
+
+    it('deve evitar disparos duplicados idênticos em sequência rápida (deduplicação)', async () => {
+      const mockToastListener = vi.fn();
+      notificationService.onToast(mockToastListener);
+
+      const payload = {
+        title: 'Lembrete Único',
+        body: 'Não deve duplicar',
+        playSound: false,
+      };
+
       await notificationService.sendNotification(payload);
+      await notificationService.sendNotification(payload);
+
+      // Deve ter sido disparado apenas 1 vez devido à janela de deduplicação
       expect(mockToastListener).toHaveBeenCalledTimes(1);
     });
 

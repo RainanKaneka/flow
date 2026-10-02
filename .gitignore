@@ -36,3 +36,9 @@ next-env.d.ts
 # Tauri / Rust
 src-tauri/target/
 src-tauri/gen/
+
+# IDE / Agent caches
+.agents/
+.claude/
+skills-lock.json
+

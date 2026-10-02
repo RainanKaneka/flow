@@ -1,0 +1,41 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Função auxiliar para verificar propriedade do documento
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    // Campos sensíveis de monetização e quotas que NÃO podem ser alterados pelo cliente
+    function protectedFieldsNotModified() {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny([
+        'plan', 'premiumSince', 'premiumUntil', 'aiQuota'
+      ]);
+    }
+
+    // Regras para a partição do usuário em /users/{userId}
+    match /users/{userId} {
+      // Leitura permitida para o próprio usuário autenticado
+      allow read: if isOwner(userId);
+
+      // Criação inicial: cliente só pode criar com plan 'free' (ou omitido) e sem fraudar quotas
+      allow create: if isOwner(userId)
+        && (!('plan' in request.resource.data) || request.resource.data.plan == 'free')
+        && (!('aiQuota' in request.resource.data) || request.resource.data.aiQuota.monthlyLimit <= 1000);
+
+      // Atualização: cliente não pode alterar plano, datas de vigência ou quotas diretamente
+      // (Atualizações de plano/quota são gerenciadas pelo backend via Cloud Functions / Admin SDK)
+      allow update: if isOwner(userId) && protectedFieldsNotModified();
+
+      // Deleção de conta pelo próprio usuário
+      allow delete: if isOwner(userId);
+
+      // Subcoleções do usuário (sync/state, logs, etc.)
+      match /{collection}/{docId} {
+        allow read, write: if isOwner(userId);
+      }
+    }
+  }
+}

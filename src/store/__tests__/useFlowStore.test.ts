@@ -26,6 +26,12 @@ describe('useFlowStore', () => {
       expect(state.selectedRoutineTypeId).toBe(added?.id);
     });
 
+    it('deve auto-corrigir selectedRoutineTypeId para o primeiro tipo se o id passado for inválido', () => {
+      useFlowStore.getState().selectRoutineType('non_existent_routine_id');
+      const state = useFlowStore.getState();
+      expect(state.selectedRoutineTypeId).toBe(state.routineTypes[0].id);
+    });
+
     it('deve atualizar um tipo de rotina existente', () => {
       const routine = useFlowStore.getState().routineTypes[0];
 
@@ -373,28 +379,45 @@ describe('useFlowStore', () => {
       expect(currentSeconds).toBe(initialSeconds - 1);
     });
 
-    it('deve concluir a sessão e alternar modo quando o timer zerar', () => {
+    it('deve concluir a sessão e alternar modo automaticamente quando o timer zerar', () => {
       const task = useFlowStore.getState().tasks[0];
       useFlowStore.getState().startPomodoro(task.id);
 
-      // Simula timer no último segundo
+      // Simula timer no último segundo com autoAdvance ativo (padrão 0.4.5)
       useFlowStore.getState().resetPomodoro(1);
       useFlowStore.getState().startPomodoro(task.id);
 
       useFlowStore.getState().tickPomodoro();
 
-      const pomo = useFlowStore.getState().pomodoro;
+      let pomo = useFlowStore.getState().pomodoro;
       expect(pomo.completedSessions).toBe(1);
-      // Após modo focus, deve transicionar para pausa curta
+      // Após modo focus, deve transicionar para pausa curta e iniciar automaticamente se autoAdvance = true
       expect(pomo.mode).toBe('shortBreak');
+      expect(pomo.isActive).toBe(true);
+
+      // Desativando autoAdvance: ao zerar, deve pausar
+      useFlowStore.getState().setPomodoroAutoAdvance(false);
+      useFlowStore.getState().resetPomodoro(1);
+      useFlowStore.getState().startPomodoro();
+      useFlowStore.getState().tickPomodoro();
+
+      pomo = useFlowStore.getState().pomodoro;
+      expect(pomo.mode).toBe('focus');
       expect(pomo.isActive).toBe(false);
     });
 
-    it('deve alternar modo Pomodoro manualmente', () => {
+    it('deve alternar modo Pomodoro manualmente e suportar Deep Focus de 50 minutos', () => {
       useFlowStore.getState().setPomodoroMode('longBreak');
-      const pomo = useFlowStore.getState().pomodoro;
+      let pomo = useFlowStore.getState().pomodoro;
       expect(pomo.mode).toBe('longBreak');
       expect(pomo.totalDurationSeconds).toBe(15 * 60);
+
+      // Seleção de 50 minutos Deep Focus (0.4.5)
+      useFlowStore.getState().setPomodoroMode('focus', 50 * 60);
+      pomo = useFlowStore.getState().pomodoro;
+      expect(pomo.mode).toBe('focus');
+      expect(pomo.totalDurationSeconds).toBe(50 * 60);
+      expect(pomo.preferredFocusDurationSeconds).toBe(50 * 60);
     });
   });
 

@@ -197,6 +197,16 @@ class SoundManager {
       osc.stop(baseTime + idx * 0.08 + 0.6);
     });
   }
+
+  // Atalho tátil para cliques de botões
+  playHapticClick() {
+    this.playTick();
+  }
+
+  // Chime Zen calmo e meditativo (Sino Tibetano 528Hz)
+  playZenChime() {
+    this.playPomodoroChime();
+  }
 }
 
 export const sounds = new SoundManager();

@@ -80,26 +80,49 @@ export async function loadStateFromDb(): Promise<Partial<FlowState>> {
   }));
 
   // 3. Tasks
+  const validRoutineTypeIds = new Set(routineTypes.map((r) => r.id));
+  const defaultRoutineTypeId = routineTypes[0]?.id || 'main_routine';
+
   const tasksRaw = await db.select<any[]>('SELECT * FROM tasks');
-  const tasks: Task[] = tasksRaw.map((t) => ({
-    id: t.id,
-    title: t.title,
-    description: t.description || '',
-    startTime: t.start_time,
-    endTime: t.end_time,
-    routineTypeId: t.routine_type_id,
-    categoryId: t.category_id,
-    isGoldenRule: Boolean(t.is_golden_rule),
-    daysOfWeek: JSON.parse(t.days_of_week || '[]'),
-    targetMinutes: t.target_minutes,
-    tags: JSON.parse(t.tags || '[]'),
-    notes: t.notes || '',
-    isCustom: Boolean(t.is_custom),
-    richContent: t.rich_content,
-    attachments: JSON.parse(t.attachments || '[]'),
-    checklist: JSON.parse(t.checklist || '[]'),
-    specificDate: t.specific_date || undefined,
-  }));
+  const tasks: Task[] = tasksRaw.map((t) => {
+    const rawRoutineId = t.routine_type_id;
+    const routineTypeId =
+      rawRoutineId && validRoutineTypeIds.has(rawRoutineId)
+        ? rawRoutineId
+        : defaultRoutineTypeId;
+
+    return {
+      id: t.id,
+      title: t.title,
+      description: t.description || '',
+      startTime: t.start_time,
+      endTime: t.end_time,
+      routineTypeId,
+      categoryId: t.category_id,
+      isGoldenRule: Boolean(t.is_golden_rule),
+      daysOfWeek: JSON.parse(t.days_of_week || '[]'),
+      targetMinutes: t.target_minutes,
+      tags: JSON.parse(t.tags || '[]'),
+      notes: t.notes || '',
+      isCustom: Boolean(t.is_custom),
+      richContent: t.rich_content,
+      attachments: JSON.parse(t.attachments || '[]'),
+      checklist: JSON.parse(t.checklist || '[]'),
+      specificDate: t.specific_date || undefined,
+    };
+  }).map((t) => {
+    // Garante que a tarefa de boas-vindas não se repita em todos os dias (0.4.5)
+    if (t.id === 'welcome_task' && (t.daysOfWeek.length > 0 || !t.specificDate)) {
+      const now = new Date();
+      const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      return {
+        ...t,
+        daysOfWeek: [],
+        specificDate: t.specificDate || today,
+      };
+    }
+    return t;
+  });
 
   // 4. Completions (Logs) - Filtra apenas logs pertencentes a tarefas válidas
   const validTaskIds = new Set(tasks.map((t) => t.id));

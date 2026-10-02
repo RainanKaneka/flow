@@ -1,5 +1,6 @@
 import React from 'react';
-import { AlertCircle, Settings, ExternalLink, Copy, Check, Zap } from 'lucide-react';
+import { AlertCircle, Settings, ExternalLink, Copy, Check, Zap, Sparkles, ShieldCheck } from 'lucide-react';
+import { isValidGoogleClientId } from '../../services/googleAuthService';
 
 export interface GoogleOAuthConnectSectionProps {
   onStartOAuth: () => void;
@@ -13,6 +14,12 @@ export interface GoogleOAuthConnectSectionProps {
   currentOrigin: string;
   copiedOrigin: boolean;
   onCopyOrigin: () => void;
+  tokenInput?: string;
+  onTokenInputChange?: (val: string) => void;
+  onConnectWithToken?: () => void;
+  isConnectingToken?: boolean;
+  isExternalBrowserOpen?: boolean;
+  onReopenBrowser?: () => void;
 }
 
 export const GoogleOAuthConnectSection: React.FC<GoogleOAuthConnectSectionProps> = ({
@@ -27,12 +34,56 @@ export const GoogleOAuthConnectSection: React.FC<GoogleOAuthConnectSectionProps>
   currentOrigin,
   copiedOrigin,
   onCopyOrigin,
+  tokenInput = '',
+  onTokenInputChange,
+  onConnectWithToken,
+  isConnectingToken = false,
+  isExternalBrowserOpen = false,
+  onReopenBrowser,
 }) => {
+  const [showManualTokenField, setShowManualTokenField] = React.useState(false);
+  const hasValidClientId = isValidGoogleClientId(clientIdInput);
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      {/* Banner de Modo Oficial Zero-Config ou Status de Client ID */}
+      <div
+        style={{
+          padding: '12px 14px',
+          borderRadius: '12px',
+          background: hasValidClientId
+            ? 'rgba(16, 185, 129, 0.1)'
+            : 'rgba(99, 102, 241, 0.08)',
+          border: hasValidClientId
+            ? '1px solid rgba(16, 185, 129, 0.28)'
+            : '1px solid rgba(99, 102, 241, 0.25)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+        }}
+        data-testid="flow-official-oauth-badge"
+      >
+        {hasValidClientId ? (
+          <ShieldCheck size={18} color="#10B981" style={{ flexShrink: 0 }} />
+        ) : (
+          <Sparkles size={18} color="var(--accent-primary)" style={{ flexShrink: 0 }} />
+        )}
+        <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', flex: 1 }}>
+          <strong style={{ color: hasValidClientId ? '#10B981' : 'var(--text-primary)' }}>
+            {hasValidClientId
+              ? 'Client ID do Google OAuth Configurado'
+              : 'Google OAuth 2.0 (Login & Sincronização)'}
+          </strong>
+          <div style={{ marginTop: '2px', lineHeight: 1.4 }}>
+            {hasValidClientId
+              ? 'Credencial ativa com suporte a renovação contínua de token (Auto-Refresh).'
+              : 'Requer Client ID do Google Cloud cadastrado ou conecte a IA direto com a Chave Gemini abaixo (sem GCP).'}
+          </div>
+        </div>
+      </div>
+
       <p style={{ fontSize: '0.83rem', color: 'var(--text-muted)', margin: 0 }}>
-        Faça login com sua conta Google real para importar automaticamente seu nome, foto de perfil
-        e autorizar os tokens da IA.
+        Faça login com sua conta Google para sincronizar seu perfil e autorizar os modelos Gemini.
       </p>
 
       {/* Botão Principal de Login Google */}
@@ -79,8 +130,8 @@ export const GoogleOAuthConnectSection: React.FC<GoogleOAuthConnectSectionProps>
         <span>{isLoggingIn ? 'Aguardando login no Google...' : 'Fazer Login com o Google'}</span>
       </button>
 
-      {/* Mensagem de Erro Google OAuth se houver */}
-      {errorMessage && (
+      {/* Mensagem de Erro Google OAuth se houver (apenas se não for o aviso informativo de navegador externo) */}
+      {errorMessage && !isExternalBrowserOpen && (
         <div
           style={{
             padding: '10px 12px',
@@ -99,12 +150,122 @@ export const GoogleOAuthConnectSection: React.FC<GoogleOAuthConnectSectionProps>
         </div>
       )}
 
-      {/* Botões secundários: Configurar Client ID ou Manual */}
+      {/* Card Especial de Conexão com Token / Navegador Externo (Desktop & Fallback) */}
+      {(isExternalBrowserOpen || showManualTokenField) && (
+        <div
+          style={{
+            padding: '14px 16px',
+            borderRadius: '14px',
+            backgroundColor: 'rgba(99, 102, 241, 0.08)',
+            border: '1px solid rgba(99, 102, 241, 0.28)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '10px',
+          }}
+          data-testid="external-browser-token-card"
+        >
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '8px',
+            }}
+          >
+            <span
+              style={{
+                fontSize: '0.84rem',
+                fontWeight: 600,
+                color: '#818CF8',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+              }}
+            >
+              <ExternalLink size={14} />
+              Login via Navegador Aberto
+            </span>
+            {onReopenBrowser && (
+              <button
+                type="button"
+                onClick={onReopenBrowser}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--text-muted)',
+                  fontSize: '0.74rem',
+                  cursor: 'pointer',
+                  textDecoration: 'underline',
+                  padding: 0,
+                }}
+              >
+                Reabrir Navegador
+              </button>
+            )}
+          </div>
+
+          <p
+            style={{
+              fontSize: '0.78rem',
+              color: 'var(--text-muted)',
+              margin: 0,
+              lineHeight: 1.45,
+            }}
+          >
+            Conclua a autorização no Chrome/Edge. O token é gerado no final. Cole o token ou a URL completa abaixo e clique em <strong>Conectar</strong>:
+          </p>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <input
+              type="text"
+              value={tokenInput}
+              onChange={(e) => onTokenInputChange && onTokenInputChange(e.target.value)}
+              placeholder="Cole o token (ya29...) ou link de redirecionamento"
+              style={{
+                flex: 1,
+                padding: '8px 12px',
+                borderRadius: '10px',
+                border: '1px solid var(--border-color)',
+                backgroundColor: 'var(--bg-primary)',
+                color: 'var(--text-primary)',
+                fontSize: '0.82rem',
+                outline: 'none',
+              }}
+            />
+            <button
+              type="button"
+              onClick={onConnectWithToken}
+              disabled={isConnectingToken || !tokenInput.trim()}
+              style={{
+                padding: '8px 14px',
+                borderRadius: '10px',
+                border: 'none',
+                backgroundColor: tokenInput.trim() ? '#6366F1' : 'rgba(99, 102, 241, 0.4)',
+                color: '#FFF',
+                fontWeight: 600,
+                fontSize: '0.82rem',
+                cursor: isConnectingToken ? 'wait' : tokenInput.trim() ? 'pointer' : 'not-allowed',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                whiteSpace: 'nowrap',
+              }}
+              data-testid="connect-with-token-btn"
+            >
+              {isConnectingToken ? 'Validando...' : 'Conectar'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Botões secundários: Configurar Client ID, Token ou Manual */}
       <div
         style={{
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '8px',
           marginTop: '4px',
         }}
       >
@@ -129,20 +290,37 @@ export const GoogleOAuthConnectSection: React.FC<GoogleOAuthConnectSectionProps>
           </span>
         </button>
 
-        <button
-          type="button"
-          onClick={onOpenManualProfile}
-          style={{
-            background: 'none',
-            border: 'none',
-            color: 'var(--text-muted)',
-            fontSize: '0.78rem',
-            cursor: 'pointer',
-            padding: 0,
-          }}
-        >
-          Preencher perfil offline
-        </button>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          <button
+            type="button"
+            onClick={() => setShowManualTokenField((prev) => !prev)}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: showManualTokenField ? '#818CF8' : 'var(--text-muted)',
+              fontSize: '0.78rem',
+              cursor: 'pointer',
+              padding: 0,
+            }}
+          >
+            {showManualTokenField ? 'Ocultar campo de token' : 'Conectar com Token já gerado'}
+          </button>
+
+          <button
+            type="button"
+            onClick={onOpenManualProfile}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'var(--text-muted)',
+              fontSize: '0.78rem',
+              cursor: 'pointer',
+              padding: 0,
+            }}
+          >
+            Preencher perfil offline
+          </button>
+        </div>
       </div>
 
       {/* Box Expansível de Configuração do Client ID do Google Cloud */}
@@ -188,12 +366,14 @@ export const GoogleOAuthConnectSection: React.FC<GoogleOAuthConnectSectionProps>
               fontSize: '0.76rem',
               color: 'var(--text-muted)',
               margin: 0,
-              lineHeight: 1.4,
+              lineHeight: 1.45,
             }}
           >
-            1. Crie uma credencial do tipo <strong>ID do cliente OAuth (Aplicativo da Web)</strong>.
+            1. Acesse o <strong>Google Cloud Console &gt; Credenciais</strong>.
             <br />
-            2. Em <strong>Origens JavaScript autorizadas</strong>, adicione a URL abaixo:
+            2. Clique em <strong>+ Criar Credenciais &gt; ID do cliente OAuth</strong> (Tipo: <em>Aplicativo da Web</em>).
+            <br />
+            3. Em <strong>Origens JavaScript autorizadas</strong> e <strong>URIs de redirecionamento autorizados</strong>, adicione a URL abaixo:
           </p>
 
           {/* Origem autorizada com cópia em 1 clique */}
@@ -228,6 +408,20 @@ export const GoogleOAuthConnectSection: React.FC<GoogleOAuthConnectSectionProps>
               {copiedOrigin ? <Check size={12} /> : <Copy size={12} />}
               <span>{copiedOrigin ? 'Copiado!' : 'Copiar'}</span>
             </button>
+          </div>
+
+          <div
+            style={{
+              padding: '8px 10px',
+              borderRadius: '8px',
+              backgroundColor: 'rgba(99, 102, 241, 0.08)',
+              border: '1px solid rgba(99, 102, 241, 0.2)',
+              fontSize: '0.74rem',
+              color: 'var(--text-secondary)',
+              lineHeight: 1.4,
+            }}
+          >
+            💡 <strong>Dica Rápida:</strong> Se você deseja apenas usar os recursos de Inteligência Artificial do Flow (Gemini), não é necessário criar Client ID no Google Cloud! Basta colar sua Chave de API Gemini gratuita na seção logo abaixo.
           </div>
 
           {/* Input do Client ID */}

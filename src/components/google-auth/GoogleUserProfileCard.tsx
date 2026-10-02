@@ -1,10 +1,13 @@
 import React from 'react';
 import { GoogleUser } from '../../types/routine';
-import { LogOut, Zap } from 'lucide-react';
+import { LogOut, Zap, RefreshCw, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { getTimeUntilExpiryMinutes, isTokenExpired } from '../../services/googleAuthService';
 
 export interface GoogleUserProfileCardProps {
   googleUser: GoogleUser;
   onDisconnect: () => void;
+  onRefreshToken?: () => void;
+  isRefreshingToken?: boolean;
   isEditingManual: boolean;
   onToggleEditManual: (editing: boolean) => void;
   manualName: string;
@@ -17,6 +20,8 @@ export interface GoogleUserProfileCardProps {
 export const GoogleUserProfileCard: React.FC<GoogleUserProfileCardProps> = ({
   googleUser,
   onDisconnect,
+  onRefreshToken,
+  isRefreshingToken = false,
   isEditingManual,
   onToggleEditManual,
   manualName,
@@ -209,30 +214,82 @@ export const GoogleUserProfileCard: React.FC<GoogleUserProfileCardProps> = ({
         </div>
       </div>
 
-      {/* Token status banner */}
+      {/* Token status banner com Auto-Refresh (Fase 4, Parte 2) */}
       <div
         style={{
-          padding: '8px 12px',
-          borderRadius: '10px',
+          padding: '10px 12px',
+          borderRadius: '12px',
           backgroundColor: googleUser.accessToken
-            ? 'rgba(99, 102, 241, 0.12)'
+            ? 'rgba(99, 102, 241, 0.1)'
             : 'rgba(245, 158, 11, 0.1)',
           border: `1px solid ${
             googleUser.accessToken ? 'rgba(99, 102, 241, 0.25)' : 'rgba(245, 158, 11, 0.25)'
           }`,
-          fontSize: '0.8rem',
-          color: googleUser.accessToken ? '#818CF8' : '#F59E0B',
           display: 'flex',
-          alignItems: 'center',
+          flexDirection: 'column',
           gap: '8px',
         }}
       >
-        <Zap size={14} />
-        <span>
-          {googleUser.accessToken
-            ? 'Token OAuth 2.0 ativo: Sua conta Google está autenticada para alimentar a IA Gemini.'
-            : 'Perfil conectado localmente.'}
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Zap size={14} color={googleUser.accessToken ? '#818CF8' : '#F59E0B'} />
+            <span style={{ fontSize: '0.82rem', fontWeight: 600, color: googleUser.accessToken ? '#818CF8' : '#F59E0B' }}>
+              {googleUser.accessToken ? 'Token Google OAuth 2.0 Ativo' : 'Perfil conectado localmente'}
+            </span>
+          </div>
+
+          {googleUser.accessToken && (
+            <span
+              style={{
+                fontSize: '0.72rem',
+                padding: '2px 8px',
+                borderRadius: '9999px',
+                backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                border: '1px solid rgba(16, 185, 129, 0.3)',
+                color: '#10B981',
+                fontWeight: 600,
+              }}
+              data-testid="token-refresh-badge"
+            >
+              Auto-Refresh Ativo • {getTimeUntilExpiryMinutes(googleUser)} min
+            </span>
+          )}
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+          <span style={{ fontSize: '0.76rem', color: 'var(--text-muted)' }}>
+            {googleUser.accessToken
+              ? 'Renovação em segundo plano automática para chamadas da IA Gemini.'
+              : 'Faça login com OAuth para obter tokens de IA.'}
+          </span>
+
+          {googleUser.accessToken && onRefreshToken && (
+            <button
+              type="button"
+              onClick={onRefreshToken}
+              disabled={isRefreshingToken}
+              style={{
+                background: 'none',
+                border: '1px solid rgba(99, 102, 241, 0.3)',
+                padding: '4px 10px',
+                borderRadius: '8px',
+                fontSize: '0.74rem',
+                color: 'var(--accent-primary)',
+                cursor: isRefreshingToken ? 'wait' : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
+                fontWeight: 600,
+                opacity: isRefreshingToken ? 0.7 : 1,
+              }}
+              data-testid="refresh-google-token-btn"
+              title="Renovar token de acesso antecipadamente"
+            >
+              <RefreshCw size={12} className={isRefreshingToken ? 'animate-spin' : ''} />
+              <span>{isRefreshingToken ? 'Renovando...' : 'Renovar Token'}</span>
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

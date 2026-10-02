@@ -31,7 +31,7 @@ describe('GoogleUserProfileCard', () => {
 
     expect(screen.getByText('Rainan Silva')).toBeInTheDocument();
     expect(screen.getByText('rainan@example.com')).toBeInTheDocument();
-    expect(screen.getByText(/Token OAuth 2.0 ativo/i)).toBeInTheDocument();
+    expect(screen.getByText(/Token Google OAuth 2.0 Ativo/i)).toBeInTheDocument();
 
     const disconnectBtn = screen.getByText('Desconectar');
     fireEvent.click(disconnectBtn);
@@ -64,4 +64,60 @@ describe('GoogleUserProfileCard', () => {
     fireEvent.click(saveBtn);
     expect(handleSave).toHaveBeenCalledTimes(1);
   });
+
+  it('deve exibir o badge de auto-refresh e botão de renovar token quando conectado com token', () => {
+    const handleRefreshToken = vi.fn();
+    render(
+      <GoogleUserProfileCard
+        googleUser={{
+          ...mockUser,
+          expiresAt: Date.now() + 45 * 60 * 1000,
+        }}
+        onDisconnect={vi.fn()}
+        onRefreshToken={handleRefreshToken}
+        isRefreshingToken={false}
+        isEditingManual={false}
+        onToggleEditManual={vi.fn()}
+        manualName=""
+        manualEmail=""
+        onManualNameChange={vi.fn()}
+        onManualEmailChange={vi.fn()}
+        onSaveManualProfile={vi.fn()}
+      />
+    );
+
+    const badge = screen.getByTestId('token-refresh-badge');
+    expect(badge).toBeInTheDocument();
+    expect(badge.textContent).toContain('Auto-Refresh Ativo');
+
+    const refreshBtn = screen.getByTestId('refresh-google-token-btn');
+    expect(refreshBtn).toBeInTheDocument();
+    expect(refreshBtn).toHaveTextContent('Renovar Token');
+
+    fireEvent.click(refreshBtn);
+    expect(handleRefreshToken).toHaveBeenCalledTimes(1);
+  });
+
+  it('deve desabilitar o botão e mostrar status de renovando quando isRefreshingToken for true', () => {
+    render(
+      <GoogleUserProfileCard
+        googleUser={mockUser}
+        onDisconnect={vi.fn()}
+        onRefreshToken={vi.fn()}
+        isRefreshingToken={true}
+        isEditingManual={false}
+        onToggleEditManual={vi.fn()}
+        manualName=""
+        manualEmail=""
+        onManualNameChange={vi.fn()}
+        onManualEmailChange={vi.fn()}
+        onSaveManualProfile={vi.fn()}
+      />
+    );
+
+    const refreshBtn = screen.getByTestId('refresh-google-token-btn');
+    expect(refreshBtn).toBeDisabled();
+    expect(refreshBtn).toHaveTextContent('Renovando...');
+  });
 });
+

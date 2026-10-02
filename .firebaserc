@@ -1,0 +1,9 @@
+{
+  "projects": {
+    "default": "flow-app-staging",
+    "staging": "flow-app-staging",
+    "production": "flow-app-prod"
+  },
+  "targets": {},
+  "etags": {}
+}

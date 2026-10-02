@@ -8,6 +8,7 @@ import { createBacklogSlice } from './slices/backlogSlice';
 import { createNotesSlice } from './slices/notesSlice';
 import { createPomodoroSlice } from './slices/pomodoroSlice';
 import { createAiSlice } from './slices/aiSlice';
+import { createAuthSyncSlice } from './slices/authSyncSlice';
 import { initDb, loadStateFromDb, syncStateToDb, runLocalStorageMigration } from '../services/dbService';
 
 export { getTodayDateString };
@@ -23,6 +24,7 @@ export const useFlowStore = create<FlowStore>()(
         ...createNotesSlice(...a),
         ...createPomodoroSlice(...a),
         ...createAiSlice(...a),
+        ...createAuthSyncSlice(...a),
       }),
       {
         name: 'flow-app-v1-clean',
@@ -38,6 +40,8 @@ export const useFlowStore = create<FlowStore>()(
           backupSettings: state.backupSettings,
           hasCompletedOnboarding: state.hasCompletedOnboarding,
           userProfile: state.userProfile,
+          firebaseUser: state.firebaseUser,
+          cloudSyncStatus: state.cloudSyncStatus,
         }),
       }
     )
@@ -92,7 +96,17 @@ export async function initializeDbStore() {
       // Sincroniza o estado inicial do Zustand (dados padrão) para o SQLite.
       await syncStateToDb(useFlowStore.getState());
     } else {
-      useFlowStore.setState(dbState);
+      const currentSelected = useFlowStore.getState().selectedRoutineTypeId;
+      const validTypes = dbState.routineTypes || [];
+      const isValid = validTypes.some((r) => r.id === currentSelected);
+      const safeSelectedRoutineTypeId = isValid
+        ? currentSelected
+        : validTypes[0]?.id || 'main_routine';
+
+      useFlowStore.setState({
+        ...dbState,
+        selectedRoutineTypeId: safeSelectedRoutineTypeId,
+      });
     }
   } catch (error) {
     console.error('Failed to initialize SQLite DB:', error);

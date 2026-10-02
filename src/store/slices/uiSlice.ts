@@ -47,6 +47,7 @@ export interface UiSliceState {
   hasCompletedOnboarding: boolean;
   userProfile: UserProfile | null;
   isOnboardingModalOpen: boolean;
+  isProfileModalOpen: boolean;
   isGlobalSearchOpen: boolean;
 }
 
@@ -83,6 +84,8 @@ export interface UiSliceActions {
   updateUserProfile: (profile: Partial<UserProfile>) => void;
   openOnboardingModal: () => void;
   closeOnboardingModal: () => void;
+  openProfileModal: () => void;
+  closeProfileModal: () => void;
 }
 
 export type UiSlice = UiSliceState & UiSliceActions;
@@ -96,6 +99,7 @@ export const createUiSlice: StateCreator<FlowStore, [], [], UiSlice> = (set, get
   hasCompletedOnboarding: false,
   userProfile: null,
   isOnboardingModalOpen: false,
+  isProfileModalOpen: false,
 
   reminderSettings: {
     enabled: true,
@@ -317,11 +321,15 @@ export const createUiSlice: StateCreator<FlowStore, [], [], UiSlice> = (set, get
   },
 
   updateUserProfile: (updates: Partial<UserProfile>) => {
-    set((state) => ({
-      userProfile: state.userProfile
-        ? { ...state.userProfile, ...updates }
-        : { name: '', objective: '', ...updates },
-    }));
+    set((state) => {
+      const current = state.userProfile || { name: '', objective: '' };
+      return {
+        userProfile: {
+          ...current,
+          ...updates,
+        },
+      };
+    });
   },
 
   openOnboardingModal: () => {
@@ -330,5 +338,13 @@ export const createUiSlice: StateCreator<FlowStore, [], [], UiSlice> = (set, get
 
   closeOnboardingModal: () => {
     set({ isOnboardingModalOpen: false });
+  },
+
+  openProfileModal: () => {
+    set({ isProfileModalOpen: true });
+  },
+
+  closeProfileModal: () => {
+    set({ isProfileModalOpen: false });
   },
 });

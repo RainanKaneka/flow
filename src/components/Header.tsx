@@ -36,6 +36,11 @@ export const Header: React.FC = () => {
   const openGoogleAuthModal = useFlowStore((s) => s.openGoogleAuthModal);
   const openOnboardingModal = useFlowStore((s) => s.openOnboardingModal);
   const openGlobalSearch = useFlowStore((s) => s.openGlobalSearch);
+  const firebaseUser = useFlowStore((s) => s.firebaseUser);
+  const cloudSyncStatus = useFlowStore((s) => s.cloudSyncStatus);
+  const openAuthSyncModal = useFlowStore((s) => s.openAuthSyncModal);
+  const userProfile = useFlowStore((s) => s.userProfile);
+  const openProfileModal = useFlowStore((s) => s.openProfileModal);
 
   const pomodoroMinutes = Math.floor(pomodoro.timeLeftSeconds / 60);
   const pomodoroSeconds = pomodoro.timeLeftSeconds % 60;
@@ -96,6 +101,11 @@ export const Header: React.FC = () => {
           onOpenBackupModal={openBackupModal}
           onOpenOnboardingModal={openOnboardingModal}
           onOpenGlobalSearch={openGlobalSearch}
+          firebaseUser={firebaseUser}
+          cloudSyncStatus={cloudSyncStatus}
+          onOpenAuthSyncModal={openAuthSyncModal}
+          userProfile={userProfile}
+          onOpenProfileModal={openProfileModal}
           theme={theme}
           onToggleTheme={toggleTheme}
           onOpenNewTaskModal={() => openTaskModal(null)}

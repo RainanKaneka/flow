@@ -12,13 +12,17 @@ export const DailyStatsBar: React.FC = () => {
   const logs = useFlowStore((s) => s.logs);
 
   const currentType = routineTypes.find((rt) => rt.id === selectedRoutineTypeId) || routineTypes[0];
+  const effectiveRoutineTypeId = currentType?.id || 'main_routine';
 
   // Filtrar tarefas aplicáveis ao dia e tipo de rotina selecionado
   const [year, month, day] = selectedDate.split('-').map(Number);
   const currentDayOfWeek = new Date(year, month - 1, day).getDay(); // 0 = Domingo, 1 = Segunda...
 
   const dayTasks = tasks.filter((t) => {
-    const matchesRoutine = t.routineTypeId === selectedRoutineTypeId;
+    const matchesRoutine =
+      routineTypes.length <= 1 ||
+      t.routineTypeId === effectiveRoutineTypeId ||
+      (!routineTypes.some((rt) => rt.id === t.routineTypeId) && effectiveRoutineTypeId === routineTypes[0]?.id);
     const matchesDay = t.specificDate
       ? t.specificDate === selectedDate
       : t.daysOfWeek.includes(currentDayOfWeek);

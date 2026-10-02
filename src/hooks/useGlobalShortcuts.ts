@@ -27,6 +27,8 @@ export const useGlobalShortcuts = () => {
   const isManageRoutinesModalOpen = useFlowStore((s) => s.isManageRoutinesModalOpen);
   const isManageCategoriesModalOpen = useFlowStore((s) => s.isManageCategoriesModalOpen);
   const isGoogleAuthModalOpen = useFlowStore((s) => s.isGoogleAuthModalOpen);
+  const isProfileModalOpen = useFlowStore((s) => s.isProfileModalOpen);
+  const closeProfileModal = useFlowStore((s) => s.closeProfileModal);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -36,6 +38,7 @@ export const useGlobalShortcuts = () => {
           closeGlobalSearch();
           return;
         }
+        if (isProfileModalOpen) closeProfileModal();
         if (isTaskModalOpen) closeTaskModal();
         if (selectedTaskIdForDetail) closeTaskDetail();
         if (isNotificationModalOpen) closeNotificationModal();

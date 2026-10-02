@@ -15,6 +15,8 @@ export interface PomodoroSliceActions {
   linkTaskToPomodoro: (taskId: string | null) => void;
   tickPomodoro: () => void;
   finishPomodoroSession: () => void;
+  togglePomodoroAutoAdvance: () => void;
+  setPomodoroAutoAdvance: (autoAdvance: boolean) => void;
 }
 
 export type PomodoroSlice = PomodoroSliceState & PomodoroSliceActions;
@@ -27,6 +29,8 @@ export const createPomodoroSlice: StateCreator<FlowStore, [], [], PomodoroSlice>
     mode: 'focus',
     linkedTaskId: null,
     completedSessions: 0,
+    autoAdvance: true, // Inicializado automaticamente como true (0.4.5)
+    preferredFocusDurationSeconds: 25 * 60,
   },
 
   startPomodoro: (linkedTaskId?: string) => {
@@ -67,10 +71,11 @@ export const createPomodoroSlice: StateCreator<FlowStore, [], [], PomodoroSlice>
 
   setPomodoroMode: (mode: PomodoroMode, durationSeconds?: number) => {
     sounds.playTick();
-    let defaultSecs = 25 * 60;
+    const currentPreferred = get().pomodoro?.preferredFocusDurationSeconds || 25 * 60;
+    let defaultSecs = currentPreferred;
     if (mode === 'shortBreak') defaultSecs = 5 * 60;
     if (mode === 'longBreak') defaultSecs = 15 * 60;
-    const dur = durationSeconds || defaultSecs;
+    const dur = durationSeconds || (mode === 'focus' ? currentPreferred : defaultSecs);
 
     set((state) => ({
       pomodoro: {
@@ -79,6 +84,8 @@ export const createPomodoroSlice: StateCreator<FlowStore, [], [], PomodoroSlice>
         isActive: false,
         totalDurationSeconds: dur,
         timeLeftSeconds: dur,
+        preferredFocusDurationSeconds:
+          mode === 'focus' ? dur : state.pomodoro.preferredFocusDurationSeconds || 25 * 60,
       },
     }));
   },
@@ -90,6 +97,10 @@ export const createPomodoroSlice: StateCreator<FlowStore, [], [], PomodoroSlice>
         totalDurationSeconds: seconds,
         timeLeftSeconds: seconds,
         isActive: false,
+        preferredFocusDurationSeconds:
+          state.pomodoro.mode === 'focus'
+            ? seconds
+            : state.pomodoro.preferredFocusDurationSeconds || 25 * 60,
       },
     }));
   },
@@ -149,9 +160,12 @@ export const createPomodoroSlice: StateCreator<FlowStore, [], [], PomodoroSlice>
       ? state.pomodoro.completedSessions + 1
       : state.pomodoro.completedSessions;
 
-    // Transição automática de modo (foco -> pausa curta ou longa)
+    // Transição de modo:
+    // Se estava em foco -> vai para descanso (longBreak a cada 4 sessões, senão shortBreak)
+    // Se estava em descanso -> vai para foco (preservando duração preferida de 25m ou 50m)
     let nextMode: PomodoroMode = 'focus';
-    let nextDuration = 25 * 60;
+    let nextDuration = state.pomodoro.preferredFocusDurationSeconds || 25 * 60;
+
     if (isFocus) {
       if (newCompletedSessions % 4 === 0) {
         nextMode = 'longBreak';
@@ -162,16 +176,38 @@ export const createPomodoroSlice: StateCreator<FlowStore, [], [], PomodoroSlice>
       }
     }
 
+    // Passar automaticamente caso autoAdvance esteja ativo (padrão: true)
+    const shouldAutoAdvance = state.pomodoro.autoAdvance ?? true;
+
     set({
       logs: updatedLogs,
       pomodoro: {
         ...state.pomodoro,
-        isActive: false,
+        isActive: shouldAutoAdvance,
         mode: nextMode,
         totalDurationSeconds: nextDuration,
         timeLeftSeconds: nextDuration,
         completedSessions: newCompletedSessions,
       },
     });
+  },
+
+  togglePomodoroAutoAdvance: () => {
+    sounds.playTick();
+    set((state) => ({
+      pomodoro: {
+        ...state.pomodoro,
+        autoAdvance: !(state.pomodoro.autoAdvance ?? true),
+      },
+    }));
+  },
+
+  setPomodoroAutoAdvance: (autoAdvance: boolean) => {
+    set((state) => ({
+      pomodoro: {
+        ...state.pomodoro,
+        autoAdvance,
+      },
+    }));
   },
 });

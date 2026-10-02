@@ -23,7 +23,6 @@ export const useReminderScheduler = () => {
   const routineTypes = useFlowStore((s) => s.routineTypes);
   const selectedRoutineTypeId = useFlowStore((s) => s.selectedRoutineTypeId);
   const categories = useFlowStore((s) => s.categories);
-  const selectedDate = useFlowStore((s) => s.selectedDate);
 
   // Armazena as chaves de notificações já disparadas nesta sessão
   const notifiedKeysRef = useRef<Set<string>>(new Set());
@@ -45,9 +44,18 @@ export const useReminderScheduler = () => {
 
       const advance = reminderSettings.advanceMinutes;
 
+      const effectiveRoutineTypeId =
+        (selectedRoutineTypeId && routineTypes.some((rt) => rt.id === selectedRoutineTypeId)
+          ? selectedRoutineTypeId
+          : routineTypes[0]?.id) || 'main_routine';
+
       // Filtra as tarefas ativas para o tipo de rotina selecionado e para o dia de hoje
       const todaysTasks = tasks.filter((t) => {
-        if (t.routineTypeId !== selectedRoutineTypeId) return false;
+        const matchesRoutine =
+          routineTypes.length <= 1 ||
+          t.routineTypeId === effectiveRoutineTypeId ||
+          (!routineTypes.some((rt) => rt.id === t.routineTypeId) && effectiveRoutineTypeId === routineTypes[0]?.id);
+        if (!matchesRoutine) return false;
         if (t.specificDate) return t.specificDate === todayStr;
         return t.daysOfWeek.includes(currentDayOfWeek);
       });
@@ -60,7 +68,7 @@ export const useReminderScheduler = () => {
         const triggerTimeStr = formatMinutesToTime(triggerMinutes);
 
         // Chave única para evitar repetição do mesmo lembrete no dia
-        const reminderKey = `${selectedDate}_${task.id}_${task.startTime}_${advance}`;
+        const reminderKey = `${todayStr}_${task.id}_${task.startTime}_${advance}`;
 
         if (currentTimeStr === triggerTimeStr && !notifiedKeysRef.current.has(reminderKey)) {
           notifiedKeysRef.current.add(reminderKey);
@@ -86,5 +94,5 @@ export const useReminderScheduler = () => {
     const interval = setInterval(checkReminders, 20000);
 
     return () => clearInterval(interval);
-  }, [reminderSettings, tasks, selectedRoutineTypeId, categories, selectedDate]);
+  }, [reminderSettings, tasks, routineTypes, selectedRoutineTypeId, categories]);
 };

@@ -33,9 +33,14 @@ export const TaskModal: React.FC = () => {
     if (editingTask && editingTask.id) {
       setTitle(editingTask.title ?? '');
       setDescription(editingTask.description ?? '');
+      const fallbackRoutineId =
+        (selectedRoutineTypeId && routineTypes.some((rt) => rt.id === selectedRoutineTypeId)
+          ? selectedRoutineTypeId
+          : routineTypes[0]?.id) || 'main_routine';
+
       setStartTime(editingTask.startTime || '14:00');
       setEndTime(editingTask.endTime || '15:00');
-      setRoutineTypeId(editingTask.routineTypeId || selectedRoutineTypeId || routineTypes[0]?.id || '');
+      setRoutineTypeId(editingTask.routineTypeId || fallbackRoutineId);
       setCategoryId(editingTask.categoryId || categories[0]?.id || '');
       setIsGoldenRule(!!editingTask.isGoldenRule);
       setNotes(editingTask.notes || '');
@@ -49,11 +54,16 @@ export const TaskModal: React.FC = () => {
         setFrequencyScope('all_days');
       }
     } else if (editingTask) {
+      const fallbackRoutineId =
+        (selectedRoutineTypeId && routineTypes.some((rt) => rt.id === selectedRoutineTypeId)
+          ? selectedRoutineTypeId
+          : routineTypes[0]?.id) || 'main_routine';
+
       setTitle(editingTask.title ?? '');
       setDescription(editingTask.description ?? '');
       setStartTime(editingTask.startTime || '09:00');
       setEndTime(editingTask.endTime || '10:00');
-      setRoutineTypeId(editingTask.routineTypeId || selectedRoutineTypeId || routineTypes[0]?.id || '');
+      setRoutineTypeId(editingTask.routineTypeId || fallbackRoutineId);
       setCategoryId(editingTask.categoryId || categories[0]?.id || '');
       setIsGoldenRule(!!editingTask.isGoldenRule);
       setNotes(editingTask.notes || '');
@@ -65,11 +75,16 @@ export const TaskModal: React.FC = () => {
         setFrequencyScope('single_day');
       }
     } else {
+      const fallbackRoutineId =
+        (selectedRoutineTypeId && routineTypes.some((rt) => rt.id === selectedRoutineTypeId)
+          ? selectedRoutineTypeId
+          : routineTypes[0]?.id) || 'main_routine';
+
       setTitle('');
       setDescription('');
       setStartTime('14:00');
       setEndTime('15:00');
-      setRoutineTypeId(selectedRoutineTypeId || routineTypes[0]?.id || '');
+      setRoutineTypeId(fallbackRoutineId);
       setCategoryId(categories[0]?.id || '');
       setIsGoldenRule(false);
       setNotes('');

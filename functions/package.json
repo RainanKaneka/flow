@@ -1,0 +1,30 @@
+{
+  "name": "flow-functions",
+  "scripts": {
+    "build": "tsc",
+    "build:watch": "tsc --watch",
+    "serve": "npm run build && firebase emulators:start --only functions",
+    "shell": "npm run build && firebase functions:shell",
+    "start": "npm run shell",
+    "deploy": "firebase deploy --only functions",
+    "deploy:staging": "npm run build && firebase deploy --only functions -P staging",
+    "deploy:prod": "npm run build && firebase deploy --only functions -P production",
+    "secret:set": "firebase functions:secrets:set GEMINI_API_KEY",
+    "logs": "firebase functions:log",
+    "test": "vitest run src",
+    "setup:dev-premium": "npx tsx scripts/setup-dev-premium.ts"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "main": "lib/index.js",
+  "dependencies": {
+    "firebase-admin": "^13.2.0",
+    "firebase-functions": "^6.3.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.19",
+    "typescript": "^5.7.3"
+  },
+  "private": true
+}

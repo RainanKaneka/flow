@@ -16,6 +16,12 @@ export interface AiSliceState {
 
 export interface AiSliceActions {
   setGoogleUser: (user: GoogleUserProfile | null) => void;
+  updateGoogleTokens: (tokens: {
+    accessToken: string;
+    refreshToken?: string;
+    expiresAt?: number;
+    lastRefreshedAt?: string;
+  }) => void;
   setGeminiConfig: (config: Partial<GeminiConfig>) => void;
   addAiMessage: (
     msg: Omit<AiChatMessage, 'id' | 'timestamp'> & { id?: string; timestamp?: string }
@@ -54,6 +60,22 @@ Aqui estão algumas coisas que podemos fazer:
 
   setGoogleUser: (user) => {
     set({ googleUser: user });
+  },
+
+  updateGoogleTokens: (tokens) => {
+    set((state) => {
+      if (!state.googleUser) return {};
+      return {
+        googleUser: {
+          ...state.googleUser,
+          accessToken: tokens.accessToken,
+          refreshToken: tokens.refreshToken ?? state.googleUser.refreshToken,
+          expiresAt: tokens.expiresAt ?? state.googleUser.expiresAt,
+          lastRefreshedAt: tokens.lastRefreshedAt ?? new Date().toISOString(),
+          isAutoRefreshEnabled: true,
+        },
+      };
+    });
   },
 
   setGeminiConfig: (config) => {

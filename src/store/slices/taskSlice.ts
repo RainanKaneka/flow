@@ -155,6 +155,8 @@ export const createTaskSlice: StateCreator<FlowStore, [], [], TaskSlice> = (set,
         mode: 'focus',
         linkedTaskId: null,
         completedSessions: 0,
+        autoAdvance: true,
+        preferredFocusDurationSeconds: 25 * 60,
       },
     });
   },

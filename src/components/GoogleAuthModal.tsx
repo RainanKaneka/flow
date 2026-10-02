@@ -9,7 +9,13 @@ import {
   GeminiModelOption,
   normalizeModelName,
 } from '../services/geminiService';
-import { initiateGoogleOAuthPopup } from '../services/googleAuthService';
+import {
+  initiateGoogleOAuthPopup,
+  getEffectiveGoogleClientId,
+  isValidGoogleClientId,
+  refreshGoogleAccessToken,
+  verifyAndConnectGoogleToken,
+} from '../services/googleAuthService';
 import { sounds } from '../utils/audio';
 import { X, Sparkles, CheckCircle2 } from 'lucide-react';
 import { GoogleUserProfileCard } from './google-auth/GoogleUserProfileCard';
@@ -44,6 +50,10 @@ export const GoogleAuthModal: React.FC = () => {
   const [isEditingProfileManual, setIsEditingProfileManual] = useState(false);
   const [manualName, setManualName] = useState('');
   const [manualEmail, setManualEmail] = useState('');
+  const [isRefreshingToken, setIsRefreshingToken] = useState(false);
+  const [tokenInput, setTokenInput] = useState('');
+  const [isConnectingToken, setIsConnectingToken] = useState(false);
+  const [isExternalBrowserOpen, setIsExternalBrowserOpen] = useState(false);
 
   const currentOrigin =
     typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
@@ -57,6 +67,10 @@ export const GoogleAuthModal: React.FC = () => {
       setTestResult(null);
       setGoogleAuthError(null);
       setIsLoggingInGoogle(false);
+      setIsRefreshingToken(false);
+      setTokenInput('');
+      setIsConnectingToken(false);
+      setIsExternalBrowserOpen(false);
 
       if (googleUser) {
         setManualName(googleUser.name);
@@ -77,20 +91,37 @@ export const GoogleAuthModal: React.FC = () => {
     }
   }, [isOpen, geminiConfig, googleUser]);
 
+  // Auto-detecta token na área de transferência ao retornar o foco à janela
+  useEffect(() => {
+    if (!isOpen || !isExternalBrowserOpen) return;
+
+    const handleWindowFocus = async () => {
+      try {
+        if (navigator.clipboard && document.hasFocus()) {
+          const text = await navigator.clipboard.readText();
+          if (text && (text.startsWith('ya29.') || text.includes('access_token=ya29.'))) {
+            setTokenInput(text.trim());
+          }
+        }
+      } catch {
+        // Ignora restrições de permissão do navegador
+      }
+    };
+
+    window.addEventListener('focus', handleWindowFocus);
+    return () => window.removeEventListener('focus', handleWindowFocus);
+  }, [isOpen, isExternalBrowserOpen]);
+
   if (!isOpen) return null;
 
-  // Iniciar login real do Google OAuth 2.0 via Popup
+  // Iniciar login real do Google OAuth 2.0 via Popup ou Navegador Externo
   const handleStartGoogleOAuth = async () => {
-    const activeClientId =
-      clientIdInput.trim() ||
-      geminiConfig.clientId?.trim() ||
-      process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ||
-      '';
+    const activeClientId = getEffectiveGoogleClientId(clientIdInput || geminiConfig.clientId);
 
-    if (!activeClientId) {
+    if (!isValidGoogleClientId(activeClientId)) {
       setShowClientIdConfig(true);
       setGoogleAuthError(
-        'Para abrir a janela oficial do Google, informe o Client ID da sua aplicação Web (veja o passo a passo abaixo).'
+        'Para fazer login com o Google OAuth 2.0, é necessário cadastrar seu Client ID do Google Cloud abaixo (ou use a Chave de API Gemini gratuita para conectar a IA imediatamente sem o Google Cloud).'
       );
       sounds.playTick();
       return;
@@ -103,6 +134,13 @@ export const GoogleAuthModal: React.FC = () => {
     try {
       const res = await initiateGoogleOAuthPopup({ clientId: activeClientId });
 
+      if (res.isExternalBrowser) {
+        setIsLoggingInGoogle(false);
+        setIsExternalBrowserOpen(true);
+        sounds.playGlassChime();
+        return;
+      }
+
       if (res.success && res.user) {
         setGoogleUser(res.user);
         setGeminiConfig({
@@ -110,6 +148,7 @@ export const GoogleAuthModal: React.FC = () => {
           isConnected: true,
         });
         setIsLoggingInGoogle(false);
+        setIsExternalBrowserOpen(false);
         setGoogleAuthError(null);
         setShowClientIdConfig(false);
         sounds.playGlassChime();
@@ -129,6 +168,60 @@ export const GoogleAuthModal: React.FC = () => {
       setIsLoggingInGoogle(false);
       setGoogleAuthError(err?.message || 'Erro inesperado na autenticação com o Google.');
       sounds.playTick();
+    }
+  };
+
+  // Conectar com Token gerado (Navegador Externo / Desktop)
+  const handleConnectWithToken = async () => {
+    if (!tokenInput.trim()) return;
+    setIsConnectingToken(true);
+    setGoogleAuthError(null);
+    sounds.playTick();
+
+    try {
+      const activeClientId = getEffectiveGoogleClientId(clientIdInput || geminiConfig.clientId);
+      const res = await verifyAndConnectGoogleToken(tokenInput, activeClientId);
+
+      if (res.success && res.user) {
+        setGoogleUser(res.user);
+        setIsExternalBrowserOpen(false);
+        setTokenInput('');
+        sounds.playGlassChime();
+
+        if (res.user.accessToken) {
+          fetchAvailableGeminiModels(apiKeyInput, res.user.accessToken).then((models) => {
+            if (models.length > 0) setAvailableModels(models);
+          });
+        }
+      } else {
+        setGoogleAuthError(res.error || 'Falha ao validar token do Google.');
+        sounds.playTick();
+      }
+    } catch (err: any) {
+      setGoogleAuthError(err?.message || 'Erro inesperado ao validar token.');
+      sounds.playTick();
+    } finally {
+      setIsConnectingToken(false);
+    }
+  };
+
+  // Renovação Manual de Token (Auto-Refresh sob demanda)
+  const handleManualTokenRefresh = async () => {
+    if (!googleUser) return;
+    setIsRefreshingToken(true);
+    setGoogleAuthError(null);
+    try {
+      const res = await refreshGoogleAccessToken(googleUser, geminiConfig.clientId);
+      if (res.success && res.user) {
+        setGoogleUser(res.user);
+        sounds.playGlassChime();
+      } else {
+        setGoogleAuthError(res.error || 'Falha ao renovar token do Google.');
+      }
+    } catch (err: any) {
+      setGoogleAuthError(err?.message || 'Erro inesperado ao renovar token.');
+    } finally {
+      setIsRefreshingToken(false);
     }
   };
 
@@ -314,7 +407,9 @@ export const GoogleAuthModal: React.FC = () => {
             </div>
           </div>
           <button
+            type="button"
             onClick={closeModal}
+            aria-label="Fechar modal"
             style={{
               background: 'none',
               border: 'none',
@@ -410,6 +505,8 @@ export const GoogleAuthModal: React.FC = () => {
               <GoogleUserProfileCard
                 googleUser={googleUser!}
                 onDisconnect={handleDisconnectGoogle}
+                onRefreshToken={handleManualTokenRefresh}
+                isRefreshingToken={isRefreshingToken}
                 isEditingManual={isEditingProfileManual}
                 onToggleEditManual={setIsEditingProfileManual}
                 manualName={manualName}
@@ -431,6 +528,12 @@ export const GoogleAuthModal: React.FC = () => {
                 currentOrigin={currentOrigin}
                 copiedOrigin={copiedOrigin}
                 onCopyOrigin={handleCopyOrigin}
+                tokenInput={tokenInput}
+                onTokenInputChange={setTokenInput}
+                onConnectWithToken={handleConnectWithToken}
+                isConnectingToken={isConnectingToken}
+                isExternalBrowserOpen={isExternalBrowserOpen}
+                onReopenBrowser={handleStartGoogleOAuth}
               />
             )}
           </div>

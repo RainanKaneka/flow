@@ -29,7 +29,10 @@ export const createRoutineSlice: StateCreator<FlowStore, [], [], RoutineSlice> =
   activeCategoryIdFilter: 'all',
 
   selectRoutineType: (id: string) => {
-    set({ selectedRoutineTypeId: id });
+    const state = get();
+    const isValid = state.routineTypes.some((r) => r.id === id);
+    const targetId = isValid ? id : state.routineTypes[0]?.id || 'main_routine';
+    set({ selectedRoutineTypeId: targetId });
   },
 
   addRoutineType: (typeData) => {

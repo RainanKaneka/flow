@@ -15,12 +15,14 @@ import {
   ChevronDown,
   Check,
   X,
+  Repeat,
 } from 'lucide-react';
 import styles from './PomodoroView.module.css';
 
 export const PomodoroView: React.FC = () => {
   const pomodoro = useFlowStore((s) => s.pomodoro);
   const tasks = useFlowStore((s) => s.tasks);
+  const routineTypes = useFlowStore((s) => s.routineTypes);
   const selectedRoutineTypeId = useFlowStore((s) => s.selectedRoutineTypeId);
   const selectedDate = useFlowStore((s) => s.selectedDate);
   const logs = useFlowStore((s) => s.logs);
@@ -33,6 +35,7 @@ export const PomodoroView: React.FC = () => {
   const linkTaskToPomodoro = useFlowStore((s) => s.linkTaskToPomodoro);
   const tickPomodoro = useFlowStore((s) => s.tickPomodoro);
   const finishPomodoroSession = useFlowStore((s) => s.finishPomodoroSession);
+  const togglePomodoroAutoAdvance = useFlowStore((s) => s.togglePomodoroAutoAdvance);
   const categories = useFlowStore((s) => s.categories);
 
   const [isLinkDropdownOpen, setIsLinkDropdownOpen] = useState(false);
@@ -65,13 +68,22 @@ export const PomodoroView: React.FC = () => {
   const [year, month, day] = selectedDate.split('-').map(Number);
   const currentDayOfWeek = new Date(year, month - 1, day).getDay();
 
+  const effectiveRoutineTypeId =
+    (selectedRoutineTypeId && routineTypes.some((rt) => rt.id === selectedRoutineTypeId)
+      ? selectedRoutineTypeId
+      : routineTypes[0]?.id) || 'main_routine';
+
   const todayTasks = useMemo(() => {
     return tasks.filter((t) => {
-      if (t.routineTypeId !== selectedRoutineTypeId) return false;
+      const matchesRoutine =
+        routineTypes.length <= 1 ||
+        t.routineTypeId === effectiveRoutineTypeId ||
+        (!routineTypes.some((rt) => rt.id === t.routineTypeId) && effectiveRoutineTypeId === routineTypes[0]?.id);
+      if (!matchesRoutine) return false;
       if (t.specificDate) return t.specificDate === selectedDate;
       return t.daysOfWeek.includes(currentDayOfWeek);
     });
-  }, [tasks, selectedRoutineTypeId, currentDayOfWeek, selectedDate]);
+  }, [tasks, routineTypes, effectiveRoutineTypeId, currentDayOfWeek, selectedDate]);
 
   const linkedTask = tasks.find((t) => t.id === pomodoro.linkedTaskId);
   const linkedTaskTime = linkedTask
@@ -142,13 +154,28 @@ export const PomodoroView: React.FC = () => {
         </div>
       </div>
 
-      {/* Seletor de Modo (Foco, Pausa Curta, Pausa Longa) */}
+      {/* Seletor de Modo (Foco, Deep Focus, Pausa Curta, Pausa Longa) */}
       <div className={styles.modeSelector}>
         <button
-          onClick={() => setPomodoroMode('focus')}
-          className={`${styles.modeButton} ${pomodoro.mode === 'focus' ? styles.modeButtonActive : ''}`}
+          onClick={() => setPomodoroMode('focus', 25 * 60)}
+          className={`${styles.modeButton} ${
+            pomodoro.mode === 'focus' && pomodoro.totalDurationSeconds === 25 * 60
+              ? styles.modeButtonActive
+              : ''
+          }`}
         >
           Foco (25m)
+        </button>
+
+        <button
+          onClick={() => setPomodoroMode('focus', 50 * 60)}
+          className={`${styles.modeButton} ${
+            pomodoro.mode === 'focus' && pomodoro.totalDurationSeconds === 50 * 60
+              ? styles.modeButtonActive
+              : ''
+          }`}
+        >
+          Deep Focus (50m)
         </button>
 
         <button
@@ -203,7 +230,11 @@ export const PomodoroView: React.FC = () => {
           {/* Central Time Display */}
           <div className={styles.centerDisplay}>
             <span className={styles.modeLabel} style={{ color: modeColor }}>
-              {pomodoro.mode === 'focus' ? 'Modo Foco' : 'Recuperação'}
+              {pomodoro.mode === 'focus'
+                ? pomodoro.totalDurationSeconds === 50 * 60
+                  ? 'Modo Deep Focus'
+                  : 'Modo Foco'
+                : 'Recuperação'}
             </span>
 
             <h1 className={styles.timeDigits}>{formattedTime}</h1>
@@ -478,6 +509,45 @@ export const PomodoroView: React.FC = () => {
                 +5 min
               </button>
             </div>
+          </div>
+
+          {/* Transição Automática de Ciclos (RF-7, 0.4.5) */}
+          <div className={styles.autoAdvanceContainer}>
+            <div className={styles.autoAdvanceInfo}>
+              <div style={{ display: 'flex', alignItems: 'center' }}>
+                <span className={styles.settingsLabel} style={{ marginBottom: 0 }}>
+                  Avanço Automático de Ciclos
+                </span>
+                <span
+                  className={`${styles.autoAdvanceBadge} ${
+                    (pomodoro.autoAdvance ?? true) ? styles.autoAdvanceBadgeActive : ''
+                  }`}
+                >
+                  <Repeat size={12} />
+                  {(pomodoro.autoAdvance ?? true) ? 'Ativado' : 'Desativado'}
+                </span>
+              </div>
+              <p className={styles.settingsSubtitle} style={{ marginBottom: 0, marginTop: '4px' }}>
+                Passa automaticamente do foco para o descanso e vice-versa sem interrupções manuais.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              role="switch"
+              aria-checked={pomodoro.autoAdvance ?? true}
+              onClick={() => togglePomodoroAutoAdvance()}
+              className={`${styles.toggleSwitch} ${
+                (pomodoro.autoAdvance ?? true) ? styles.toggleSwitchActive : ''
+              }`}
+              title="Ativar/Desativar avanço automático de ciclo"
+            >
+              <div
+                className={`${styles.toggleThumb} ${
+                  (pomodoro.autoAdvance ?? true) ? styles.toggleThumbActive : ''
+                }`}
+              />
+            </button>
           </div>
         </div>
       </div>

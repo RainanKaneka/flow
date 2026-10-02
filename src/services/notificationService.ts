@@ -25,6 +25,16 @@ export const isTauriEnvironment = (): boolean => {
 class NotificationService {
   private toastListeners: Set<ToastListener> = new Set();
   private tauriModule: any = null;
+  private lastNotificationKey: string = '';
+  private lastNotificationTime: number = 0;
+
+  /**
+   * Limpa o cache de deduplicação (útil para testes unitários)
+   */
+  clearDeduplicationCache() {
+    this.lastNotificationKey = '';
+    this.lastNotificationTime = 0;
+  }
 
   private async getTauriNotificationModule() {
     if (!isTauriEnvironment()) return null;
@@ -105,9 +115,19 @@ class NotificationService {
 
   /**
    * Dispara a notificação para o sistema operacional com áudio suave e toast visual
+   * Garante emissão única (sem duplicidade entre show_windows_toast e tauri plugin)
    */
   async sendNotification(payload: NotificationPayload) {
     const { title, body, playSound = true } = payload;
+
+    // Deduplicação estrita: ignora disparos duplicados idênticos em janela de 600ms
+    const now = Date.now();
+    const dedupeKey = `${title}:::${body}`;
+    if (dedupeKey === this.lastNotificationKey && now - this.lastNotificationTime < 600) {
+      return;
+    }
+    this.lastNotificationKey = dedupeKey;
+    this.lastNotificationTime = now;
 
     // 1. Toca chime harmônico suave nativo via Web Audio API se solicitado
     if (playSound) {
@@ -120,37 +140,39 @@ class NotificationService {
 
     // 2. Dispara a notificação nativa do SO (Windows / Tauri ou Navegador)
     if (isTauriEnvironment()) {
+      let customToastSent = false;
       // Dispara toast nativo do Windows WinRT (garante sobreposição a outros apps no Windows)
       try {
         const { invoke } = await import('@tauri-apps/api/core');
-        invoke('show_windows_toast', { title, body }).catch((err) => {
-          console.warn('Fallback show_windows_toast invoke:', err);
-        });
+        await invoke('show_windows_toast', { title, body });
+        customToastSent = true;
       } catch (invokeErr) {
-        console.warn('Tauri core invoke indisponível:', invokeErr);
+        console.warn('Fallback show_windows_toast invoke:', invokeErr);
       }
 
-      try {
-        const tauri = await this.getTauriNotificationModule();
-        if (tauri) {
-          // Garante verificação e pedido prévio de permissão para o Windows Shell
-          let isGranted = false;
-          if (typeof tauri.isPermissionGranted === 'function') {
-            isGranted = await tauri.isPermissionGranted();
-          }
-          if (!isGranted && typeof tauri.requestPermission === 'function') {
-            const req = await tauri.requestPermission();
-            isGranted = req === 'granted';
-          } else {
-            isGranted = true;
-          }
+      // Se o toast nativo WinRT não foi emitido (ex: ambiente Linux/Mac ou erro), usa o plugin Tauri como fallback único
+      if (!customToastSent) {
+        try {
+          const tauri = await this.getTauriNotificationModule();
+          if (tauri) {
+            let isGranted = false;
+            if (typeof tauri.isPermissionGranted === 'function') {
+              isGranted = await tauri.isPermissionGranted();
+            }
+            if (!isGranted && typeof tauri.requestPermission === 'function') {
+              const req = await tauri.requestPermission();
+              isGranted = req === 'granted';
+            } else {
+              isGranted = true;
+            }
 
-          if (isGranted && typeof tauri.sendNotification === 'function') {
-            tauri.sendNotification({ title, body });
+            if (isGranted && typeof tauri.sendNotification === 'function') {
+              tauri.sendNotification({ title, body });
+            }
           }
+        } catch (e) {
+          console.warn('Tentando emitir notificação nativa via Tauri plugin:', e);
         }
-      } catch (e) {
-        console.warn('Tentando emitir notificação nativa via Tauri plugin:', e);
       }
     } else if (this.isSupported() && Notification.permission === 'granted') {
       try {

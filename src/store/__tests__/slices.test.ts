@@ -416,6 +416,23 @@ describe('Store Slices (Modularized Architecture)', () => {
       expect(useFlowStore.getState().pomodoro.mode).toBe('shortBreak');
       expect(useFlowStore.getState().pomodoro.completedSessions).toBe(1);
     });
+
+    it('deve alternar autoAdvance e transicionar de descanso de volta para o foco', () => {
+      expect(useFlowStore.getState().pomodoro.autoAdvance).toBe(true);
+
+      useFlowStore.getState().togglePomodoroAutoAdvance();
+      expect(useFlowStore.getState().pomodoro.autoAdvance).toBe(false);
+
+      useFlowStore.getState().setPomodoroAutoAdvance(true);
+      expect(useFlowStore.getState().pomodoro.autoAdvance).toBe(true);
+
+      // Coloca em shortBreak e finaliza para testar retorno ao foco
+      useFlowStore.getState().setPomodoroMode('shortBreak');
+      useFlowStore.getState().finishPomodoroSession();
+
+      expect(useFlowStore.getState().pomodoro.mode).toBe('focus');
+      expect(useFlowStore.getState().pomodoro.isActive).toBe(true);
+    });
   });
 
   describe('aiSlice', () => {

@@ -1,6 +1,5 @@
 export type AppView = 'routine' | 'timeline' | 'calendar' | 'dashboard' | 'backlog' | 'pomodoro' | 'notes' | 'ai';
 
-// Integração Google & Agente de IA com Gemini (RF-15, RF-16, RF-17, RF-18, RF-19)
 export interface GoogleUserProfile {
   id: string;
   name: string;
@@ -8,6 +7,12 @@ export interface GoogleUserProfile {
   avatarUrl?: string;
   connectedAt: string;
   accessToken?: string;
+  refreshToken?: string;
+  expiresAt?: number; // timestamp em ms quando o accessToken expira
+  tokenType?: string;
+  scope?: string;
+  isAutoRefreshEnabled?: boolean;
+  lastRefreshedAt?: string;
 }
 
 export type GoogleUser = GoogleUserProfile;
@@ -216,11 +221,83 @@ export interface PomodoroState {
   mode: PomodoroMode;
   linkedTaskId: string | null;
   completedSessions: number;
+  autoAdvance?: boolean;
+  preferredFocusDurationSeconds?: number;
+}
+export type PomodoroSession = PomodoroState;
+
+export interface UserAiQuota {
+  monthlyLimit: number;
+  used: number;
+  resetDate: string; // ISO formato YYYY-MM-DD
+  totalTokensConsumed: number;
 }
 
 export interface UserProfile {
   name: string;
   objective: string;
+  bio?: string;
+  avatarUrl?: string;
+  avatarPreset?: string;
+  plan?: 'free' | 'premium';
+  premiumSince?: string | null;
+  premiumUntil?: string | null;
+  aiQuota?: UserAiQuota;
+  themePreference?: 'dark' | 'light';
+  pomodoroMinutes?: number;
+  soundEnabled?: boolean;
+  remindersEnabled?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface ProfileAchievement {
+  id: string;
+  title: string;
+  description: string;
+  icon: string;
+  unlocked: boolean;
+  unlockedAt?: string;
+  progressText?: string;
+}
+
+export interface UserProfileStats {
+  totalTasksCompleted: number;
+  totalPomodoroMinutes: number;
+  currentStreakDays: number;
+  efficiencyRate: number; // 0 - 100%
+  topCategory: {
+    id: string;
+    name: string;
+    color: string;
+    count: number;
+    minutes: number;
+  } | null;
+  productivityLevel: {
+    levelNumber: number;
+    title: string;
+    points: number;
+    nextLevelPoints: number;
+    progressPercentage: number;
+  };
+  achievements: ProfileAchievement[];
+}
+
+// Firebase Authentication & Cloud Sync (Fase 4, Parte 1)
+export interface FirebaseUserProfile {
+  uid: string;
+  email: string | null;
+  displayName: string | null;
+  photoURL: string | null;
+  isAnonymous: boolean;
+  providerId: string;
+}
+
+export interface CloudSyncStatus {
+  isSyncing: boolean;
+  lastSyncedAt: string | null; // ISO string
+  error: string | null;
+  autoSyncEnabled: boolean;
 }
 
 export interface OnboardingData {
@@ -286,10 +363,11 @@ export interface FlowState {
   aiMessages: AiChatMessage[];
   isGoogleAuthModalOpen: boolean;
 
-  // Onboarding Wizard & Perfil do Usuário (Fase 3, Parte 1)
+  // Onboarding Wizard & Perfil do Usuário (Fase 3, Parte 1 & Fase 4, Parte 4)
   hasCompletedOnboarding: boolean;
   userProfile: UserProfile | null;
   isOnboardingModalOpen: boolean;
+  isProfileModalOpen: boolean;
 
   // Snackbar Undo/Redo
   snackbar: {
@@ -310,6 +388,11 @@ export interface FlowState {
 
   // Pesquisa Global / Command Palette (Fase 3, Parte 5)
   isGlobalSearchOpen: boolean;
+
+  // Backend API: Firebase Auth & Cloud Sync (Fase 4, Parte 1)
+  firebaseUser: FirebaseUserProfile | null;
+  cloudSyncStatus: CloudSyncStatus;
+  isAuthSyncModalOpen: boolean;
 }
 
 export interface FlowActions {
@@ -317,6 +400,12 @@ export interface FlowActions {
   setRoutineViewMode?: (mode: 'stream' | 'timeline') => void;
   setDate: (date: string) => void;
   toggleTheme: () => void;
+
+  // Backend API: Firebase Auth & Cloud Sync (Fase 4, Parte 1)
+  setFirebaseUser: (user: FirebaseUserProfile | null) => void;
+  setCloudSyncStatus: (status: Partial<CloudSyncStatus>) => void;
+  openAuthSyncModal: () => void;
+  closeAuthSyncModal: () => void;
 
   // Pesquisa Global / Command Palette (Fase 3, Parte 5)
   openGlobalSearch: () => void;
@@ -393,6 +482,8 @@ export interface FlowActions {
   linkTaskToPomodoro: (taskId: string | null) => void;
   tickPomodoro: () => void;
   finishPomodoroSession: () => void;
+  togglePomodoroAutoAdvance: () => void;
+  setPomodoroAutoAdvance: (autoAdvance: boolean) => void;
 
   // Lembretes & Notificações (RF-12)
   updateReminderSettings: (updates: Partial<ReminderSettings>) => void;
@@ -412,6 +503,12 @@ export interface FlowActions {
 
   // Agente de IA com Gemini & Conta Google (RF-15, RF-16, RF-18, RF-19)
   setGoogleUser: (user: GoogleUserProfile | null) => void;
+  updateGoogleTokens: (tokens: {
+    accessToken: string;
+    refreshToken?: string;
+    expiresAt?: number;
+    lastRefreshedAt?: string;
+  }) => void;
   setGeminiConfig: (config: Partial<GeminiConfig>) => void;
   addAiMessage: (
     msg: Omit<AiChatMessage, 'id' | 'timestamp'> & { id?: string; timestamp?: string }
@@ -425,11 +522,13 @@ export interface FlowActions {
   showSnackbar: (message: string, onUndo?: () => void) => void;
   hideSnackbar: () => void;
 
-  // Onboarding Wizard & Perfil do Usuário (Fase 3, Parte 1)
+  // Onboarding Wizard & Perfil do Usuário (Fase 3, Parte 1 & Fase 4, Parte 4)
   completeOnboarding: (data: OnboardingData) => void;
   updateUserProfile: (profile: Partial<UserProfile>) => void;
   openOnboardingModal: () => void;
   closeOnboardingModal: () => void;
+  openProfileModal: () => void;
+  closeProfileModal: () => void;
 
   // Drag-and-Drop & Reordenação de Tarefas (Fase 3, Parte 2)
   reorderTasks: (

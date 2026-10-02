@@ -72,3 +72,27 @@
   - Abas de navegação responsivas com módulo CSS (`HeaderNavTabs.module.css`), suporte a rolagem oculta e adaptação para displays compactos ($\le 1240px$).
   - Toolbar de ações com colapso responsivo de rótulos em telas menores que 1200px.
 - [x] **Suite de Testes de Software**: 298 testes automatizados em 41 arquivos de teste com 100% de aprovação e build de produção validado com 0 erros.
+
+## Atualizações e correções para a versão 0.4.5 (Concluído)
+
+- [x] **Deduplicação e Correção de Notificações Duplicadas**:
+  - Eliminação da chamada concorrente dupla entre o comando WinRT Tauri (`show_windows_toast`) e o plugin `@tauri-apps/plugin-notification` em [notificationService.ts](file:///c:/Users/Rainan/Desktop/Rotina/flow-app/src/services/notificationService.ts). O plugin oficial agora atua estritamente como fallback se o comando nativo falhar.
+  - Adição de janela de deduplicação temporal (600ms) por chave de conteúdo no `notificationService` e blindagem no [reminderScheduler.ts](file:///c:/Users/Rainan/Desktop/Rotina/flow-app/src/services/reminderScheduler.ts) vinculando a chave de disparo à data civil do relógio (`todayStr`) em vez da data selecionada na UI, impedindo repetições em navegações de calendário.
+- [x] **Tarefa de Boas-Vindas Fixada Estritamente no Primeiro Dia**:
+  - Configuração da tarefa inicial `welcome_task` em [initialRoutine.ts](file:///c:/Users/Rainan/Desktop/Rotina/flow-app/src/data/initialRoutine.ts) com `daysOfWeek: []` e `specificDate: todayStr`, garantindo que não seja recorrente em todos os dias da semana.
+  - Sanitização retroativa em [dbService.ts](file:///c:/Users/Rainan/Desktop/Rotina/flow-app/src/services/dbService.ts) durante o carregamento do banco SQLite/local, convertendo instâncias legadas de `welcome_task` para data específica do primeiro login e impedindo sua reaparição em dias subsequentes.
+- [x] **Deep Focus de 50 Minutos no Pomodoro**:
+  - Adicionado novo modo "Deep Focus (50m)" no seletor de ciclos do [PomodoroView.tsx](file:///c:/Users/Rainan/Desktop/Rotina/flow-app/src/components/PomodoroView.tsx) com estilo visual Notion-like, gradiente temático e exibição dinâmica de "Modo Deep Focus".
+  - Suporte completo no estado da store ([pomodoroSlice.ts](file:///c:/Users/Rainan/Desktop/Rotina/flow-app/src/store/slices/pomodoroSlice.ts)) com preservação da duração preferida de foco (`preferredFocusDurationSeconds = 50 * 60`).
+- [x] **Avanço Automático de Ciclos no Pomodoro (Auto-Advance)**:
+  - Implementada transição automática contínua de ciclo (Foco $\to$ Descanso Curto/Longo $\to$ Foco) ao término do timer quando ativado.
+  - Opção inicializada como **ativada por padrão** (`autoAdvance: true`), com card de configuração e toggle switch elegante no design system do Flow no [PomodoroView.tsx](file:///c:/Users/Rainan/Desktop/Rotina/flow-app/src/components/PomodoroView.tsx) e [PomodoroView.module.css](file:///c:/Users/Rainan/Desktop/Rotina/flow-app/src/components/PomodoroView.module.css).
+- [x] **Correção de Dessincronização de Rotina ao Reiniciar o App (Tarefas Ocultas na Lista)**:
+  - **Causa Raiz Identificada**: Quando o app era reiniciado, o `localStorage` mantinha um `selectedRoutineTypeId` órfão ou inconsistente (ex.: rotina de template anterior como `routine_deep_work`) enquanto o banco SQLite carregava as tarefas e rotinas salvas (ex.: `main_routine`). Como a visualização da Lista (`page.tsx` e `DailyStatsBar.tsx`) exigia estritamente `t.routineTypeId === selectedRoutineTypeId`, as tarefas do dia eram filtradas e a tela exibia incorretamente *"Nenhuma atividade para este dia"*, embora estivessem intactas e visíveis no Cronograma Visual (que não filtra por rotina).
+  - **Auto-Correção e Resiliência Implementadas**:
+    - No [useFlowStore.ts](file:///c:/Users/Rainan/Desktop/Rotina/flow-app/src/store/useFlowStore.ts), ao reidratar o banco SQLite em `initializeDbStore`, valida se `selectedRoutineTypeId` existe em `routineTypes`. Se não existir, auto-corrige instantaneamente para o ID padrão da rotina ativa.
+    - No [dbService.ts](file:///c:/Users/Rainan/Desktop/Rotina/flow-app/src/services/dbService.ts), garante que toda tarefa carregada tenha um `routineTypeId` associado a uma rotina existente no banco.
+    - No [page.tsx](file:///c:/Users/Rainan/Desktop/Rotina/flow-app/src/app/page.tsx), [DailyStatsBar.tsx](file:///c:/Users/Rainan/Desktop/Rotina/flow-app/src/components/DailyStatsBar.tsx), [PomodoroView.tsx](file:///c:/Users/Rainan/Desktop/Rotina/flow-app/src/components/PomodoroView.tsx) e [reminderScheduler.ts](file:///c:/Users/Rainan/Desktop/Rotina/flow-app/src/services/reminderScheduler.ts), implementado `effectiveRoutineTypeId` com lógica de auto-cura e filtro resiliente, garantindo que tarefas de rotinas únicas ou órfãs nunca sumam do fluxo diário.
+- [x] **Bump de Versão e Suíte de Testes Automatizados**:
+  - Versão atualizada para `0.4.5` em `package.json`, `tauri.conf.json`, `Cargo.toml` e `updateService.ts`.
+  - Suíte completa de testes no Vitest com 408 testes em 51 arquivos de teste (100% de aprovação) e 0 erros de linting/build.

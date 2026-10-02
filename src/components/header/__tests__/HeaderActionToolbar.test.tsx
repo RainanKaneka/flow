@@ -54,4 +54,22 @@ describe('HeaderActionToolbar Component', () => {
     fireEvent.click(themeBtn);
     expect(onToggleTheme).toHaveBeenCalledTimes(1);
   });
+
+  it('deve renderizar botão de perfil de usuário e disparar onOpenProfileModal', () => {
+    const onOpenProfileModal = vi.fn();
+    render(
+      <HeaderActionToolbar
+        {...defaultProps}
+        userProfile={{ name: 'Rainan Silva', objective: 'Alta Performance', avatarPreset: 'zen' }}
+        onOpenProfileModal={onOpenProfileModal}
+      />
+    );
+
+    const profileBtn = screen.getByTestId('header-user-profile-btn');
+    expect(profileBtn).toBeInTheDocument();
+    expect(screen.getByText('Rainan')).toBeInTheDocument();
+
+    fireEvent.click(profileBtn);
+    expect(onOpenProfileModal).toHaveBeenCalledTimes(1);
+  });
 });

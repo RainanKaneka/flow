@@ -1,5 +1,8 @@
 import { Task, Category, RoutineType, AiActionProposal, TaskLog } from '../types/routine';
 import { calculateReplanSchedule, timeToMinutes, minutesToTime } from '../utils/routineReplan';
+import { useFlowStore } from '../store/useFlowStore';
+import { getFirebaseAuthInstance, getActiveFirebaseConfig } from './firebaseConfig';
+import { calculateNextResetDate } from './userProfileService';
 
 export interface ChatContext {
   tasks: Task[];
@@ -319,6 +322,208 @@ export const testGeminiApiKey = async (
   }
 };
 
+export interface GeminiProxyCallOptions {
+  contents: Array<{
+    role?: string;
+    parts: Array<{ text: string } | Record<string, any>>;
+  }>;
+  model?: string;
+  idToken: string;
+  systemInstruction?: any;
+  generationConfig?: any;
+  isDevPremium?: boolean;
+}
+
+export interface GeminiProxyCallResult {
+  ok: boolean;
+  status: number;
+  data?: any;
+  candidateText?: string;
+  error?: string;
+  quotaExceeded?: boolean;
+  quota?: {
+    used: number;
+    monthlyLimit: number;
+    totalTokensConsumed?: number;
+  };
+}
+
+/**
+ * Retorna o endpoint da Cloud Function aiProxy
+ * Prioridade:
+ * 1. NEXT_PUBLIC_AI_PROXY_URL (variável de ambiente explícita)
+ * 2. Emulador local se NEXT_PUBLIC_USE_FIREBASE_EMULATOR === 'true' ou localhost em dev
+ * 3. URL padrão de produção no Google Cloud Functions (southamerica-east1)
+ */
+export const getAiProxyEndpoint = (): string => {
+  if (process.env.NEXT_PUBLIC_AI_PROXY_URL) {
+    return process.env.NEXT_PUBLIC_AI_PROXY_URL;
+  }
+
+  const config = getActiveFirebaseConfig();
+  const projectId =
+    config?.projectId || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'flow-app-dev';
+
+  const isBrowser = typeof window !== 'undefined';
+  const isLocalhost =
+    isBrowser &&
+    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+  const isDev = process.env.NODE_ENV === 'development';
+
+  if ((isLocalhost || isDev) && process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR === 'true') {
+    return `http://127.0.0.1:5001/${projectId}/southamerica-east1/aiProxy`;
+  }
+
+  return `https://southamerica-east1-${projectId}.cloudfunctions.net/aiProxy`;
+};
+
+/**
+ * Recupera o ID Token JWT do usuário atualmente autenticado no Firebase Auth
+ */
+export const getActiveFirebaseIdToken = async (): Promise<string | null> => {
+  try {
+    const auth = getFirebaseAuthInstance();
+    const currentUser = auth?.currentUser;
+    if (currentUser) {
+      return await currentUser.getIdToken();
+    }
+  } catch (error) {
+    console.warn('[geminiService] Falha ao obter Firebase ID Token:', error);
+  }
+  return null;
+};
+
+/**
+ * Executa a chamada ao Gemini via Cloud Function aiProxy (recurso oficial para planos Premium)
+ */
+export const callGeminiViaProxy = async ({
+  contents,
+  model = DEFAULT_MODEL,
+  idToken,
+  systemInstruction,
+  generationConfig,
+  isDevPremium,
+}: GeminiProxyCallOptions): Promise<GeminiProxyCallResult> => {
+  const endpoint = getAiProxyEndpoint();
+  const sanitizedModel = normalizeModelName(model);
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${idToken.trim()}`,
+  };
+
+  if (isDevPremium) {
+    headers['x-dev-premium'] = 'true';
+  }
+
+  const payload: Record<string, any> = {
+    model: sanitizedModel,
+    contents,
+  };
+
+  if (systemInstruction) {
+    payload.systemInstruction = systemInstruction;
+  }
+  if (generationConfig) {
+    payload.generationConfig = generationConfig;
+  }
+
+  try {
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(payload),
+    });
+
+    // Lê os headers de quota retornados pelo backend
+    const quotaUsedHeader =
+      res.headers.get('x-ai-quota-used') || res.headers.get('X-Ai-Quota-Used');
+    const quotaLimitHeader =
+      res.headers.get('x-ai-quota-limit') || res.headers.get('X-Ai-Quota-Limit');
+    const tokensConsumedHeader =
+      res.headers.get('x-ai-tokens-consumed') || res.headers.get('X-Ai-Tokens-Consumed');
+
+    let updatedQuota:
+      | { used: number; monthlyLimit: number; totalTokensConsumed?: number }
+      | undefined;
+
+    if (quotaUsedHeader !== null && quotaLimitHeader !== null) {
+      const used = parseInt(quotaUsedHeader, 10);
+      const monthlyLimit = parseInt(quotaLimitHeader, 10);
+      const tokensConsumed = parseInt(tokensConsumedHeader || '0', 10);
+
+      updatedQuota = { used, monthlyLimit, totalTokensConsumed: tokensConsumed };
+
+      // Sincroniza em tempo real no Zustand store
+      try {
+        const currentProfile = useFlowStore.getState().userProfile;
+        if (currentProfile) {
+          useFlowStore.getState().updateUserProfile({
+            aiQuota: {
+              monthlyLimit: monthlyLimit || currentProfile.aiQuota?.monthlyLimit || 1000,
+              used: Number.isNaN(used) ? (currentProfile.aiQuota?.used ?? 0) : used,
+              resetDate: currentProfile.aiQuota?.resetDate || calculateNextResetDate(),
+              totalTokensConsumed:
+                (currentProfile.aiQuota?.totalTokensConsumed || 0) +
+                (Number.isNaN(tokensConsumed) ? 0 : tokensConsumed),
+            },
+          });
+        }
+      } catch (storeErr) {
+        console.warn('[geminiService] Falha ao sincronizar quota no store:', storeErr);
+      }
+    }
+
+    if (res.status === 429) {
+      return {
+        ok: false,
+        status: 429,
+        quotaExceeded: true,
+        error: 'Quota mensal de IA esgotada.',
+        quota: updatedQuota,
+      };
+    }
+
+    if (res.status === 403) {
+      const data = await res.json().catch(() => ({}));
+      return {
+        ok: false,
+        status: 403,
+        error: data.error || 'Recurso exclusivo do plano Premium.',
+        quota: updatedQuota,
+      };
+    }
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      return {
+        ok: false,
+        status: res.status,
+        error: errData.error || `Erro HTTP ${res.status} no proxy de IA.`,
+        quota: updatedQuota,
+      };
+    }
+
+    const data = await res.json();
+    const candidateText = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+    return {
+      ok: true,
+      status: 200,
+      data,
+      candidateText,
+      quota: updatedQuota,
+    };
+  } catch (err: any) {
+    console.error('[geminiService] Falha de conexão com Cloud Function aiProxy:', err);
+    return {
+      ok: false,
+      status: 0,
+      error: err?.message || 'Falha de conexão com o proxy de IA.',
+    };
+  }
+};
+
 /**
  * Constrói o System Prompt com o contexto atual da rotina do usuário e instruções estritas de agendamento por data
  */
@@ -631,8 +836,12 @@ Confira os detalhes e clique em aplicar para agendá-la diretamente:`,
 };
 
 /**
- * Interage com o Agente de IA (Gemini REST API ou Fallback Heurístico Local)
- * Suporta autenticação tanto via Chave de API quanto via Bearer Token de Conta Google OAuth 2.0
+ * Interage com o Agente de IA (Cloud Function aiProxy quando Premium, Gemini REST API ou Fallback Heurístico Local)
+ * Suporta autenticação via:
+ * 1. Cloud Function aiProxy (automático para assinantes Premium autenticados)
+ * 2. Chave de API Google Gemini própria (modo Free / Fallback)
+ * 3. Bearer Token de Conta Google OAuth 2.0 (modo Free / Fallback)
+ * 4. Fallback Heurístico Local Offline (quando offline ou sem chaves)
  */
 export const sendMessageToAssistant = async ({
   prompt,
@@ -641,6 +850,8 @@ export const sendMessageToAssistant = async ({
   apiKey,
   accessToken,
   model = DEFAULT_MODEL,
+  isPremium,
+  firebaseIdToken,
 }: {
   prompt: string;
   history: Array<{ role: 'user' | 'assistant'; content: string }>;
@@ -648,102 +859,238 @@ export const sendMessageToAssistant = async ({
   apiKey?: string;
   accessToken?: string;
   model?: string;
+  isPremium?: boolean;
+  firebaseIdToken?: string;
 }): Promise<ChatResponse> => {
+  const storeProfile = useFlowStore.getState().userProfile;
+  const effectiveIsPremium = isPremium ?? (storeProfile?.plan === 'premium');
+  let idToken = firebaseIdToken;
+
+  if (effectiveIsPremium && !idToken) {
+    idToken = (await getActiveFirebaseIdToken()) || undefined;
+  }
+
+  // ROTA PRIMÁRIA: Se o usuário for Premium e possuir um token do Firebase Auth, usa o aiProxy
+  if (effectiveIsPremium && idToken) {
+    try {
+      const systemPrompt = buildSystemInstruction(context);
+      const sanitizedModel = normalizeModelName(model);
+
+      const contents: any[] = [
+        {
+          role: 'user',
+          parts: [{ text: `INSTRUÇÃO DO SISTEMA:\n${systemPrompt}` }],
+        },
+        {
+          role: 'model',
+          parts: [
+            {
+              text: 'Entendido. Agirei como Flow AI, gerando respostas elegantes e blocos ```flow-action quando for necessário criar tarefas com datas precisas ou replanejar atrasos.',
+            },
+          ],
+        },
+      ];
+
+      // Histórico recente (últimas 6 mensagens para manter eficiência de tokens)
+      const recentHistory = history.slice(-6);
+      for (const h of recentHistory) {
+        contents.push({
+          role: h.role === 'assistant' ? 'model' : 'user',
+          parts: [{ text: h.content }],
+        });
+      }
+
+      // Pergunta atual
+      contents.push({
+        role: 'user',
+        parts: [{ text: prompt }],
+      });
+
+      const proxyResult = await callGeminiViaProxy({
+        contents,
+        model: sanitizedModel,
+        idToken,
+      });
+
+      if (proxyResult.ok && proxyResult.candidateText) {
+        const { cleanedText, proposal } = extractActionProposal(
+          proxyResult.candidateText,
+          context,
+          prompt
+        );
+        return {
+          content: cleanedText,
+          actionProposal: proposal,
+        };
+      }
+
+      // Se a quota mensal do plano Premium estiver esgotada (429)
+      if (proxyResult.quotaExceeded) {
+        const hasKey = apiKey && apiKey.trim().length > 10;
+        const hasToken = accessToken && accessToken.trim().length > 10;
+
+        // Se o usuário tiver cadastrado sua chave pessoal, faz fallback automático
+        if (hasKey || hasToken) {
+          console.warn(
+            '[geminiService] Quota Premium esgotada, utilizando credencial pessoal como fallback.'
+          );
+        } else {
+          const resetDate = storeProfile?.aiQuota?.resetDate || calculateNextResetDate();
+          return {
+            content: `⚠️ **Limite Mensal de IA Atingido**\n\nVocê atingiu a sua quota mensal de mensagens de IA do plano Flow Premium.\n\nSua quota será reiniciada automaticamente em **${resetDate}**.\n\n💡 *Dica: Você pode cadastrar uma Chave de API Google Gemini pessoal gratuita nas configurações para continuar gerando respostas até a renovação da sua quota.*`,
+          };
+        }
+      }
+    } catch (proxyErr) {
+      console.warn('[geminiService] Falha ao chamar proxy de IA, tentando fallback:', proxyErr);
+    }
+  }
+
+  // ROTA SECUNDÁRIA (Fallback pessoal / Modo Free / Dev):
+  // Se houver chave pessoal de API ou Token Google OAuth
   const hasKey = apiKey && apiKey.trim().length > 10;
   const hasToken = accessToken && accessToken.trim().length > 10;
 
-  // Se não houver chave de API nem token OAuth, utiliza o motor inteligente local
-  if (!hasKey && !hasToken) {
-    return generateLocalHeuristicResponse(prompt, context);
-  }
+  if (hasKey || hasToken) {
+    try {
+      const systemPrompt = buildSystemInstruction(context);
+      const sanitizedModel = normalizeModelName(model);
 
-  try {
-    const systemPrompt = buildSystemInstruction(context);
-    const sanitizedModel = normalizeModelName(model);
+      const endpoint = hasKey
+        ? `https://generativelanguage.googleapis.com/v1beta/models/${sanitizedModel}:generateContent?key=${apiKey!.trim()}`
+        : `https://generativelanguage.googleapis.com/v1beta/models/${sanitizedModel}:generateContent`;
 
-    const endpoint = hasKey
-      ? `https://generativelanguage.googleapis.com/v1beta/models/${sanitizedModel}:generateContent?key=${apiKey!.trim()}`
-      : `https://generativelanguage.googleapis.com/v1beta/models/${sanitizedModel}:generateContent`;
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (hasToken) {
+        headers['Authorization'] = `Bearer ${accessToken!.trim()}`;
+      }
 
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-    if (hasToken) {
-      headers['Authorization'] = `Bearer ${accessToken!.trim()}`;
-    }
+      // Monta histórico no formato aceito pelo Gemini
+      const contents: any[] = [
+        {
+          role: 'user',
+          parts: [{ text: `INSTRUÇÃO DO SISTEMA:\n${systemPrompt}` }],
+        },
+        {
+          role: 'model',
+          parts: [
+            {
+              text: 'Entendido. Agirei como Flow AI, gerando respostas elegantes e blocos ```flow-action quando for necessário criar tarefas com datas precisas ou replanejar atrasos.',
+            },
+          ],
+        },
+      ];
 
-    // Monta histórico no formato aceito pelo Gemini
-    const contents: any[] = [
-      {
-        role: 'user',
-        parts: [{ text: `INSTRUÇÃO DO SISTEMA:\n${systemPrompt}` }],
-      },
-      {
-        role: 'model',
-        parts: [
-          {
-            text: 'Entendido. Agirei como Flow AI, gerando respostas elegantes e blocos ```flow-action quando for necessário criar tarefas com datas precisas ou replanejar atrasos.',
-          },
-        ],
-      },
-    ];
+      // Histórico recente (últimas 6 mensagens para manter eficiência)
+      const recentHistory = history.slice(-6);
+      for (const h of recentHistory) {
+        contents.push({
+          role: h.role === 'assistant' ? 'model' : 'user',
+          parts: [{ text: h.content }],
+        });
+      }
 
-    // Histórico recente (últimas 6 mensagens para manter eficiência)
-    const recentHistory = history.slice(-6);
-    for (const h of recentHistory) {
+      // Pergunta atual
       contents.push({
-        role: h.role === 'assistant' ? 'model' : 'user',
-        parts: [{ text: h.content }],
+        role: 'user',
+        parts: [{ text: prompt }],
       });
-    }
 
-    // Pergunta atual
-    contents.push({
-      role: 'user',
-      parts: [{ text: prompt }],
-    });
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ contents }),
+      });
 
-    const res = await fetch(endpoint, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ contents }),
-    });
+      if (!res.ok) {
+        console.warn('Gemini API retornou erro, utilizando fallback heurístico.');
+        return generateLocalHeuristicResponse(prompt, context);
+      }
 
-    if (!res.ok) {
-      console.warn('Gemini API retornou erro, utilizando fallback heurístico.');
+      const data = await res.json();
+      const candidateText = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+      if (!candidateText) {
+        return generateLocalHeuristicResponse(prompt, context);
+      }
+
+      const { cleanedText, proposal } = extractActionProposal(candidateText, context, prompt);
+      return {
+        content: cleanedText,
+        actionProposal: proposal,
+      };
+    } catch (err) {
+      console.error('Erro na chamada ao Gemini API:', err);
       return generateLocalHeuristicResponse(prompt, context);
     }
-
-    const data = await res.json();
-    const candidateText = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-
-    if (!candidateText) {
-      return generateLocalHeuristicResponse(prompt, context);
-    }
-
-    const { cleanedText, proposal } = extractActionProposal(candidateText, context, prompt);
-    return {
-      content: cleanedText,
-      actionProposal: proposal,
-    };
-  } catch (err) {
-    console.error('Erro na chamada ao Gemini API:', err);
-    return generateLocalHeuristicResponse(prompt, context);
   }
+
+  // ROTA FINAL (Fallback Heurístico Local Offline)
+  return generateLocalHeuristicResponse(prompt, context);
 };
 
 /**
  * Sugere quebra de tarefa complexa em subtarefas / checklists (RF-17)
+ * Prioridade:
+ * 1. Cloud Function aiProxy (quando Premium)
+ * 2. Gemini REST API com credencial pessoal (Free/Dev)
+ * 3. Fallback Heurístico local baseado no tipo de tarefa
  */
 export const decomposeTaskWithGemini = async ({
   task,
   apiKey,
   accessToken,
   model = DEFAULT_MODEL,
+  isPremium,
+  firebaseIdToken,
 }: {
   task: Task;
   apiKey?: string;
   accessToken?: string;
   model?: string;
+  isPremium?: boolean;
+  firebaseIdToken?: string;
 }): Promise<string[]> => {
+  const storeProfile = useFlowStore.getState().userProfile;
+  const effectiveIsPremium = isPremium ?? (storeProfile?.plan === 'premium');
+  let idToken = firebaseIdToken;
+
+  if (effectiveIsPremium && !idToken) {
+    idToken = (await getActiveFirebaseIdToken()) || undefined;
+  }
+
+  const prompt = `Dada a seguinte tarefa da rotina:
+Título: "${task.title}"
+Descrição: "${task.description || 'Sem descrição'}"
+Duração prevista: ${task.targetMinutes} minutos
+
+Quebre essa atividade em 3 a 5 subtarefas práticas, acionáveis e diretas para um checklist de execução.
+Retorne EXCLUSIVAMENTE uma lista de itens, um por linha, iniciando com "- ". Sem introduções nem conclusões.`;
+
+  // ROTA 1: Se o usuário for Premium e possuir um token, rota primária é o aiProxy
+  if (effectiveIsPremium && idToken) {
+    try {
+      const sanitizedModel = normalizeModelName(model);
+      const proxyResult = await callGeminiViaProxy({
+        contents: [{ parts: [{ text: prompt }] }],
+        model: sanitizedModel,
+        idToken,
+      });
+
+      if (proxyResult.ok && proxyResult.candidateText) {
+        const items = proxyResult.candidateText
+          .split('\n')
+          .map((line: string) => line.replace(/^[-*•\d.)\s]+/, '').trim())
+          .filter((line: string) => line.length > 2);
+
+        if (items.length > 0) return items.slice(0, 6);
+      }
+    } catch (e) {
+      console.warn('Erro ao decompor tarefa via proxy Gemini, tentando fallback:', e);
+    }
+  }
+
+  // ROTA 2: Fallback com API Key ou OAuth pessoal
   const hasKey = apiKey && apiKey.trim().length > 10;
   const hasToken = accessToken && accessToken.trim().length > 10;
 
@@ -758,14 +1105,6 @@ export const decomposeTaskWithGemini = async ({
       if (hasToken) {
         headers['Authorization'] = `Bearer ${accessToken!.trim()}`;
       }
-
-      const prompt = `Dada a seguinte tarefa da rotina:
-Título: "${task.title}"
-Descrição: "${task.description || 'Sem descrição'}"
-Duração prevista: ${task.targetMinutes} minutos
-
-Quebre essa atividade em 3 a 5 subtarefas práticas, acionáveis e diretas para um checklist de execução.
-Retorne EXCLUSIVAMENTE uma lista de itens, um por linha, iniciando com "- ". Sem introduções nem conclusões.`;
 
       const res = await fetch(endpoint, {
         method: 'POST',
@@ -790,7 +1129,7 @@ Retorne EXCLUSIVAMENTE uma lista de itens, um por linha, iniciando com "- ". Sem
     }
   }
 
-  // Fallback Heurístico inteligente baseado no contexto do título
+  // ROTA 3: Fallback Heurístico inteligente baseado no contexto do título
   const titleLower = task.title.toLowerCase();
   if (titleLower.includes('estud') || titleLower.includes('ler') || titleLower.includes('livro')) {
     return [

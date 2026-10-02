@@ -5,3 +5,4 @@ export * from './backlogSlice';
 export * from './notesSlice';
 export * from './pomodoroSlice';
 export * from './aiSlice';
+export * from './authSyncSlice';

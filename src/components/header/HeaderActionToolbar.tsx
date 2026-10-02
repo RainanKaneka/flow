@@ -1,7 +1,8 @@
 import React from 'react';
-import { Sparkles, Sun, Moon, Plus, Timer, Bell, Database, Search } from 'lucide-react';
+import { Sparkles, Sun, Moon, Plus, Timer, Bell, Database, Search, Cloud, CloudCheck, User } from 'lucide-react';
 import { isNewerVersion, CURRENT_APP_VERSION } from '../../services/updateService';
-import { GoogleUser, GeminiConfig } from '../../types/routine';
+import { GoogleUser, GeminiConfig, FirebaseUserProfile, CloudSyncStatus, UserProfile } from '../../types/routine';
+import { getPresetById } from '../../services/userProfileService';
 
 export interface HeaderActionToolbarProps {
   activeView: string;
@@ -18,6 +19,11 @@ export interface HeaderActionToolbarProps {
   onOpenBackupModal?: () => void;
   onOpenOnboardingModal?: () => void;
   onOpenGlobalSearch?: () => void;
+  firebaseUser?: FirebaseUserProfile | null;
+  cloudSyncStatus?: CloudSyncStatus;
+  onOpenAuthSyncModal?: () => void;
+  userProfile?: UserProfile | null;
+  onOpenProfileModal?: () => void;
   theme: 'light' | 'dark';
   onToggleTheme: () => void;
   onOpenNewTaskModal: () => void;
@@ -38,6 +44,11 @@ export const HeaderActionToolbar: React.FC<HeaderActionToolbarProps> = ({
   onOpenBackupModal,
   onOpenOnboardingModal,
   onOpenGlobalSearch,
+  firebaseUser,
+  cloudSyncStatus,
+  onOpenAuthSyncModal,
+  userProfile,
+  onOpenProfileModal,
   theme,
   onToggleTheme,
   onOpenNewTaskModal,
@@ -196,6 +207,54 @@ export const HeaderActionToolbar: React.FC<HeaderActionToolbarProps> = ({
         </button>
       )}
 
+      {/* Sincronização em Nuvem / Firebase Sync (Fase 4, Parte 1) */}
+      {onOpenAuthSyncModal && (
+        <button
+          onClick={onOpenAuthSyncModal}
+          style={{
+            width: '36px',
+            height: '36px',
+            borderRadius: '50%',
+            background: firebaseUser ? 'rgba(99, 102, 241, 0.15)' : 'var(--bg-secondary)',
+            border: firebaseUser ? '1px solid rgba(99, 102, 241, 0.4)' : '1px solid var(--border-subtle)',
+            color: firebaseUser ? 'var(--accent-primary)' : 'var(--text-secondary)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            position: 'relative',
+            transition: 'all 200ms var(--bezier-haptic)',
+          }}
+          title={
+            firebaseUser
+              ? `Nuvem conectada: ${firebaseUser.displayName || firebaseUser.email || 'Convidado'}`
+              : 'Sincronização em Nuvem (Firebase Sync & Autenticação)'
+          }
+          data-testid="header-cloud-sync-btn"
+        >
+          {cloudSyncStatus?.isSyncing ? (
+            <Cloud size={15} style={{ animation: 'spin 1.5s linear infinite' }} />
+          ) : firebaseUser ? (
+            <CloudCheck size={15} />
+          ) : (
+            <Cloud size={15} />
+          )}
+          {cloudSyncStatus?.isSyncing && (
+            <span
+              style={{
+                position: 'absolute',
+                top: '4px',
+                right: '4px',
+                width: '6px',
+                height: '6px',
+                borderRadius: '50%',
+                backgroundColor: 'var(--accent-primary)',
+              }}
+            />
+          )}
+        </button>
+      )}
+
       {/* Onboarding Wizard / Setup de Rotinas */}
       {onOpenOnboardingModal && (
         <button
@@ -257,6 +316,72 @@ export const HeaderActionToolbar: React.FC<HeaderActionToolbarProps> = ({
           >
             Ctrl+K
           </kbd>
+        </button>
+      )}
+
+      {/* Perfil de Usuário & Configurações (Fase 4, Parte 4) */}
+      {onOpenProfileModal && (
+        <button
+          onClick={onOpenProfileModal}
+          data-testid="header-user-profile-btn"
+          style={{
+            height: '36px',
+            padding: userProfile?.name ? '0 10px 0 4px' : '0 10px',
+            borderRadius: '9999px',
+            background: 'var(--bg-secondary)',
+            border: '1px solid var(--border-subtle)',
+            color: 'var(--text-primary)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            cursor: 'pointer',
+            transition: 'all 200ms var(--bezier-haptic)',
+            fontSize: '12px',
+            fontWeight: 600,
+          }}
+          title={`Perfil de Usuário: ${userProfile?.name || 'Configurar Perfil'}`}
+        >
+          {userProfile?.avatarUrl ? (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              src={userProfile.avatarUrl}
+              alt={userProfile.name}
+              style={{ width: '26px', height: '26px', borderRadius: '50%', objectFit: 'cover' }}
+            />
+          ) : userProfile?.avatarPreset ? (
+            <div
+              style={{
+                width: '26px',
+                height: '26px',
+                borderRadius: '50%',
+                background: getPresetById(userProfile.avatarPreset).bgGradient,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '13px',
+              }}
+            >
+              {getPresetById(userProfile.avatarPreset).emoji}
+            </div>
+          ) : (
+            <div
+              style={{
+                width: '26px',
+                height: '26px',
+                borderRadius: '50%',
+                background: 'var(--bg-elevated)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'var(--text-secondary)',
+              }}
+            >
+              <User size={14} />
+            </div>
+          )}
+          <span className="hide-on-compact-desktop">
+            {userProfile?.name ? userProfile.name.split(' ')[0] : 'Perfil'}
+          </span>
         </button>
       )}
 
