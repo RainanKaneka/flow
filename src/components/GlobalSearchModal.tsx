@@ -1,5 +1,6 @@
 'use client';
 
+import { PRODUCT_FEATURES } from '../config/productFeatures';
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useFlowStore } from '../store/useFlowStore';
 import { sounds } from '../utils/audio';
@@ -443,7 +444,9 @@ export const GlobalSearchModal: React.FC = () => {
       });
     });
 
-    return list;
+    return list.filter(
+      (item) => PRODUCT_FEATURES.aiAssistant || !['nav-ai', 'setting-google-auth'].includes(item.id)
+    );
   }, [
     tasks,
     notes,
@@ -551,12 +554,16 @@ export const GlobalSearchModal: React.FC = () => {
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      setSelectedIndex((prev) => (filteredResults.length > 0 ? (prev + 1) % filteredResults.length : 0));
+      setSelectedIndex((prev) =>
+        filteredResults.length > 0 ? (prev + 1) % filteredResults.length : 0
+      );
       sounds.playTick();
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
       setSelectedIndex((prev) =>
-        filteredResults.length > 0 ? (prev - 1 + filteredResults.length) % filteredResults.length : 0
+        filteredResults.length > 0
+          ? (prev - 1 + filteredResults.length) % filteredResults.length
+          : 0
       );
       sounds.playTick();
     } else if (e.key === 'Enter') {
@@ -668,9 +675,9 @@ export const GlobalSearchModal: React.FC = () => {
                 </div>
                 <div className={styles.emptyTitle}>Nenhum resultado encontrado</div>
                 <div className={styles.emptySubtitle}>
-                  Não encontramos nada para &ldquo;{query}&rdquo;. Tente buscar por tarefas, anotações,
-                  configurações ou termos como &ldquo;backup&rdquo;, &ldquo;pomodoro&rdquo;, ou
-                  &ldquo;tema&rdquo;.
+                  Não encontramos nada para &ldquo;{query}&rdquo;. Tente buscar por tarefas,
+                  anotações, configurações ou termos como &ldquo;backup&rdquo;,
+                  &ldquo;pomodoro&rdquo;, ou &ldquo;tema&rdquo;.
                 </div>
               </div>
             ) : (
@@ -711,9 +718,7 @@ export const GlobalSearchModal: React.FC = () => {
                     </div>
 
                     <div className={styles.itemRight}>
-                      {item.shortcut && (
-                        <kbd className={styles.shortcutBadge}>{item.shortcut}</kbd>
-                      )}
+                      {item.shortcut && <kbd className={styles.shortcutBadge}>{item.shortcut}</kbd>}
                       <ArrowRight size={14} style={{ opacity: isSelected ? 0.8 : 0.2 }} />
                     </div>
                   </div>
@@ -740,8 +745,7 @@ export const GlobalSearchModal: React.FC = () => {
               </div>
             </div>
             <div>
-              {filteredResults.length}{' '}
-              {filteredResults.length === 1 ? 'resultado' : 'resultados'}
+              {filteredResults.length} {filteredResults.length === 1 ? 'resultado' : 'resultados'}
             </div>
           </div>
         </div>

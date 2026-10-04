@@ -5,6 +5,15 @@ import { AuthSyncModal } from '../AuthSyncModal';
 import { useFlowStore } from '../../store/useFlowStore';
 import { firebaseAuthService } from '../../services/firebaseAuthService';
 import { cloudSyncService } from '../../services/cloudSyncService';
+import { userProfileService } from '../../services/userProfileService';
+
+vi.mock('../../services/userProfileService', () => ({
+  userProfileService: {
+    ensureUserProfileInitialized: vi
+      .fn()
+      .mockResolvedValue({ name: 'Google Dev', objective: 'Minha rotina', avatarPreset: 'spark' }),
+  },
+}));
 
 vi.mock('../../services/firebaseAuthService', () => ({
   firebaseAuthService: {
@@ -99,6 +108,10 @@ describe('AuthSyncModal Component', () => {
     await waitFor(() => {
       expect(firebaseAuthService.signInWithGoogle).toHaveBeenCalled();
       expect(useFlowStore.getState().firebaseUser?.uid).toBe('google-123');
+      expect(userProfileService.ensureUserProfileInitialized).toHaveBeenCalledWith(
+        'google-123',
+        expect.objectContaining({ name: 'Google Dev', email: 'google@flow.com' })
+      );
     });
   });
 

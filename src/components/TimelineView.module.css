@@ -227,6 +227,12 @@
   margin-top: 4px;
 }
 
+.currentTimeLabel {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
 /* Nó Conector no Eixo Vertical */
 .spineNode {
   position: relative;

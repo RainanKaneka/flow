@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import Database from '@tauri-apps/plugin-sql';
-import { initDb, loadStateFromDb, syncStateToDb, resetDbInstanceForTesting } from '../dbService';
+import { initDb, loadStateFromDb, syncStateToDb, resetDbInstanceForTesting, runLocalStorageMigration } from '../dbService';
 import { Task, TaskLog, BacklogItem, RoutineType, Category } from '../../types/routine';
 
 describe('dbService - SQLite Relational Integrity and FK Prevention', () => {
@@ -20,6 +20,24 @@ describe('dbService - SQLite Relational Integrity and FK Prevention', () => {
   });
 
   describe('initDb', () => {
+    it('adiciona as colunas de andamento apenas quando ausentes no banco existente', async () => {
+      mockDb.select.mockResolvedValueOnce([{ name: 'id' }]).mockResolvedValueOnce([{ name: 'id' }]);
+      await initDb();
+      expect(mockDb.execute).toHaveBeenCalledWith('ALTER TABLE tasks ADD COLUMN auto_start INTEGER DEFAULT 0;');
+      expect(mockDb.execute).toHaveBeenCalledWith('ALTER TABLE task_completions ADD COLUMN in_progress INTEGER DEFAULT 0;');
+      expect(mockDb.execute).toHaveBeenCalledWith('ALTER TABLE task_completions ADD COLUMN started_at TEXT;');
+
+      mockDb.execute.mockClear();
+      mockDb.select
+        .mockResolvedValueOnce([{ name: 'id' }, { name: 'auto_start' }])
+        .mockResolvedValueOnce([{ name: 'id' }, { name: 'in_progress' }, { name: 'started_at' }]);
+      await initDb();
+      const statusAlterations = mockDb.execute.mock.calls.filter(([sql]) =>
+        /^ALTER TABLE .*ADD COLUMN (auto_start|in_progress|started_at)\b/.test(sql)
+      );
+      expect(statusAlterations).toHaveLength(0);
+    });
+
     it('deve habilitar PRAGMA foreign_keys = ON e executar limpeza preventiva', async () => {
       await initDb();
 
@@ -94,10 +112,56 @@ describe('dbService - SQLite Relational Integrity and FK Prevention', () => {
       expect(loaded.logs!['2026-09-24_task_valid']).toBeDefined();
       // O log da tarefa órfã não deve ser carregado na store
       expect(loaded.logs!['2026-09-24_task_orphaned']).toBeUndefined();
+      // Bancos anteriores não ativam início automático nem inventam atividade em andamento.
+      expect(loaded.tasks?.[0].autoStart).toBe(false);
+      expect(loaded.logs!['2026-09-24_task_valid'].inProgress).toBe(false);
+      expect(loaded.logs!['2026-09-24_task_valid'].startedAt).toBeUndefined();
+    });
+
+    it('restaura início automático e logs em andamento ou já interrompidos sem marcar conclusão', async () => {
+      mockDb.select.mockImplementation(async (query: string) => {
+        if (query.includes('FROM routine_types')) return [{ id: 'rt_1', name: 'Rotina' }];
+        if (query.includes('FROM categories')) return [{ id: 'cat_1', name: 'Foco', color: '#fff' }];
+        if (query.includes('FROM tasks')) return [{
+          id: 'task_1', title: 'Foco', start_time: '09:00', end_time: '10:00',
+          routine_type_id: 'rt_1', category_id: 'cat_1', days_of_week: '[1]',
+          target_minutes: 60, auto_start: 1,
+        }];
+        if (query.includes('FROM task_completions')) return [0, 1].map((inProgress) => ({
+          id: `log_${inProgress}`, task_id: 'task_1', date: `2026-10-0${inProgress + 3}`,
+          completed: 0, time_spent_minutes: 0, in_progress: inProgress,
+          started_at: '2026-10-03T12:00:00.000Z',
+        }));
+        return [];
+      });
+      const loaded = await loadStateFromDb();
+      expect(loaded.tasks?.[0].autoStart).toBe(true);
+      expect(loaded.logs?.log_1).toMatchObject({ completed: false, inProgress: true, startedAt: '2026-10-03T12:00:00.000Z' });
+      expect(loaded.logs?.log_0).toMatchObject({ completed: false, inProgress: false, startedAt: '2026-10-03T12:00:00.000Z' });
     });
   });
 
   describe('syncStateToDb', () => {
+    it('preserva logs iniciados sem minutos e remove somente pendentes sem histórico de início', async () => {
+      const base = { taskId: 'task_1', date: '2026-10-03', completed: false, timeSpentMinutes: 0 };
+      const startedAt = '2026-10-03T12:00:00.000Z';
+      await syncStateToDb({
+        logs: {
+          running: { ...base, id: 'running', inProgress: true, startedAt },
+          stopped: { ...base, id: 'stopped', inProgress: false, startedAt },
+          pending: { ...base, id: 'pending' },
+        },
+      });
+      const inserts = mockDb.execute.mock.calls.filter(([sql]) => sql.startsWith('INSERT OR REPLACE INTO task_completions'));
+      expect(inserts.map(([, values]) => values)).toEqual([
+        ['running', 'task_1', '2026-10-03', 0, null, 0, 1, startedAt],
+        ['stopped', 'task_1', '2026-10-03', 0, null, 0, 0, startedAt],
+      ]);
+      expect(mockDb.execute).toHaveBeenCalledWith(
+        'DELETE FROM task_completions WHERE id NOT IN ($1, $2)', ['running', 'stopped']
+      );
+    });
+
     it('deve nunca tentar inserir completions de tarefas inexistentes', async () => {
       const state = {
         routineTypes: [{ id: 'rt_1', name: 'Rotina', description: '', philosophy: '', color: '#fff' }] as RoutineType[],
@@ -259,5 +323,25 @@ describe('dbService - SQLite Relational Integrity and FK Prevention', () => {
       expect(consoleWarnSpy).toHaveBeenCalled();
       consoleWarnSpy.mockRestore();
     });
+  });
+
+  it('migra campos de início do localStorage para o SQLite e não repete a migração', async () => {
+    const startedAt = '2026-10-03T12:00:00.000Z';
+    localStorage.setItem('flow-app-v1-clean', JSON.stringify({ state: {
+      tasks: [{
+        id: 'task_1', title: 'Foco', startTime: '09:00', endTime: '10:00',
+        routineTypeId: 'rt_1', categoryId: 'cat_1', daysOfWeek: [1], targetMinutes: 60, autoStart: true,
+      }],
+      logs: { running: { id: 'running', taskId: 'task_1', date: '2026-10-03', completed: false, inProgress: true, startedAt } },
+    } }));
+    await runLocalStorageMigration();
+    const taskInsert = mockDb.execute.mock.calls.find(([sql]) => sql.startsWith('INSERT OR REPLACE INTO tasks'));
+    expect(taskInsert?.[1][17]).toBe(1);
+    const logInsert = mockDb.execute.mock.calls.find(([sql]) => sql.startsWith('INSERT OR REPLACE INTO task_completions'));
+    expect(logInsert?.[1].slice(6)).toEqual([1, startedAt]);
+    expect(localStorage.getItem('flow-db-migrated')).toBe('true');
+    mockDb.execute.mockClear();
+    await runLocalStorageMigration();
+    expect(mockDb.execute).not.toHaveBeenCalled();
   });
 });

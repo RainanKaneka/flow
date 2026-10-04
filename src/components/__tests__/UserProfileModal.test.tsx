@@ -100,10 +100,8 @@ describe('UserProfileModal Component', () => {
     expect(screen.getByText('Duração Padrão do Pomodoro')).toBeInTheDocument();
     expect(screen.getByText('Feedback Sensorial (Tigela Tibetana 528Hz)')).toBeInTheDocument();
 
-    // Alternar modo do plano (Pro / Free)
-    const togglePlanBtn = screen.getByTestId('toggle-plan-btn');
-    fireEvent.click(togglePlanBtn);
-    expect(screen.getByText('Ativo (Pro)')).toBeInTheDocument();
+    expect(screen.queryByTestId('toggle-plan-btn')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Plano Flow/)).not.toBeInTheDocument();
   });
 
   it('deve permitir alternar para a aba de Estatísticas & Conquistas e exibir métricas', () => {
@@ -155,5 +153,23 @@ describe('UserProfileModal Component', () => {
 
     fireEvent.keyDown(window, { key: 'Escape' });
     expect(useFlowStore.getState().isProfileModalOpen).toBe(false);
+  });
+  it('não exibe monetização para perfil Pro antigo nem altera seu plano ao salvar', () => {
+    const legacy = {
+      ...useFlowStore.getState().userProfile!,
+      plan: 'premium' as const,
+      aiQuota: { monthlyLimit: 1000, used: 25, totalTokensConsumed: 100, resetDate: '2026-11-01' },
+    };
+    useFlowStore.setState({ isProfileModalOpen: true, userProfile: legacy });
+    render(<UserProfileModal />);
+    expect(screen.queryByText('Flow Pro')).not.toBeInTheDocument();
+    expect(screen.queryByText('Gratuito')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('tab-settings-btn'));
+    expect(screen.queryByTestId('toggle-plan-btn')).not.toBeInTheDocument();
+    expect(screen.queryByText('Consumo Mensal de IA:')).not.toBeInTheDocument();
+    expect(screen.getByText('Tema Visual')).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('save-profile-btn'));
+    expect(useFlowStore.getState().userProfile?.plan).toBe('premium');
+    expect(useFlowStore.getState().userProfile?.aiQuota).toEqual(legacy.aiQuota);
   });
 });

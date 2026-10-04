@@ -22,6 +22,7 @@ export const TaskModal: React.FC = () => {
   const [routineTypeId, setRoutineTypeId] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [isGoldenRule, setIsGoldenRule] = useState(false);
+  const [autoStart, setAutoStart] = useState(false);
   const [notes, setNotes] = useState('');
   const [frequencyScope, setFrequencyScope] = useState<'single_day' | 'all_days'>('single_day');
   const [targetDate, setTargetDate] = useState<string>('');
@@ -29,6 +30,7 @@ export const TaskModal: React.FC = () => {
   useEffect(() => {
     const initialDate = editingTask?.specificDate || selectedDate;
     setTargetDate(initialDate);
+    setAutoStart(!!editingTask?.autoStart);
 
     if (editingTask && editingTask.id) {
       setTitle(editingTask.title ?? '');
@@ -148,6 +150,7 @@ export const TaskModal: React.FC = () => {
       routineTypeId: routineTypeId || selectedRoutineTypeId || routineTypes[0]?.id || '',
       categoryId: categoryId || categories[0]?.id || '',
       isGoldenRule: !!isGoldenRule,
+      autoStart,
       daysOfWeek: finalDaysOfWeek,
       targetMinutes: calculateMinutes(startTime, endTime),
       tags: matchedCat ? [matchedCat.name] : (editingTask?.tags || []),
@@ -185,6 +188,8 @@ export const TaskModal: React.FC = () => {
           className="double-bezel-inner"
           style={{
             padding: '24px 28px',
+            maxHeight: '90vh',
+            overflowY: 'auto',
           }}
         >
           {/* Header */}
@@ -512,6 +517,39 @@ export const TaskModal: React.FC = () => {
                 />
               </div>
             </div>
+
+            <label
+              style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: '10px',
+                padding: '10px 12px',
+                borderRadius: '10px',
+                border: '1px solid var(--border-subtle)',
+                background: 'var(--bg-elevated)',
+                cursor: 'pointer',
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={autoStart}
+                onChange={(event) => setAutoStart(event.target.checked)}
+                aria-describedby="task-auto-start-description"
+                style={{ accentColor: 'var(--accent-primary)', marginTop: '2px' }}
+              />
+              <div>
+                <span style={{ fontSize: '12px', fontWeight: 600 }}>
+                  Iniciar automaticamente no horário marcado
+                </span>
+                <p
+                  id="task-auto-start-description"
+                  style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '3px' }}
+                >
+                  Com o Flow aberto, a tarefa fica em andamento do início ao fim do horário previsto.
+                  A conclusão continua sendo manual.
+                </p>
+              </div>
+            </label>
 
             {/* Category & Routine Type */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>

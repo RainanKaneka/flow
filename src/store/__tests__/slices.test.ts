@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { useFlowStore } from '../useFlowStore';
+import { useFlowStore, getTodayDateString } from '../useFlowStore';
 
 describe('Store Slices (Modularized Architecture)', () => {
   beforeEach(() => {
@@ -399,8 +399,7 @@ describe('Store Slices (Modularized Architecture)', () => {
 
     it('deve registrar tempo focado na tarefa vinculada ao finalizar sessão', () => {
       const task = useFlowStore.getState().tasks[0];
-      const selectedDate = useFlowStore.getState().selectedDate;
-      const key = `${selectedDate}_${task.id}`;
+      const key = `${getTodayDateString()}_${task.id}`;
 
       useFlowStore.getState().setPomodoroDuration(30 * 60); // 30 minutos
       useFlowStore.getState().linkTaskToPomodoro(task.id);

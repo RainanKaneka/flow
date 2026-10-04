@@ -139,6 +139,16 @@ describe('exportImportService', () => {
   });
 
   describe('CSV Generators', () => {
+    it('exporta andamento e instante de início preservando a conclusão independente', () => {
+      const rows = parseCsv(generateCompletionsCsv({ running: {
+        id: 'running', taskId: 'task_1', date: '2026-10-03', completed: false,
+        inProgress: true, startedAt: '2026-10-03T12:00:00.000Z',
+      } }, mockTasks, mockCategories));
+      expect(rows[1][rows[0].indexOf('Concluído')]).toBe('Não');
+      expect(rows[1][rows[0].indexOf('Em Andamento')]).toBe('Sim');
+      expect(rows[1][rows[0].indexOf('Iniciado Em')]).toBe('2026-10-03T12:00:00.000Z');
+    });
+
     it('deve gerar CSV de tarefas com cabeçalhos e mapeamento correto de tipos e categorias', () => {
       const csv = generateTasksCsv(mockTasks, mockRoutineTypes, mockCategories);
 
@@ -182,6 +192,19 @@ describe('exportImportService', () => {
   });
 
   describe('parseTasksFromCsv', () => {
+    it('preserva a opção de início automático ao exportar e reimportar tarefas', () => {
+      const tasks = [{ ...mockTasks[0], autoStart: true }, { ...mockTasks[1], autoStart: false }];
+      const result = parseTasksFromCsv(generateTasksCsv(tasks, mockRoutineTypes, mockCategories), mockRoutineTypes, mockCategories);
+      expect(result.errors).toEqual([]);
+      expect(result.tasks.map((task) => task.autoStart)).toEqual([true, false]);
+      expect(result.tasks.map((task) => task.startTime)).toEqual(['09:00', '07:00']);
+    });
+
+    it('não confunde a coluna de início automático com o horário quando vem primeiro', () => {
+      const result = parseTasksFromCsv('Título,Início Automático,Início,Fim\nFoco,Sim,14:00,15:00');
+      expect(result.tasks[0]).toMatchObject({ autoStart: true, startTime: '14:00', endTime: '15:00' });
+    });
+
     it('deve retornar erro se CSV estiver vazio', () => {
       const res = parseTasksFromCsv('', mockRoutineTypes, mockCategories);
       expect(res.errors.length).toBeGreaterThan(0);
@@ -206,6 +229,7 @@ describe('exportImportService', () => {
       expect(res.tasks[0].routineTypeId).toBe('rt_work');
       expect(res.tasks[0].categoryId).toBe('cat_code');
       expect(res.tasks[0].targetMinutes).toBe(60);
+      expect(res.tasks[0].autoStart).toBe(false);
     });
 
     it('deve importar tarefas de CSV com cabeçalhos em inglês', () => {
@@ -221,6 +245,22 @@ describe('exportImportService', () => {
   });
 
   describe('JSON Export and Validation', () => {
+    it.each(['merge', 'replace'] as const)('preserva andamento no roundtrip JSON em modo %s', (mode) => {
+      const logs: Record<string, TaskLog> = { running: {
+        id: 'running', taskId: 'task_1', date: '2026-10-03', completed: false,
+        inProgress: true, startedAt: '2026-10-03T12:00:00.000Z',
+      } };
+      const state = {
+        routineTypes: mockRoutineTypes, categories: mockCategories,
+        tasks: [{ ...mockTasks[0], autoStart: true }], logs, backlog: [], notes: [],
+      };
+      const validation = validateJsonImport(JSON.stringify(generateJsonExport(state)));
+      expect(validation.isValid).toBe(true);
+      const { nextState } = applyImport(validation.sanitizedData!, mode, useFlowStore.getState());
+      expect(nextState.tasks?.find((task) => task.id === 'task_1')?.autoStart).toBe(true);
+      expect(nextState.logs?.running).toEqual(logs.running);
+    });
+
     it('deve gerar payload de exportação com estatísticas e dados completos', () => {
       const payload = generateJsonExport({
         routineTypes: mockRoutineTypes,
@@ -253,6 +293,7 @@ describe('exportImportService', () => {
       const validation = validateJsonImport(JSON.stringify(payload));
       expect(validation.isValid).toBe(true);
       expect(validation.summary?.tasksCount).toBe(2);
+      expect(validation.sanitizedData?.tasks[0].autoStart).toBeUndefined();
       expect(validation.sanitizedData?.tasks).toHaveLength(2);
     });
 

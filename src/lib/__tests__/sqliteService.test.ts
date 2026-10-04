@@ -88,6 +88,22 @@ describe('sqliteService', () => {
   ];
 
   describe('generateSqlDump', () => {
+    it('exporta início automático e andamento, inclusive histórico interrompido sem minutos', () => {
+      const startedAt = '2026-10-03T12:00:00.000Z';
+      const base = { taskId: 'task-1', date: '2026-10-03', completed: false, timeSpentMinutes: 0 };
+      const dump = generateSqlDump(mockRoutineTypes, mockCategories, [{ ...mockTasks[0], autoStart: true }], {
+        running: { ...base, id: 'running', inProgress: true, startedAt },
+        stopped: { ...base, id: 'stopped', inProgress: false, startedAt },
+        pending: { ...base, id: 'pending' },
+      }, []);
+      expect(dump).toContain('auto_start INTEGER DEFAULT 0');
+      expect(dump).toContain('in_progress INTEGER DEFAULT 0');
+      expect(dump).toContain('started_at TEXT');
+      expect(dump).toContain("VALUES ('running', 'task-1', '2026-10-03', 0, '', 0, 1, '2026-10-03T12:00:00.000Z')");
+      expect(dump).toContain("VALUES ('stopped', 'task-1', '2026-10-03', 0, '', 0, 0, '2026-10-03T12:00:00.000Z')");
+      expect(dump).not.toContain("VALUES ('pending'");
+    });
+
     it('deve incluir o schema DDL completo', () => {
       const dump = generateSqlDump([], [], [], {}, [], []);
       expect(dump).toContain(SQLITE_SCHEMA);

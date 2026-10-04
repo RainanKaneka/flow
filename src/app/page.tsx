@@ -1,5 +1,6 @@
 'use client';
 
+import { PRODUCT_FEATURES } from '../config/productFeatures';
 import React, { useMemo, useEffect, useState } from 'react';
 import { useFlowStore, initializeDbStore } from '../store/useFlowStore';
 import { Header } from '../components/Header';
@@ -34,6 +35,8 @@ import { useDailyBackupScheduler } from '../hooks/useDailyBackupScheduler';
 import { useUpdateChecker } from '../hooks/useUpdateChecker';
 import { useGoogleTokenRefresh } from '../hooks/useGoogleTokenRefresh';
 import { useCloudSync } from '../hooks/useCloudSync';
+import { useFirebaseSession } from '../hooks/useFirebaseSession';
+import { useTaskProgressScheduler } from '../hooks/useTaskProgressScheduler';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { Sparkles, Compass, RefreshCw, Database, Clock, List, CheckCircle2 } from 'lucide-react';
 
@@ -43,6 +46,7 @@ export default function Home() {
   useReminderScheduler();
   useUpdateChecker();
   useGoogleTokenRefresh();
+  const isFirebaseSessionReady = useFirebaseSession();
 
   const activeView = useFlowStore((s) => s.activeView);
   const tasks = useFlowStore((s) => s.tasks);
@@ -56,8 +60,9 @@ export default function Home() {
   const routineViewMode = useFlowStore((s) => s.routineViewMode || 'stream');
   const setRoutineViewMode = useFlowStore((s) => s.setRoutineViewMode);
   const [isDbReady, setIsDbReady] = useState(false);
-  
-  useCloudSync(isDbReady);
+
+  useCloudSync(isDbReady && isFirebaseSessionReady);
+  useTaskProgressScheduler(isDbReady);
   const [oauthBrowserToken, setOauthBrowserToken] = useState<string | null>(null);
   const openBackupModal = useFlowStore((s) => s.openBackupModal);
   const openOnboardingModal = useFlowStore((s) => s.openOnboardingModal);
@@ -84,7 +89,11 @@ export default function Home() {
 
   // Listener para capturar token se aberto como popup de OAuth 2.0 ou aba do navegador externo
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.location.hash.includes('access_token=')) {
+    if (
+      PRODUCT_FEATURES.aiAssistant &&
+      typeof window !== 'undefined' &&
+      window.location.hash.includes('access_token=')
+    ) {
       try {
         const params = new URLSearchParams(window.location.hash.substring(1));
         const token = params.get('access_token');
@@ -135,7 +144,8 @@ export default function Home() {
         const matchesRoutine =
           routineTypes.length <= 1 ||
           t.routineTypeId === effectiveRoutineTypeId ||
-          (!routineTypes.some((rt) => rt.id === t.routineTypeId) && effectiveRoutineTypeId === routineTypes[0]?.id);
+          (!routineTypes.some((rt) => rt.id === t.routineTypeId) &&
+            effectiveRoutineTypeId === routineTypes[0]?.id);
         const matchesCategory = activeCategoryId === 'all' || t.categoryId === activeCategoryId;
         if (!matchesRoutine || !matchesCategory) return false;
 
@@ -152,11 +162,25 @@ export default function Home() {
         const [bh, bm] = b.startTime.split(':').map(Number);
         return ah * 60 + am - (bh * 60 + bm);
       });
-  }, [tasks, routineTypes, effectiveRoutineTypeId, currentDayOfWeek, activeCategoryId, selectedDate]);
+  }, [
+    tasks,
+    routineTypes,
+    effectiveRoutineTypeId,
+    currentDayOfWeek,
+    activeCategoryId,
+    selectedDate,
+  ]);
 
   if (!isDbReady) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div
+        style={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
         <p style={{ color: 'var(--text-secondary)' }}>Sincronizando banco de dados...</p>
       </div>
     );
@@ -201,7 +225,7 @@ export default function Home() {
           </ErrorBoundary>
         )}
 
-        {activeView === 'ai' && (
+        {PRODUCT_FEATURES.aiAssistant && activeView === 'ai' && (
           <ErrorBoundary viewName="Assistente Inteligente">
             <AiAssistantView />
           </ErrorBoundary>
@@ -441,7 +465,7 @@ export default function Home() {
       <NotificationSettingsModal />
       <BackupModal />
       <UpdateModal />
-      <GoogleAuthModal />
+      {PRODUCT_FEATURES.aiAssistant && <GoogleAuthModal />}
       <InAppNotificationToast />
       <Snackbar />
       <OnboardingWizard />
@@ -450,7 +474,7 @@ export default function Home() {
       <UserProfileModal />
 
       {/* Overlay no Navegador Externo após autorização do Google OAuth */}
-      {oauthBrowserToken && (
+      {PRODUCT_FEATURES.aiAssistant && oauthBrowserToken && (
         <div
           style={{
             position: 'fixed',
@@ -504,8 +528,16 @@ export default function Home() {
               Login do Google Autorizado!
             </h3>
 
-            <p style={{ fontSize: '0.86rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>
-              O token de acesso foi <strong>copiado automaticamente</strong> para sua área de transferência. Volte ao aplicativo Flow e clique no botão <strong>Conectar</strong>.
+            <p
+              style={{
+                fontSize: '0.86rem',
+                color: 'var(--text-muted)',
+                margin: 0,
+                lineHeight: 1.5,
+              }}
+            >
+              O token de acesso foi <strong>copiado automaticamente</strong> para sua área de
+              transferência. Volte ao aplicativo Flow e clique no botão <strong>Conectar</strong>.
             </p>
 
             <div style={{ display: 'flex', gap: '10px', marginTop: '6px', width: '100%' }}>

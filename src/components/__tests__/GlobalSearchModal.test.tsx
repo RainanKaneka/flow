@@ -220,4 +220,12 @@ describe('GlobalSearchModal Component', () => {
 
     expect((input as HTMLInputElement).value).toBe('');
   });
+  it('não oferece navegação nem configuração de IA na busca', () => {
+    render(<GlobalSearchModal />);
+    const input = screen.getByTestId('global-search-input');
+    fireEvent.change(input, { target: { value: 'Gemini' } });
+    expect(screen.getByText('Nenhum resultado encontrado')).toBeInTheDocument();
+    expect(screen.queryByText('Assistente Inteligente (Gemini IA)')).not.toBeInTheDocument();
+    expect(screen.queryByText('Conexão Google & Gemini IA')).not.toBeInTheDocument();
+  });
 });

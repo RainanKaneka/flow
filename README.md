@@ -32,6 +32,21 @@ A minimalist personal productivity desktop application engineered to conquer dai
 
 ## Key Features
 
+The current version has no plans, subscription offers, quotas or AI interface. The previous implementation is preserved but disabled; see [recursos-guardados.md](docs/recursos-guardados.md) for the feature switches and future restoration notes.
+
+### Firebase accounts
+
+Google sign-in opens the system browser on desktop. Firebase restores the session
+and creates or loads the account profile with its name, e-mail and photo.
+See [firebase-auth.md](docs/firebase-auth.md) for deployment and verification.
+
+### Task Progress
+
+- Start a task manually and follow its **Em andamento** status until its scheduled end time.
+- Enable automatic start individually when creating or editing a task; scheduling runs while Flow is open.
+- Starting a linked focus Pomodoro also starts the task. Progress is stored per date and shown in the routine, task details, timeline, calendar and Pomodoro.
+- Reaching the end time returns the task to pending; completion remains a manual confirmation.
+
 ### ⏱️ Pomodoro Timer & Deep Focus (RF-7 & RF-13)
 
 - **Zero-Dependency Audio Synthesis**: Pleasant Tibetan singing bowl chime with multi-harmonic frequencies (528 Hz / 1056 Hz with 2.8s natural decay) upon session completion.

@@ -44,6 +44,28 @@ export async function initDb(): Promise<void> {
     // Coluna já existe
   }
 
+  // Atualizações aditivas para instalações existentes; bancos novos já recebem
+  // essas colunas pelo schema acima. Consultar o schema mantém a migração idempotente.
+  const statusMigrations = [
+    { table: 'tasks', columns: [{ name: 'auto_start', definition: 'INTEGER DEFAULT 0' }] },
+    {
+      table: 'task_completions',
+      columns: [
+        { name: 'in_progress', definition: 'INTEGER DEFAULT 0' },
+        { name: 'started_at', definition: 'TEXT' },
+      ],
+    },
+  ];
+  for (const migration of statusMigrations) {
+    const columns = await db.select<{ name: string }[]>(`PRAGMA table_info(${migration.table})`);
+    const existingNames = new Set(columns.map((column) => column.name));
+    for (const column of migration.columns) {
+      if (!existingNames.has(column.name)) {
+        await db.execute(`ALTER TABLE ${migration.table} ADD COLUMN ${column.name} ${column.definition};`);
+      }
+    }
+  }
+
   // Auto-recuperação preventiva: remove registros órfãos que possam ter sobrado no banco
   try {
     await db.execute('DELETE FROM task_completions WHERE task_id NOT IN (SELECT id FROM tasks);');
@@ -109,6 +131,7 @@ export async function loadStateFromDb(): Promise<Partial<FlowState>> {
       attachments: JSON.parse(t.attachments || '[]'),
       checklist: JSON.parse(t.checklist || '[]'),
       specificDate: t.specific_date || undefined,
+      autoStart: Boolean(t.auto_start),
     };
   }).map((t) => {
     // Garante que a tarefa de boas-vindas não se repita em todos os dias (0.4.5)
@@ -135,6 +158,8 @@ export async function loadStateFromDb(): Promise<Partial<FlowState>> {
         taskId: l.task_id,
         date: l.date,
         completed: Boolean(l.completed),
+        inProgress: Boolean(l.in_progress),
+        startedAt: l.started_at || undefined,
         completedAt: l.completed_at,
         timeSpentMinutes: l.time_spent_minutes || 0,
       };
@@ -247,8 +272,8 @@ export async function syncStateToDb(state: Partial<FlowState>): Promise<void> {
             : t.categoryId;
 
         await db.execute(
-          `INSERT OR REPLACE INTO tasks (id, title, description, start_time, end_time, routine_type_id, category_id, is_golden_rule, days_of_week, target_minutes, tags, notes, is_custom, rich_content, attachments, checklist, specific_date) 
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)`,
+          `INSERT OR REPLACE INTO tasks (id, title, description, start_time, end_time, routine_type_id, category_id, is_golden_rule, days_of_week, target_minutes, tags, notes, is_custom, rich_content, attachments, checklist, specific_date, auto_start)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)`,
           [
             t.id,
             t.title,
@@ -267,6 +292,7 @@ export async function syncStateToDb(state: Partial<FlowState>): Promise<void> {
             JSON.stringify(t.attachments || []),
             JSON.stringify(t.checklist || []),
             t.specificDate || null,
+            t.autoStart ? 1 : 0,
           ]
         );
       }
@@ -330,11 +356,11 @@ export async function syncStateToDb(state: Partial<FlowState>): Promise<void> {
         if (state.tasks && !validTaskIds.has(log.taskId)) {
           continue;
         }
-        if (!log.completed && (!log.timeSpentMinutes || log.timeSpentMinutes <= 0)) {
+        if (!log.completed && !log.inProgress && !log.startedAt && (!log.timeSpentMinutes || log.timeSpentMinutes <= 0)) {
           continue;
         }
         await db.execute(
-          `INSERT OR REPLACE INTO task_completions (id, task_id, date, completed, completed_at, time_spent_minutes) VALUES ($1, $2, $3, $4, $5, $6)`,
+          `INSERT OR REPLACE INTO task_completions (id, task_id, date, completed, completed_at, time_spent_minutes, in_progress, started_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
           [
             log.id,
             log.taskId,
@@ -342,6 +368,8 @@ export async function syncStateToDb(state: Partial<FlowState>): Promise<void> {
             log.completed ? 1 : 0,
             log.completedAt || null,
             log.timeSpentMinutes || 0,
+            log.inProgress ? 1 : 0,
+            log.startedAt || null,
           ]
         );
       }
@@ -368,7 +396,7 @@ export async function syncStateToDb(state: Partial<FlowState>): Promise<void> {
     // Remove logs desmarcados ou removidos da store
     if (state.logs) {
       const activeLogs = Object.values(state.logs).filter(
-        (l) => (!state.tasks || validTaskIds.has(l.taskId)) && (l.completed || (l.timeSpentMinutes && l.timeSpentMinutes > 0))
+        (l) => (!state.tasks || validTaskIds.has(l.taskId)) && (l.completed || l.inProgress || l.startedAt || (l.timeSpentMinutes && l.timeSpentMinutes > 0))
       );
       if (activeLogs.length > 0) {
         const ids = activeLogs.map((l) => l.id);

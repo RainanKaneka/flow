@@ -1,3 +1,4 @@
+import { PRODUCT_FEATURES } from '../../config/productFeatures';
 import { StateCreator } from 'zustand';
 import {
   FlowStore,
@@ -182,7 +183,7 @@ Aqui estão algumas coisas que podemos fazer:
   },
 
   openGoogleAuthModal: () => {
-    set({ isGoogleAuthModalOpen: true });
+    if (PRODUCT_FEATURES.aiAssistant) set({ isGoogleAuthModalOpen: true });
   },
 
   closeGoogleAuthModal: () => {

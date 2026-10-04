@@ -1,5 +1,6 @@
 // Serviço de Configuração e Inicialização do Firebase (Fase 4, Parte 1 & Fase 4.3)
-import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
+import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
+import bundledFirebaseConfig from '../config/firebaseProject.json';
 import { getAuth, connectAuthEmulator, Auth } from 'firebase/auth';
 import { getFirestore, connectFirestoreEmulator, Firestore } from 'firebase/firestore';
 
@@ -55,7 +56,8 @@ export const getActiveFirebaseConfig = (): FirebaseCustomConfig | null => {
       apiKey: envApiKey,
       authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || `${envProjectId}.firebaseapp.com`,
       projectId: envProjectId,
-      storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || `${envProjectId}.appspot.com`,
+      storageBucket:
+        process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || `${envProjectId}.appspot.com`,
       messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || '',
       appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || '',
     };
@@ -74,6 +76,17 @@ export const getActiveFirebaseConfig = (): FirebaseCustomConfig | null => {
     };
   }
 
+  // A configuração pública do SDK acompanha a versão distribuída do Flow.
+  const bundled = bundledFirebaseConfig as Partial<FirebaseCustomConfig>;
+  if (bundled.apiKey && bundled.projectId) {
+    return {
+      ...bundled,
+      apiKey: bundled.apiKey,
+      projectId: bundled.projectId,
+      authDomain: bundled.authDomain || `${bundled.projectId}.firebaseapp.com`,
+    };
+  }
+
   return null;
 };
 
@@ -87,6 +100,7 @@ export const saveCustomFirebaseConfig = (config: FirebaseCustomConfig | null): v
   } else {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
   }
+  window.dispatchEvent(new Event('flow:firebase-config-changed'));
 };
 
 /**
@@ -121,11 +135,18 @@ export const getFirebaseAppInstance = (): FirebaseApp | null => {
   if (!config) return null;
 
   try {
-    if (getApps().length > 0) {
-      cachedApp = getApp();
-    } else {
-      cachedApp = initializeApp(config);
+    const apps = getApps();
+    const matchingApp = apps.find(
+      (app) => app.options?.projectId === config.projectId && app.options?.apiKey === config.apiKey
+    );
+    const app = matchingApp || initializeApp(config, `flow-${config.projectId}-${apps.length}`);
+    if (app !== cachedApp) {
+      cachedAuth = null;
+      cachedDb = null;
+      authEmulatorConnected = false;
+      firestoreEmulatorConnected = false;
     }
+    cachedApp = app;
     return cachedApp;
   } catch (error) {
     console.error('Falha ao inicializar FirebaseApp:', error);

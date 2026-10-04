@@ -1,10 +1,14 @@
 'use client';
 
+import { PRODUCT_FEATURES } from '../config/productFeatures';
 import React, { useState, useEffect } from 'react';
 import { useFlowStore } from '../store/useFlowStore';
 import { TaskAttachment, TaskChecklistItem } from '../types/routine';
 import { sounds } from '../utils/audio';
 import { decomposeTaskWithGemini } from '../services/geminiService';
+import { TaskProgressBadge, TaskStartButton } from './TaskProgressControl';
+import { useTaskProgressClock } from '../hooks/useTaskProgressClock';
+import { getTaskProgressStatus } from '../utils/taskProgress';
 import {
   X,
   Play,
@@ -36,6 +40,7 @@ export const TaskDetailModal: React.FC = () => {
   const toggleChecklistItem = useFlowStore((s) => s.toggleChecklistItem);
   const startPomodoro = useFlowStore((s) => s.startPomodoro);
   const setActiveView = useFlowStore((s) => s.setActiveView);
+  const now = useTaskProgressClock();
 
   const task = tasks.find((t) => t.id === selectedTaskId);
 
@@ -69,6 +74,7 @@ export const TaskDetailModal: React.FC = () => {
   const key = `${selectedDate}_${task.id}`;
   const log = logs[key];
   const timeSpentMinutes = log?.timeSpentMinutes || 0;
+  const progressStatus = getTaskProgressStatus(task, log, selectedDate, now);
 
   const checklist = task.checklist || [];
   const completedSubtasks = checklist.filter((item) => item.completed).length;
@@ -112,7 +118,7 @@ export const TaskDetailModal: React.FC = () => {
 
   // Sugerir Subtarefas com Gemini IA (RF-17)
   const handleDecomposeWithAi = async () => {
-    if (!task || isDecomposing) return;
+    if (!PRODUCT_FEATURES.aiAssistant || !task || isDecomposing) return;
     setIsDecomposing(true);
     sounds.playTick();
 
@@ -209,6 +215,7 @@ export const TaskDetailModal: React.FC = () => {
 
                 {/* Routine Type badge */}
                 <span className={styles.routineBadge}>{routineType?.name}</span>
+                <TaskProgressBadge status={progressStatus} />
 
                 {/* Target Time */}
                 <span className={styles.timeBadge}>
@@ -231,6 +238,17 @@ export const TaskDetailModal: React.FC = () => {
             >
               <X size={16} />
             </button>
+          </div>
+
+          <div className={styles.taskProgressRow}>
+            <p className={styles.taskProgressDescription}>
+              {progressStatus === 'completed'
+                ? 'Atividade concluída nesta data.'
+                : progressStatus === 'in_progress'
+                  ? `Em andamento até ${task.endTime}. Marque como concluída quando terminar.`
+                  : 'Inicie a atividade para acompanhar seu andamento até o horário de término.'}
+            </p>
+            <TaskStartButton task={task} date={selectedDate} log={log} now={now} />
           </div>
 
           {/* Banner de Ação Rápida: Iniciar Pomodoro com esta tarefa vinculada */}
@@ -265,15 +283,17 @@ export const TaskDetailModal: React.FC = () => {
                 )}
               </div>
 
-              <button
-                type="button"
-                onClick={handleDecomposeWithAi}
-                disabled={isDecomposing}
-                className={styles.aiDecomposeBtn}
-              >
-                <Sparkles size={13} className={isDecomposing ? 'animate-spin' : ''} />
-                <span>{isDecomposing ? 'Gerando com IA...' : 'Sugerir Subtarefas com IA'}</span>
-              </button>
+              {PRODUCT_FEATURES.aiAssistant && (
+                <button
+                  type="button"
+                  onClick={handleDecomposeWithAi}
+                  disabled={isDecomposing}
+                  className={styles.aiDecomposeBtn}
+                >
+                  <Sparkles size={13} className={isDecomposing ? 'animate-spin' : ''} />
+                  <span>{isDecomposing ? 'Gerando com IA...' : 'Sugerir Subtarefas com IA'}</span>
+                </button>
+              )}
             </div>
 
             {/* Barra de progresso do checklist */}

@@ -44,7 +44,7 @@ describe('useGoogleTokenRefresh Hook', () => {
   });
 
   it('não deve fazer nada quando não houver usuário conectado', async () => {
-    renderHook(() => useGoogleTokenRefresh(5000));
+    renderHook(() => useGoogleTokenRefresh(5000, true));
     expect(googleAuthService.refreshGoogleAccessToken).not.toHaveBeenCalled();
 
     await act(async () => {
@@ -66,7 +66,7 @@ describe('useGoogleTokenRefresh Hook', () => {
       },
     });
 
-    renderHook(() => useGoogleTokenRefresh(5000));
+    renderHook(() => useGoogleTokenRefresh(5000, true));
     await act(async () => {
       await Promise.resolve();
     });
@@ -86,7 +86,7 @@ describe('useGoogleTokenRefresh Hook', () => {
       },
     });
 
-    renderHook(() => useGoogleTokenRefresh(5000));
+    renderHook(() => useGoogleTokenRefresh(5000, true));
     await act(async () => {
       await Promise.resolve();
     });
@@ -110,7 +110,7 @@ describe('useGoogleTokenRefresh Hook', () => {
     };
     useFlowStore.setState({ googleUser: mockUser });
 
-    renderHook(() => useGoogleTokenRefresh(5000));
+    renderHook(() => useGoogleTokenRefresh(5000, true));
     await act(async () => {
       await Promise.resolve();
     });
@@ -138,7 +138,7 @@ describe('useGoogleTokenRefresh Hook', () => {
       },
     });
 
-    renderHook(() => useGoogleTokenRefresh(60000));
+    renderHook(() => useGoogleTokenRefresh(60000, true));
     await act(async () => {
       await Promise.resolve();
     });
@@ -150,5 +150,25 @@ describe('useGoogleTokenRefresh Hook', () => {
       await Promise.resolve();
     });
     expect(googleAuthService.refreshGoogleAccessToken).toHaveBeenCalledTimes(2);
+  });
+  it('não renova tokens antigos com a IA desativada na versão atual', async () => {
+    useFlowStore.setState({
+      googleUser: {
+        id: 'legacy',
+        name: 'Legacy',
+        email: 'legacy@example.com',
+        accessToken: 'expired-token',
+        expiresAt: Date.now() - 1000,
+        connectedAt: '',
+      },
+    });
+    renderHook(() => useGoogleTokenRefresh());
+    await act(async () => {
+      vi.advanceTimersByTime(120000);
+      window.dispatchEvent(new Event('focus'));
+      document.dispatchEvent(new Event('visibilitychange'));
+      await Promise.resolve();
+    });
+    expect(googleAuthService.refreshGoogleAccessToken).not.toHaveBeenCalled();
   });
 });

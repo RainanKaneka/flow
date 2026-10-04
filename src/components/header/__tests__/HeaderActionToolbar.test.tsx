@@ -72,4 +72,15 @@ describe('HeaderActionToolbar Component', () => {
     fireEvent.click(profileBtn);
     expect(onOpenProfileModal).toHaveBeenCalledTimes(1);
   });
+  it('não exibe a conexão Gemini mesmo com credenciais antigas', () => {
+    render(
+      <HeaderActionToolbar
+        {...defaultProps}
+        geminiConfig={{ ...defaultProps.geminiConfig, apiKey: 'legacy-key', isConnected: true }}
+      />
+    );
+    expect(screen.queryByTitle(/Gemini/)).not.toBeInTheDocument();
+    expect(screen.queryByText('Gemini')).not.toBeInTheDocument();
+    expect(screen.getByText('Nova Atividade')).toBeInTheDocument();
+  });
 });

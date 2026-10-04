@@ -64,9 +64,7 @@ describe('useGlobalShortcuts Hook', () => {
     renderHook(() => useGlobalShortcuts());
 
     act(() => {
-      window.dispatchEvent(
-        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })
-      );
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
     });
     expect(useFlowStore.getState().isGlobalSearchOpen).toBe(false);
   });
@@ -93,5 +91,19 @@ describe('useGlobalShortcuts Hook', () => {
       window.dispatchEvent(new KeyboardEvent('keydown', { key: '8', bubbles: true }));
     });
     expect(useFlowStore.getState().activeView).toBe('calendar');
+  });
+  it('não abre a IA pelo atalho 6 ou por ações antigas', () => {
+    useFlowStore.setState({ activeView: 'notes', isGoogleAuthModalOpen: false });
+    renderHook(() => useGlobalShortcuts());
+    act(() => {
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: '6', bubbles: true }));
+    });
+    expect(useFlowStore.getState().activeView).toBe('notes');
+    act(() => {
+      useFlowStore.getState().setActiveView('ai');
+      useFlowStore.getState().openGoogleAuthModal();
+    });
+    expect(useFlowStore.getState().activeView).toBe('routine');
+    expect(useFlowStore.getState().isGoogleAuthModalOpen).toBe(false);
   });
 });

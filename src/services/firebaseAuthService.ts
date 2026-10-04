@@ -12,13 +12,18 @@ import {
 } from 'firebase/auth';
 import { getFirebaseAuthInstance, isFirebaseConfigured } from './firebaseConfig';
 import { FirebaseUserProfile } from '../types/routine';
+import { isTauri } from '../utils/browser';
+import { signInWithGoogleOnDesktop } from './firebaseDesktopAuthService';
 
 export const mapFirebaseUser = (user: User | null): FirebaseUserProfile | null => {
   if (!user) return null;
   return {
     uid: user.uid,
     email: user.email,
-    displayName: user.displayName || user.email?.split('@')[0] || (user.isAnonymous ? 'Convidado (Offline/Sync)' : 'Usuário Flow'),
+    displayName:
+      user.displayName ||
+      user.email?.split('@')[0] ||
+      (user.isAnonymous ? 'Convidado (Offline/Sync)' : 'Usuário Flow'),
     photoURL: user.photoURL,
     isAnonymous: user.isAnonymous,
     providerId: user.providerData[0]?.providerId || (user.isAnonymous ? 'anonymous' : 'password'),
@@ -57,7 +62,11 @@ export const firebaseAuthService = {
   /**
    * Criação de Conta com E-mail, Senha e Nome Opcional
    */
-  async signUpWithEmail(email: string, password: string, displayName?: string): Promise<FirebaseUserProfile> {
+  async signUpWithEmail(
+    email: string,
+    password: string,
+    displayName?: string
+  ): Promise<FirebaseUserProfile> {
     const auth = getFirebaseAuthInstance();
     if (!auth) throw new Error('Firebase Auth não configurado.');
     const userCredential = await fbCreateUserWithEmail(auth, email.trim(), password);
@@ -86,7 +95,7 @@ export const firebaseAuthService = {
   },
 
   /**
-   * Login com Google via Firebase Popup (funciona nativamente no navegador e Tauri)
+   * Login Google no navegador ou pelo navegador externo no desktop.
    */
   async signInWithGoogle(): Promise<FirebaseUserProfile> {
     const auth = getFirebaseAuthInstance();
@@ -94,7 +103,10 @@ export const firebaseAuthService = {
     const provider = new GoogleAuthProvider();
     provider.addScope('email');
     provider.addScope('profile');
-    const result = await signInWithPopup(auth, provider);
+    provider.setCustomParameters({ prompt: 'select_account' });
+    const result = isTauri()
+      ? await signInWithGoogleOnDesktop()
+      : await signInWithPopup(auth, provider);
     const profile = mapFirebaseUser(result.user);
     if (!profile) throw new Error('Não foi possível autenticar com o Google via Firebase.');
     return profile;

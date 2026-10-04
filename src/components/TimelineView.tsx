@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useFlowStore } from '../store/useFlowStore';
 import { getTodayDateString } from '../store/slices/uiSlice';
 import { timeToMinutes } from '../utils/routineReplan';
@@ -11,6 +11,8 @@ import {
   TimelineIntervalItem,
 } from '../utils/timelineLayout';
 import { sounds } from '../utils/audio';
+import { useTaskProgressClock } from '../hooks/useTaskProgressClock';
+import { TaskProgressBadge, TaskStartButton } from './TaskProgressControl';
 import styles from './TimelineView.module.css';
 import {
   Clock,
@@ -43,15 +45,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ showViewToggle = tru
   const routineViewMode = useFlowStore((s) => s.routineViewMode || 'timeline');
   const setRoutineViewMode = useFlowStore((s) => s.setRoutineViewMode);
 
-  // Tempo atual para o marcador "AGORA"
-  const [currentNow, setCurrentNow] = useState(() => new Date());
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentNow(new Date());
-    }, 30000); // Atualiza a cada 30 segundos
-    return () => clearInterval(timer);
-  }, []);
+  const currentNow = useTaskProgressClock();
 
   const todayStr = getTodayDateString();
   const isToday = selectedDate === todayStr;
@@ -81,7 +75,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ showViewToggle = tru
     filteredTasks,
     logs,
     selectedDate,
-    nowMinutes
+    currentNow
   );
   const summary = calculateTimelineSummary(timelineItems);
 
@@ -347,7 +341,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ showViewToggle = tru
                     className={`${styles.spineNode} ${
                       item.status === 'completed'
                         ? styles.spineNodeCompleted
-                        : item.isCurrent
+                        : item.status === 'in_progress'
                           ? styles.spineNodeActive
                           : ''
                     }`}
@@ -358,7 +352,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ showViewToggle = tru
                     className={`${styles.timelineCard} ${
                       item.status === 'completed'
                         ? styles.timelineCardCompleted
-                        : item.isCurrent
+                        : item.status === 'in_progress'
                           ? styles.timelineCardActive
                           : ''
                     }`}
@@ -415,22 +409,8 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ showViewToggle = tru
                           </span>
                         )}
 
-                        {/* Status Em Andamento / Agora */}
-                        {item.isCurrent && item.status !== 'completed' && (
-                          <span
-                            style={{
-                              fontSize: '10px',
-                              fontWeight: 800,
-                              letterSpacing: '0.04em',
-                              padding: '2px 6px',
-                              borderRadius: '4px',
-                              backgroundColor: 'var(--accent-primary)',
-                              color: '#FFFFFF',
-                            }}
-                          >
-                            EM ANDAMENTO
-                          </span>
-                        )}
+                        <TaskProgressBadge status={item.status} />
+                        {item.isCurrent && <span className={styles.currentTimeLabel}>Horário atual</span>}
                       </div>
 
                       {/* Título (clicável para abrir detalhes) */}
@@ -561,6 +541,14 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ showViewToggle = tru
                       >
                         {item.status === 'completed' && <Check size={14} strokeWidth={3} />}
                       </button>
+
+                      <TaskStartButton
+                        task={task}
+                        date={selectedDate}
+                        log={logs[`${selectedDate}_${task.id}`]}
+                        now={currentNow}
+                        compact
+                      />
 
                       {/* Botão de Iniciar Pomodoro */}
                       {item.status !== 'completed' && (

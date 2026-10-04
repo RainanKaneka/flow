@@ -150,6 +150,7 @@ export function generateTasksCsv(
     'Notas',
     'Conteúdo Rico',
     'Data Específica',
+    'Início Automático',
   ];
 
   const rows = tasks.map((t) => {
@@ -173,6 +174,7 @@ export function generateTasksCsv(
       t.notes || '',
       t.richContent || '',
       t.specificDate || '',
+      t.autoStart ? 'Sim' : 'Não',
     ]);
   });
 
@@ -199,6 +201,8 @@ export function generateCompletionsCsv(
     'Concluído',
     'Horário da Conclusão',
     'Tempo Focado (min)',
+    'Em Andamento',
+    'Iniciado Em',
   ];
 
   const sortedLogs = Object.values(logs).sort((a, b) => b.date.localeCompare(a.date));
@@ -216,6 +220,8 @@ export function generateCompletionsCsv(
       l.completed ? 'Sim' : 'Não',
       l.completedAt || '',
       l.timeSpentMinutes || 0,
+      l.inProgress ? 'Sim' : 'Não',
+      l.startedAt || '',
     ]);
   });
 
@@ -288,7 +294,11 @@ export function parseTasksFromCsv(
 
   const titleIdx = findHeaderIdx('título', 'titulo', 'title', 'nome', 'atividade', 'task');
   const descIdx = findHeaderIdx('descrição', 'descricao', 'description', 'desc');
-  const startIdx = findHeaderIdx('início', 'inicio', 'start', 'começo', 'comeco', 'horário');
+  const autoStartAliases = ['início automático', 'inicio automatico', 'autostart', 'auto_start'];
+  const autoStartIdx = findHeaderIdx(...autoStartAliases);
+  const startIdx = rawHeaders.findIndex((h, index) =>
+    index !== autoStartIdx && ['início', 'inicio', 'start', 'começo', 'comeco', 'horário'].some((alias) => h.includes(alias))
+  );
   const endIdx = findHeaderIdx('fim', 'termino', 'término', 'end');
   const routineIdx = findHeaderIdx('tipo de rotina', 'rotina', 'routine');
   const catIdx = findHeaderIdx('categoria', 'category');
@@ -387,6 +397,7 @@ export function parseTasksFromCsv(
       tags,
       notes: notesIdx !== -1 ? row[notesIdx] || '' : '',
       isCustom: true,
+      autoStart: autoStartIdx !== -1 && ['sim', 'true', '1', 'yes'].includes((row[autoStartIdx] || '').trim().toLowerCase()),
     });
   }
 

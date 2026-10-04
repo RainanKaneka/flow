@@ -38,6 +38,7 @@ CREATE TABLE IF NOT EXISTS tasks (
     attachments TEXT, -- JSON array de links/arquivos
     checklist TEXT, -- JSON array de sub-tarefas
     specific_date TEXT, -- YYYY-MM-DD para tarefas pontuais
+    auto_start INTEGER DEFAULT 0,
     FOREIGN KEY(routine_type_id) REFERENCES routine_types(id) ON DELETE CASCADE,
     FOREIGN KEY(category_id) REFERENCES categories(id) ON DELETE CASCADE
 );
@@ -49,6 +50,8 @@ CREATE TABLE IF NOT EXISTS task_completions (
     completed INTEGER DEFAULT 1,
     completed_at TEXT, -- HH:mm:ss
     time_spent_minutes INTEGER DEFAULT 0,
+    in_progress INTEGER DEFAULT 0,
+    started_at TEXT,
     FOREIGN KEY(task_id) REFERENCES tasks(id) ON DELETE CASCADE
 );
 
@@ -119,15 +122,16 @@ VALUES ('${c.id}', '${nameEsc}', '${c.color}', '${c.icon || ''}');\n`;
     const attachStr = JSON.stringify(t.attachments || []);
     const checkStr = JSON.stringify(t.checklist || []);
 
-    dump += `INSERT OR REPLACE INTO tasks (id, title, description, start_time, end_time, routine_type_id, category_id, is_golden_rule, days_of_week, target_minutes, tags, notes, is_custom, rich_content, attachments, checklist, specific_date)
-VALUES ('${t.id}', '${titleEsc}', '${descEsc}', '${t.startTime}', '${t.endTime}', '${t.routineTypeId}', '${t.categoryId}', ${t.isGoldenRule ? 1 : 0}, '${daysStr}', ${t.targetMinutes}, '${tagsStr}', '${notesEsc}', ${t.isCustom ? 1 : 0}, '${richEsc}', '${attachStr}', '${checkStr}', '${t.specificDate || ''}');\n`;
+    dump += `INSERT OR REPLACE INTO tasks (id, title, description, start_time, end_time, routine_type_id, category_id, is_golden_rule, days_of_week, target_minutes, tags, notes, is_custom, rich_content, attachments, checklist, specific_date, auto_start)
+VALUES ('${t.id}', '${titleEsc}', '${descEsc}', '${t.startTime}', '${t.endTime}', '${t.routineTypeId}', '${t.categoryId}', ${t.isGoldenRule ? 1 : 0}, '${daysStr}', ${t.targetMinutes}, '${tagsStr}', '${notesEsc}', ${t.isCustom ? 1 : 0}, '${richEsc}', '${attachStr}', '${checkStr}', '${t.specificDate || ''}', ${t.autoStart ? 1 : 0});\n`;
   }
 
   // Completions
   for (const log of Object.values(logs)) {
-    if (!log.completed && (!log.timeSpentMinutes || log.timeSpentMinutes <= 0)) continue;
-    dump += `INSERT OR REPLACE INTO task_completions (id, task_id, date, completed, completed_at, time_spent_minutes)
-VALUES ('${log.id}', '${log.taskId}', '${log.date}', ${log.completed ? 1 : 0}, '${log.completedAt || ''}', ${log.timeSpentMinutes || 0});\n`;
+    if (!log.completed && !log.inProgress && !log.startedAt && (!log.timeSpentMinutes || log.timeSpentMinutes <= 0)) continue;
+    const startedAt = log.startedAt ? `'${log.startedAt.replace(/'/g, "''")}'` : 'NULL';
+    dump += `INSERT OR REPLACE INTO task_completions (id, task_id, date, completed, completed_at, time_spent_minutes, in_progress, started_at)
+VALUES ('${log.id}', '${log.taskId}', '${log.date}', ${log.completed ? 1 : 0}, '${log.completedAt || ''}', ${log.timeSpentMinutes || 0}, ${log.inProgress ? 1 : 0}, ${startedAt});\n`;
   }
 
   // Backlog

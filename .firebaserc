@@ -1,8 +1,7 @@
 {
   "projects": {
-    "default": "flow-app-staging",
-    "staging": "flow-app-staging",
-    "production": "flow-app-prod"
+    "default": "flow-rainan-prod",
+    "production": "flow-rainan-prod"
   },
   "targets": {},
   "etags": {}

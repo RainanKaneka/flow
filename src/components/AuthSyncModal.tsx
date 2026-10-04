@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useFlowStore } from '../store/useFlowStore';
 import { firebaseAuthService } from '../services/firebaseAuthService';
+import { restoreFirebaseAccount } from '../services/firebaseSessionService';
 import { cloudSyncService, CloudSyncPayload } from '../services/cloudSyncService';
 import {
   getActiveFirebaseConfig,
@@ -127,7 +128,7 @@ export const AuthSyncModal: React.FC = () => {
 
     try {
       const user = await firebaseAuthService.signInWithEmail(email, password);
-      setFirebaseUser(user);
+      await restoreFirebaseAccount(user);
       setSuccessMessage(`Bem-vindo de volta, ${user.displayName || user.email}!`);
       // Trigger auto-sync initial
       cloudSyncService.syncBidirectional(user.uid, getPayload()).catch(console.error);
@@ -147,8 +148,8 @@ export const AuthSyncModal: React.FC = () => {
 
     try {
       const user = await firebaseAuthService.signUpWithEmail(email, password, displayName);
-      setFirebaseUser(user);
-      setSuccessMessage('Conta criada com sucesso! Seus dados foram sincronizados.');
+      await restoreFirebaseAccount(user);
+      setSuccessMessage('Conta e perfil criados com sucesso!');
       cloudSyncService.syncBidirectional(user.uid, getPayload()).catch(console.error);
     } catch (err: any) {
       setErrorMessage(err.message || 'Falha ao criar conta.');
@@ -164,7 +165,7 @@ export const AuthSyncModal: React.FC = () => {
 
     try {
       const user = await firebaseAuthService.signInWithGoogle();
-      setFirebaseUser(user);
+      await restoreFirebaseAccount(user);
       setSuccessMessage(`Conectado como ${user.displayName}!`);
       cloudSyncService.syncBidirectional(user.uid, getPayload()).catch(console.error);
     } catch (err: any) {
@@ -181,7 +182,7 @@ export const AuthSyncModal: React.FC = () => {
 
     try {
       const user = await firebaseAuthService.signInAnonymously();
-      setFirebaseUser(user);
+      await restoreFirebaseAccount(user);
       setSuccessMessage('Conectado como Convidado com sincronização em nuvem ativa!');
       cloudSyncService.syncBidirectional(user.uid, getPayload()).catch(console.error);
     } catch (err: any) {
@@ -273,10 +274,17 @@ export const AuthSyncModal: React.FC = () => {
                     <img
                       src={firebaseUser.photoURL}
                       alt={firebaseUser.displayName || 'Avatar'}
-                      style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        borderRadius: '50%',
+                        objectFit: 'cover',
+                      }}
                     />
                   ) : (
-                    <span>{(firebaseUser.displayName || firebaseUser.email || 'U')[0].toUpperCase()}</span>
+                    <span>
+                      {(firebaseUser.displayName || firebaseUser.email || 'U')[0].toUpperCase()}
+                    </span>
                   )}
                 </div>
                 <div className={styles.profileInfo}>
@@ -284,7 +292,10 @@ export const AuthSyncModal: React.FC = () => {
                     {firebaseUser.displayName || 'Usuário Conectado'}
                   </span>
                   <span className={styles.profileEmail}>
-                    {firebaseUser.email || (firebaseUser.isAnonymous ? 'Sessão Convidado' : 'ID: ' + firebaseUser.uid.substring(0, 10) + '...')}
+                    {firebaseUser.email ||
+                      (firebaseUser.isAnonymous
+                        ? 'Sessão Convidado'
+                        : 'ID: ' + firebaseUser.uid.substring(0, 10) + '...')}
                   </span>
                 </div>
                 <button
@@ -313,9 +324,18 @@ export const AuthSyncModal: React.FC = () => {
                   </span>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginTop: '6px' }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '12px',
+                    marginTop: '6px',
+                  }}
+                >
                   <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
-                    {tasks.length} tarefas, {notes.length} notas e {backlog.length} pendências protegidas.
+                    {tasks.length} tarefas, {notes.length} notas e {backlog.length} pendências
+                    protegidas.
                   </span>
                   <button
                     onClick={handleManualSync}
@@ -323,8 +343,13 @@ export const AuthSyncModal: React.FC = () => {
                     style={{ padding: '6px 14px', fontSize: '12px', gap: '6px' }}
                     disabled={isLoading}
                   >
-                    <RefreshCw size={13} className={cloudSyncStatus.isSyncing ? 'animate-spin' : ''} />
-                    <span>{cloudSyncStatus.isSyncing ? 'Sincronizando...' : 'Sincronizar Agora'}</span>
+                    <RefreshCw
+                      size={13}
+                      className={cloudSyncStatus.isSyncing ? 'animate-spin' : ''}
+                    />
+                    <span>
+                      {cloudSyncStatus.isSyncing ? 'Sincronizando...' : 'Sincronizar Agora'}
+                    </span>
                   </button>
                 </div>
               </div>
@@ -368,9 +393,13 @@ export const AuthSyncModal: React.FC = () => {
                     <span>Continuar com Google</span>
                   </button>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '4px 0' }}>
+                  <div
+                    style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '4px 0' }}
+                  >
                     <div style={{ flex: 1, height: '1px', background: 'var(--border-subtle)' }} />
-                    <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>ou com e-mail</span>
+                    <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                      ou com e-mail
+                    </span>
                     <div style={{ flex: 1, height: '1px', background: 'var(--border-subtle)' }} />
                   </div>
 
@@ -471,7 +500,8 @@ export const AuthSyncModal: React.FC = () => {
               {authTab === 'settings' && (
                 <div className={styles.formSection}>
                   <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-                    Insira as credenciais do seu projeto Firebase para sincronizar dados em seu próprio backend:
+                    Insira as credenciais do seu projeto Firebase para sincronizar dados em seu
+                    próprio backend:
                   </span>
 
                   <div className={styles.inputGroup}>

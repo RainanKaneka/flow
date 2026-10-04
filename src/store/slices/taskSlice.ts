@@ -7,6 +7,7 @@ import {
 } from '../../data/initialRoutine';
 import { reorderAndRescheduleTasks, shiftTaskTime } from '../../utils/taskReorder';
 import { timeToMinutes } from '../../utils/routineReplan';
+import { canStartTask, getCurrentTaskDate, getTaskTimeWindow } from '../../utils/taskProgress';
 
 export interface TaskSliceState {
   tasks: Task[];
@@ -14,6 +15,8 @@ export interface TaskSliceState {
 }
 
 export interface TaskSliceActions {
+  startTask: (taskId: string, date?: string) => void;
+  refreshTaskProgress: (now?: Date) => void;
   toggleTaskCompletion: (taskId: string, targetDate?: string) => void;
   saveTask: (task: Omit<Task, 'id'> & { id?: string }) => void;
   deleteTask: (taskId: string) => void;
@@ -41,6 +44,71 @@ export const createTaskSlice: StateCreator<FlowStore, [], [], TaskSlice> = (set,
   tasks: DEFAULT_TASKS,
   logs: {},
 
+  startTask: (taskId, targetDate) => {
+    const now = new Date();
+    const state = get();
+    const task = state.tasks.find((item) => item.id === taskId);
+    if (!task) return;
+    const date = targetDate ?? getCurrentTaskDate(task, now);
+    if (!date || !canStartTask(task, date, now)) return;
+    const key = `${date}_${taskId}`;
+    const log = state.logs[key];
+    if (log?.completed || log?.inProgress) return;
+    set({
+      logs: {
+        ...state.logs,
+        [key]: {
+          ...log,
+          id: key,
+          taskId,
+          date,
+          completed: false,
+          inProgress: true,
+          startedAt: log?.startedAt || now.toISOString(),
+        },
+      },
+    });
+  },
+
+  refreshTaskProgress: (now = new Date()) => {
+    const state = get();
+    const tasksById = new Map(state.tasks.map((task) => [task.id, task]));
+    const logs = { ...state.logs };
+    let changed = false;
+
+    // Encerrar andamento mantém a conclusão dependente da confirmação do usuário.
+    for (const [key, log] of Object.entries(logs)) {
+      if (!log.inProgress) continue;
+      const task = tasksById.get(log.taskId);
+      if (!task || log.completed || !canStartTask(task, log.date, now)) {
+        logs[key] = { ...log, inProgress: false };
+        changed = true;
+      }
+    }
+
+    for (const task of state.tasks) {
+      if (!task.autoStart) continue;
+      const date = getCurrentTaskDate(task, now);
+      if (!date) continue;
+      const window = getTaskTimeWindow(task, date);
+      if (!window || now < window.start || now >= window.end) continue;
+      const key = `${date}_${task.id}`;
+      const log = logs[key];
+      if (log?.completed || log?.inProgress || log?.startedAt) continue;
+      logs[key] = {
+        ...log,
+        id: key,
+        taskId: task.id,
+        date,
+        completed: false,
+        inProgress: true,
+        startedAt: now.toISOString(),
+      };
+      changed = true;
+    }
+    if (changed) set({ logs });
+  },
+
   toggleTaskCompletion: (taskId: string, targetDate?: string) => {
     const date = targetDate || get().selectedDate;
     const key = `${date}_${taskId}`;
@@ -57,10 +125,12 @@ export const createTaskSlice: StateCreator<FlowStore, [], [], TaskSlice> = (set,
       logs: {
         ...state.logs,
         [key]: {
+          ...currentLog,
           id: key,
           taskId,
           date,
           completed: isCompleted,
+          inProgress: false,
           completedAt: isCompleted ? timeString : undefined,
           timeSpentMinutes: currentLog?.timeSpentMinutes || 0,
         },

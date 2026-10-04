@@ -12,6 +12,9 @@
 
 # Production
 /build
+/firebase-auth-bridge/dist/
+/.firebase/
+firebase-debug.log*
 
 # Misc
 .DS_Store

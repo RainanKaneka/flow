@@ -1,23 +1,24 @@
 'use client';
 
+import { PRODUCT_FEATURES } from '../config/productFeatures';
 import { useEffect, useRef } from 'react';
 import { useFlowStore } from '../store/useFlowStore';
-import {
-  isTokenExpired,
-  refreshGoogleAccessToken,
-} from '../services/googleAuthService';
+import { isTokenExpired, refreshGoogleAccessToken } from '../services/googleAuthService';
 
 /**
  * Hook para monitoramento contínuo e renovação automática do Token do Google OAuth
  * Garante que o usuário nunca seja desconectado silenciosamente por expiração de token.
  */
-export const useGoogleTokenRefresh = (intervalMs = 60000) => {
+export const useGoogleTokenRefresh = (
+  intervalMs = 60000,
+  enabled: boolean = PRODUCT_FEATURES.aiAssistant
+) => {
   const googleUser = useFlowStore((s) => s.googleUser);
   const geminiConfig = useFlowStore((s) => s.geminiConfig);
   const isRefreshingRef = useRef(false);
 
   useEffect(() => {
-    if (!googleUser || !googleUser.accessToken) return;
+    if (!enabled || !googleUser || !googleUser.accessToken) return;
 
     const checkAndRefreshToken = async () => {
       if (isRefreshingRef.current) return;
@@ -59,5 +60,5 @@ export const useGoogleTokenRefresh = (intervalMs = 60000) => {
       window.removeEventListener('focus', handleFocusOrVisible);
       document.removeEventListener('visibilitychange', handleFocusOrVisible);
     };
-  }, [googleUser, geminiConfig.clientId, intervalMs]);
+  }, [enabled, googleUser, geminiConfig.clientId, intervalMs]);
 };

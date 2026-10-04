@@ -83,6 +83,7 @@ export interface Task {
   isGoldenRule?: boolean; // Hábito âncora / Regra prioritária
   daysOfWeek: number[]; // [1,2,3,4,5] = Segunda a Sexta
   specificDate?: string; // YYYY-MM-DD (para tarefas específicas de um determinado dia)
+  autoStart?: boolean; // Iniciar esta atividade automaticamente no horário marcado
   targetMinutes: number;
   tags: string[];
   notes?: string;
@@ -101,6 +102,8 @@ export interface TaskLog {
   completed: boolean;
   completedAt?: string; // HH:mm:ss
   timeSpentMinutes?: number;
+  inProgress?: boolean;
+  startedAt?: string; // ISO: início da execução desta ocorrência
 }
 
 export interface BacklogItem {
@@ -220,6 +223,7 @@ export interface PomodoroState {
   totalDurationSeconds: number;
   mode: PomodoroMode;
   linkedTaskId: string | null;
+  linkedTaskDate?: string | null; // Data da ocorrência vinculada à sessão
   completedSessions: number;
   autoAdvance?: boolean;
   preferredFocusDurationSeconds?: number;
@@ -429,6 +433,8 @@ export interface FlowActions {
   closeManageCategoriesModal: () => void;
 
   // Tarefas
+  startTask: (taskId: string, date?: string) => void;
+  refreshTaskProgress: (now?: Date) => void;
   toggleTaskCompletion: (taskId: string, date?: string) => void;
   saveTask: (task: Omit<Task, 'id'> & { id?: string }) => void;
   deleteTask: (taskId: string) => void;

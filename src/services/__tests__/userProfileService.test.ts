@@ -186,6 +186,51 @@ describe('userProfileService', () => {
   });
 
   describe('Cloud Sync (saveUserProfileToCloud & fetchUserProfileFromCloud)', () => {
+    it('cria o perfil com a foto e a identidade fornecidas pelo Google', async () => {
+      const { doc, getDoc, setDoc } = await import('firebase/firestore');
+      const { getFirebaseFirestoreInstance } = await import('../firebaseConfig');
+      vi.mocked(getFirebaseFirestoreInstance).mockReturnValue({} as never);
+      vi.mocked(doc).mockReturnValue('googleProfile' as never);
+      vi.mocked(getDoc).mockResolvedValueOnce({ exists: () => false } as never);
+      const profile = await userProfileService.ensureUserProfileInitialized('google-uid', {
+        name: 'Conta Google',
+        email: 'google@example.com',
+        avatarUrl: 'https://example.com/photo.png',
+      });
+      expect(profile?.avatarUrl).toBe('https://example.com/photo.png');
+      expect(setDoc).toHaveBeenCalledWith(
+        'googleProfile',
+        expect.objectContaining({
+          displayName: 'Conta Google',
+          email: 'google@example.com',
+          profile: expect.objectContaining({
+            name: 'Conta Google',
+            avatarUrl: 'https://example.com/photo.png',
+          }),
+        }),
+        { merge: true }
+      );
+    });
+
+    it('remove campos opcionais indefinidos ao salvar um perfil recuperado da nuvem', async () => {
+      const { doc, setDoc } = await import('firebase/firestore');
+      const { getFirebaseFirestoreInstance } = await import('../firebaseConfig');
+      vi.mocked(getFirebaseFirestoreInstance).mockReturnValue({} as never);
+      vi.mocked(doc).mockReturnValue('existingProfile' as never);
+      vi.mocked(setDoc).mockResolvedValueOnce(undefined);
+      const saved = await userProfileService.saveUserProfileToCloud('uid', {
+        name: 'Meu perfil',
+        objective: 'Estudar',
+        avatarUrl: undefined,
+        bio: undefined,
+      });
+      expect(saved).toBe(true);
+      const data = vi.mocked(setDoc).mock.calls[0][1];
+      expect(data.profile).not.toHaveProperty('bio');
+      expect(data.profile).not.toHaveProperty('avatarUrl');
+      expect(data.profile.name).toBe('Meu perfil');
+    });
+
     it('deve retornar false caso o Firestore não esteja disponível', async () => {
       const res = await userProfileService.saveUserProfileToCloud('', {
         name: 'Rainan',

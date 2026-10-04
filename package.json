@@ -1,10 +1,11 @@
 {
   "name": "flow",
-  "version": "0.4.5",
+  "version": "5.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:firebase-auth": "node scripts/build-firebase-auth.mjs",
     "start": "next start",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
@@ -54,6 +55,7 @@
     "jsdom": "^30.1.1",
     "prettier": "^3.9.8",
     "typescript": "^5.8.2",
+    "vite": "^8.3.0",
     "vitest": "^5.0.1"
   }
 }

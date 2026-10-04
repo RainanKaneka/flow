@@ -102,4 +102,9 @@ describe('TaskDetailModal Component', () => {
 
     expect(useFlowStore.getState().selectedTaskIdForDetail).toBeNull();
   });
+  it('mantém o checklist manual sem sugestões de IA', () => {
+    render(<TaskDetailModal />);
+    expect(screen.queryByText('Sugerir Subtarefas com IA')).not.toBeInTheDocument();
+    expect(screen.getByText('Adicionar')).toBeInTheDocument();
+  });
 });

@@ -126,6 +126,22 @@
   gap: 12px;
 }
 
+.taskProgressRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.taskProgressDescription {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  flex: 1;
+  min-width: 180px;
+}
+
 .pomodoroBannerTitle {
   font-size: 13px;
   font-weight: 700;

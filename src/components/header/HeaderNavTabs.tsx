@@ -1,6 +1,16 @@
+import { PRODUCT_FEATURES } from '../../config/productFeatures';
 import React from 'react';
 import { AppView } from '../../types/routine';
-import { CheckCircle2, Timer, FileText, Inbox, BarChart2, Sparkles, Clock, Calendar } from 'lucide-react';
+import {
+  CheckCircle2,
+  Timer,
+  FileText,
+  Inbox,
+  BarChart2,
+  Sparkles,
+  Clock,
+  Calendar,
+} from 'lucide-react';
 import styles from './HeaderNavTabs.module.css';
 
 export interface HeaderNavTabsProps {
@@ -21,10 +31,7 @@ export const HeaderNavTabs: React.FC<HeaderNavTabsProps> = ({
   backlogCount,
 }) => {
   return (
-    <div
-      data-testid="header-nav-tabs"
-      className={styles.container}
-    >
+    <div data-testid="header-nav-tabs" className={styles.container}>
       {/* 1: Rotina Tab */}
       <button
         onClick={() => onSelectView('routine')}
@@ -88,11 +95,7 @@ export const HeaderNavTabs: React.FC<HeaderNavTabsProps> = ({
       >
         <FileText size={13} />
         <span>Notas</span>
-        {notesCount > 0 && (
-          <span className={styles.tabCountBadge}>
-            {notesCount}
-          </span>
-        )}
+        {notesCount > 0 && <span className={styles.tabCountBadge}>{notesCount}</span>}
       </button>
 
       {/* 4: Backlog Tab */}
@@ -130,15 +133,17 @@ export const HeaderNavTabs: React.FC<HeaderNavTabsProps> = ({
       </button>
 
       {/* 6: IA Assistant Tab */}
-      <button
-        onClick={() => onSelectView('ai')}
-        title="Assistente IA Copilot [Atalho: 6]"
-        className={`${styles.tabBtn} ${activeView === 'ai' ? styles.tabBtnActive : ''}`}
-        style={activeView === 'ai' ? { color: '#6366F1' } : undefined}
-      >
-        <Sparkles size={13} color="#6366F1" />
-        <span>IA</span>
-      </button>
+      {PRODUCT_FEATURES.aiAssistant && (
+        <button
+          onClick={() => onSelectView('ai')}
+          title="Assistente IA Copilot [Atalho: 6]"
+          className={`${styles.tabBtn} ${activeView === 'ai' ? styles.tabBtnActive : ''}`}
+          style={activeView === 'ai' ? { color: '#6366F1' } : undefined}
+        >
+          <Sparkles size={13} color="#6366F1" />
+          <span>IA</span>
+        </button>
+      )}
     </div>
   );
 };

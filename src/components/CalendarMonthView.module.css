@@ -290,6 +290,16 @@
   opacity: 0.6;
 }
 
+.taskPillInProgress {
+  color: var(--accent-primary);
+  background: var(--accent-soft);
+  box-shadow: inset 2px 0 0 var(--accent-primary);
+}
+
+.taskProgressIcon {
+  flex-shrink: 0;
+}
+
 .taskDot {
   width: 5px;
   height: 5px;
@@ -410,6 +420,7 @@
   align-items: center;
   gap: 10px;
   flex: 1;
+  min-width: 0;
 }
 
 .inspectorTaskTime {

@@ -24,7 +24,7 @@ describe('HeaderNavTabs', () => {
     expect(screen.getByText('Notas')).toBeInTheDocument();
     expect(screen.getByText('Backlog')).toBeInTheDocument();
     expect(screen.getByText('Dashboard')).toBeInTheDocument();
-    expect(screen.getByText('IA')).toBeInTheDocument();
+    expect(screen.queryByText('IA')).not.toBeInTheDocument();
 
     // Badges de contador
     expect(screen.getByText('3')).toBeInTheDocument();

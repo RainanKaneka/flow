@@ -11,6 +11,8 @@ vi.mock('../firebaseConfig', () => ({
 vi.mock('firebase/auth', () => {
   class MockGoogleAuthProvider {
     addScope = vi.fn();
+    setCustomParameters = vi.fn();
+    static credential = vi.fn().mockReturnValue({ providerId: 'google.com' });
   }
   return {
     signInWithEmailAndPassword: vi.fn(),
@@ -21,6 +23,7 @@ vi.mock('firebase/auth', () => {
     onAuthStateChanged: vi.fn(),
     GoogleAuthProvider: MockGoogleAuthProvider,
     signInWithPopup: vi.fn(),
+    signInWithCredential: vi.fn(),
   };
 });
 
@@ -152,9 +155,9 @@ describe('firebaseAuthService', () => {
 
     it('lança erro se o Firebase não estiver configurado', async () => {
       (firebaseConfig.getFirebaseAuthInstance as any).mockReturnValue(null);
-      await expect(
-        firebaseAuthService.signInWithEmail('email@test.com', 'pwd')
-      ).rejects.toThrow('Firebase Auth não configurado.');
+      await expect(firebaseAuthService.signInWithEmail('email@test.com', 'pwd')).rejects.toThrow(
+        'Firebase Auth não configurado.'
+      );
     });
   });
 });

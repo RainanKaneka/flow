@@ -1,5 +1,14 @@
 # Esse documento terá anotações de bugs e correções a serem feitas.
 
+## Atualização — Estado “Em andamento” nas tarefas
+
+- [x] Início manual pelo botão “Iniciar tarefa”, com andamento até o horário final e confirmação manual da conclusão.
+- [x] Opção individual “Iniciar automaticamente no horário marcado” na criação e edição das tarefas, com agendamento enquanto o Flow está aberto.
+- [x] Início de foco Pomodoro vinculado coloca a atividade em andamento; vincular uma atividade durante o foco também inicia sua execução.
+- [x] Estado por ocorrência diária, preservado no SQLite, na sincronização e nas exportações JSON, CSV e SQL, com migração para bancos existentes.
+- [x] Indicação consistente na lista, nos detalhes, no cronograma, no calendário e no Pomodoro, inclusive para horários que atravessam a meia-noite.
+- [x] Pomodoro mantém a data real da sessão ao navegar pelo calendário; o timer permanece centralizado para evitar contagem duplicada na tela de foco.
+
 
 ## Atualizações para a versão 0.1.4 (Concluído)
 

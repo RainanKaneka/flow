@@ -1,12 +1,7 @@
 // Serviço de Sincronização em Nuvem via Firebase Firestore (Fase 4, Parte 1)
-import {
-  doc,
-  setDoc,
-  getDoc,
-  onSnapshot,
-  serverTimestamp,
-} from 'firebase/firestore';
+import { doc, setDoc, getDoc, onSnapshot, serverTimestamp } from 'firebase/firestore';
 import { getFirebaseFirestoreInstance, isFirebaseConfigured } from './firebaseConfig';
+import { toFirestoreData } from '../utils/firebaseData';
 import {
   Task,
   RoutineType,
@@ -59,7 +54,7 @@ export const cloudSyncService = {
       await setDoc(
         userSyncDocRef,
         {
-          ...data,
+          ...toFirestoreData(data),
           lastUpdatedClient: nowIso,
           serverTimestamp: serverTimestamp(),
         },
@@ -112,10 +107,7 @@ export const cloudSyncService = {
    * Se a nuvem não tiver dados, faz o upload inicial.
    * Se ambos existirem, combina as coleções com base nos IDs mais recentes.
    */
-  async syncBidirectional(
-    userId: string,
-    localData: CloudSyncPayload
-  ): Promise<CloudSyncResult> {
+  async syncBidirectional(userId: string, localData: CloudSyncPayload): Promise<CloudSyncResult> {
     const cloud = await this.pullFromCloud(userId);
     const nowIso = new Date().toISOString();
 

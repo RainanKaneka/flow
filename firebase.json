@@ -1,15 +1,57 @@
 {
   "firestore": {
     "database": "(default)",
-    "location": "nam5",
+    "location": "southamerica-east1",
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"
   },
   "auth": {
+    "authorizedDomains": [
+      "localhost",
+      "127.0.0.1",
+      "flow-rainan-prod.firebaseapp.com",
+      "flow-rainan-prod.web.app"
+    ],
     "providers": {
       "anonymous": true,
-      "emailPassword": true
+      "emailPassword": true,
+      "googleSignIn": {
+        "oAuthBrandDisplayName": "Flow",
+        "supportEmail": "kanekozbr@gmail.com"
+      }
     }
+  },
+  "hosting": {
+    "site": "flow-rainan-prod",
+    "public": "firebase-auth-bridge/dist",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "headers": [
+      {
+        "source": "**",
+        "headers": [
+          {
+            "key": "Referrer-Policy",
+            "value": "no-referrer"
+          },
+          {
+            "key": "X-Content-Type-Options",
+            "value": "nosniff"
+          },
+          {
+            "key": "Cache-Control",
+            "value": "no-store"
+          },
+          {
+            "key": "Content-Security-Policy",
+            "value": "default-src 'self'; script-src 'self' https://apis.google.com; style-src 'self'; connect-src 'self' https://*.googleapis.com https://*.firebaseapp.com https://*.web.app; frame-src https://*.firebaseapp.com https://*.web.app https://accounts.google.com; img-src 'self' data: https://*.googleusercontent.com; form-action http://127.0.0.1:*; base-uri 'none'; frame-ancestors 'none'; object-src 'none'"
+          }
+        ]
+      }
+    ]
   },
   "functions": [
     {

@@ -1,5 +1,6 @@
 'use client';
 
+import { PRODUCT_FEATURES } from '../config/productFeatures';
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useFlowStore } from '../store/useFlowStore';
 import {
@@ -115,7 +116,7 @@ export const UserProfileModal: React.FC = () => {
       bio: bio.trim(),
       avatarPreset,
       avatarUrl: avatarUrl.trim() || undefined,
-      plan: selectedPlan,
+      plan: PRODUCT_FEATURES.monetization ? selectedPlan : userProfile?.plan || 'free',
       themePreference: theme,
       pomodoroMinutes: Math.round(pomodoro.totalDurationSeconds / 60),
       soundEnabled: reminderSettings.soundEnabled,
@@ -311,23 +312,32 @@ export const UserProfileModal: React.FC = () => {
                 </h2>
 
                 {/* Badge do Plano */}
-                <span
-                  style={{
-                    fontSize: '11px',
-                    fontWeight: 700,
-                    padding: '2px 8px',
-                    borderRadius: '9999px',
-                    backgroundColor: selectedPlan === 'premium' ? 'rgba(99, 102, 241, 0.15)' : 'rgba(255, 255, 255, 0.08)',
-                    color: selectedPlan === 'premium' ? 'var(--accent-primary)' : 'var(--text-muted)',
-                    border: selectedPlan === 'premium' ? '1px solid rgba(99, 102, 241, 0.35)' : '1px solid var(--border-subtle)',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                  }}
-                >
-                  {selectedPlan === 'premium' ? <Zap size={11} /> : null}
-                  {selectedPlan === 'premium' ? 'Flow Pro' : 'Gratuito'}
-                </span>
+                {PRODUCT_FEATURES.monetization && (
+                  <span
+                    style={{
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      padding: '2px 8px',
+                      borderRadius: '9999px',
+                      backgroundColor:
+                        selectedPlan === 'premium'
+                          ? 'rgba(99, 102, 241, 0.15)'
+                          : 'rgba(255, 255, 255, 0.08)',
+                      color:
+                        selectedPlan === 'premium' ? 'var(--accent-primary)' : 'var(--text-muted)',
+                      border:
+                        selectedPlan === 'premium'
+                          ? '1px solid rgba(99, 102, 241, 0.35)'
+                          : '1px solid var(--border-subtle)',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                    }}
+                  >
+                    {selectedPlan === 'premium' ? <Zap size={11} /> : null}
+                    {selectedPlan === 'premium' ? 'Flow Pro' : 'Gratuito'}
+                  </span>
+                )}
               </div>
 
               <p
@@ -391,7 +401,8 @@ export const UserProfileModal: React.FC = () => {
                 padding: '8px 16px',
                 borderRadius: '12px',
                 border: 'none',
-                backgroundColor: activeTab === 'configuracoes' ? 'var(--accent-primary)' : 'transparent',
+                backgroundColor:
+                  activeTab === 'configuracoes' ? 'var(--accent-primary)' : 'transparent',
                 color: activeTab === 'configuracoes' ? '#FFF' : 'var(--text-secondary)',
                 fontSize: '13px',
                 fontWeight: 600,
@@ -413,7 +424,8 @@ export const UserProfileModal: React.FC = () => {
                 padding: '8px 16px',
                 borderRadius: '12px',
                 border: 'none',
-                backgroundColor: activeTab === 'estatisticas' ? 'var(--accent-primary)' : 'transparent',
+                backgroundColor:
+                  activeTab === 'estatisticas' ? 'var(--accent-primary)' : 'transparent',
                 color: activeTab === 'estatisticas' ? '#FFF' : 'var(--text-secondary)',
                 fontSize: '13px',
                 fontWeight: 600,
@@ -485,8 +497,12 @@ export const UserProfileModal: React.FC = () => {
                           gap: '4px',
                           padding: '8px 4px',
                           borderRadius: '16px',
-                          backgroundColor: isSelected ? 'rgba(99, 102, 241, 0.12)' : 'var(--bg-secondary)',
-                          border: isSelected ? '2px solid var(--accent-primary)' : '1px solid var(--border-subtle)',
+                          backgroundColor: isSelected
+                            ? 'rgba(99, 102, 241, 0.12)'
+                            : 'var(--bg-secondary)',
+                          border: isSelected
+                            ? '2px solid var(--accent-primary)'
+                            : '1px solid var(--border-subtle)',
                           cursor: 'pointer',
                           transition: 'all 150ms var(--bezier-haptic)',
                         }}
@@ -753,10 +769,16 @@ export const UserProfileModal: React.FC = () => {
               >
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    {theme === 'dark' ? <Moon size={16} color="var(--accent-primary)" /> : <Sun size={16} color="#F59E0B" />}
+                    {theme === 'dark' ? (
+                      <Moon size={16} color="var(--accent-primary)" />
+                    ) : (
+                      <Sun size={16} color="#F59E0B" />
+                    )}
                     <span style={{ fontSize: '14px', fontWeight: 700 }}>Tema Visual</span>
                   </div>
-                  <p style={{ margin: '4px 0 0', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                  <p
+                    style={{ margin: '4px 0 0', fontSize: '12px', color: 'var(--text-secondary)' }}
+                  >
                     {theme === 'dark' ? 'Modo Escuro OLED (#08080A)' : 'Modo Claro Suave'}
                   </p>
                 </div>
@@ -800,10 +822,15 @@ export const UserProfileModal: React.FC = () => {
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <Timer size={16} color="var(--accent-primary)" />
-                    <span style={{ fontSize: '14px', fontWeight: 700 }}>Duração Padrão do Pomodoro</span>
+                    <span style={{ fontSize: '14px', fontWeight: 700 }}>
+                      Duração Padrão do Pomodoro
+                    </span>
                   </div>
-                  <p style={{ margin: '4px 0 0', fontSize: '12px', color: 'var(--text-secondary)' }}>
-                    Tempo de foco selecionado: {Math.round(pomodoro.totalDurationSeconds / 60)} minutos
+                  <p
+                    style={{ margin: '4px 0 0', fontSize: '12px', color: 'var(--text-secondary)' }}
+                  >
+                    Tempo de foco selecionado: {Math.round(pomodoro.totalDurationSeconds / 60)}{' '}
+                    minutos
                   </p>
                 </div>
 
@@ -821,9 +848,13 @@ export const UserProfileModal: React.FC = () => {
                         style={{
                           padding: '6px 10px',
                           borderRadius: '8px',
-                          backgroundColor: isCurrent ? 'var(--accent-primary)' : 'var(--bg-elevated)',
+                          backgroundColor: isCurrent
+                            ? 'var(--accent-primary)'
+                            : 'var(--bg-elevated)',
                           color: isCurrent ? '#FFF' : 'var(--text-secondary)',
-                          border: isCurrent ? '1px solid var(--accent-primary)' : '1px solid var(--border-subtle)',
+                          border: isCurrent
+                            ? '1px solid var(--accent-primary)'
+                            : '1px solid var(--border-subtle)',
                           fontSize: '12px',
                           fontWeight: 600,
                           cursor: 'pointer',
@@ -852,9 +883,13 @@ export const UserProfileModal: React.FC = () => {
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <Volume2 size={16} color="var(--accent-primary)" />
-                    <span style={{ fontSize: '14px', fontWeight: 700 }}>Feedback Sensorial (Tigela Tibetana 528Hz)</span>
+                    <span style={{ fontSize: '14px', fontWeight: 700 }}>
+                      Feedback Sensorial (Tigela Tibetana 528Hz)
+                    </span>
                   </div>
-                  <p style={{ margin: '4px 0 0', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                  <p
+                    style={{ margin: '4px 0 0', fontSize: '12px', color: 'var(--text-secondary)' }}
+                  >
                     Sons harmônicos sintetizados ao concluir tarefas e transição de foco
                   </p>
                 </div>
@@ -886,7 +921,9 @@ export const UserProfileModal: React.FC = () => {
                     style={{
                       padding: '6px 12px',
                       borderRadius: '8px',
-                      backgroundColor: reminderSettings.soundEnabled ? 'var(--accent-primary)' : 'var(--bg-elevated)',
+                      backgroundColor: reminderSettings.soundEnabled
+                        ? 'var(--accent-primary)'
+                        : 'var(--bg-elevated)',
                       color: reminderSettings.soundEnabled ? '#FFF' : 'var(--text-secondary)',
                       border: '1px solid var(--border-subtle)',
                       fontSize: '11px',
@@ -915,10 +952,15 @@ export const UserProfileModal: React.FC = () => {
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <Bell size={16} color="var(--accent-primary)" />
-                    <span style={{ fontSize: '14px', fontWeight: 700 }}>Notificações de Início de Tarefa</span>
+                    <span style={{ fontSize: '14px', fontWeight: 700 }}>
+                      Notificações de Início de Tarefa
+                    </span>
                   </div>
-                  <p style={{ margin: '4px 0 0', fontSize: '12px', color: 'var(--text-secondary)' }}>
-                    Alerta nativo no Windows com {reminderSettings.advanceMinutes} min de antecedência
+                  <p
+                    style={{ margin: '4px 0 0', fontSize: '12px', color: 'var(--text-secondary)' }}
+                  >
+                    Alerta nativo no Windows com {reminderSettings.advanceMinutes} min de
+                    antecedência
                   </p>
                 </div>
 
@@ -931,7 +973,9 @@ export const UserProfileModal: React.FC = () => {
                   style={{
                     padding: '6px 14px',
                     borderRadius: '8px',
-                    backgroundColor: reminderSettings.enabled ? 'var(--accent-primary)' : 'var(--bg-elevated)',
+                    backgroundColor: reminderSettings.enabled
+                      ? 'var(--accent-primary)'
+                      : 'var(--bg-elevated)',
                     color: reminderSettings.enabled ? '#FFF' : 'var(--text-secondary)',
                     border: '1px solid var(--border-subtle)',
                     fontSize: '11px',
@@ -959,10 +1003,18 @@ export const UserProfileModal: React.FC = () => {
               >
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    {firebaseUser ? <CloudCheck size={16} color="#10B981" /> : <Cloud size={16} color="var(--text-secondary)" />}
-                    <span style={{ fontSize: '14px', fontWeight: 700 }}>Sincronização em Nuvem (Firebase)</span>
+                    {firebaseUser ? (
+                      <CloudCheck size={16} color="#10B981" />
+                    ) : (
+                      <Cloud size={16} color="var(--text-secondary)" />
+                    )}
+                    <span style={{ fontSize: '14px', fontWeight: 700 }}>
+                      Sincronização em Nuvem (Firebase)
+                    </span>
                   </div>
-                  <p style={{ margin: '4px 0 0', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                  <p
+                    style={{ margin: '4px 0 0', fontSize: '12px', color: 'var(--text-secondary)' }}
+                  >
                     {firebaseUser
                       ? `Conectado como: ${firebaseUser.displayName || firebaseUser.email || 'Convidado'}`
                       : 'Nenhum usuário conectado à nuvem.'}
@@ -991,59 +1043,76 @@ export const UserProfileModal: React.FC = () => {
               </div>
 
               {/* Configuração 6: Plano de Assinatura & Tokens (Fase 4.3 & Fase 5) */}
-              <div
-                style={{
-                  padding: '16px',
-                  borderRadius: '16px',
-                  backgroundColor: selectedPlan === 'premium' ? 'rgba(99, 102, 241, 0.08)' : 'var(--bg-secondary)',
-                  border: selectedPlan === 'premium' ? '1px solid rgba(99, 102, 241, 0.35)' : '1px solid var(--border-subtle)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: '12px',
-                  flexWrap: 'wrap',
-                }}
-              >
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Zap size={16} color="var(--accent-primary)" />
-                    <span style={{ fontSize: '14px', fontWeight: 700 }}>
-                      Plano Flow: {selectedPlan === 'premium' ? 'Pro / Premium ⚡' : 'Gratuito (Local)'}
-                    </span>
-                  </div>
-                  <p style={{ margin: '4px 0 0', fontSize: '12px', color: 'var(--text-secondary)' }}>
-                    {selectedPlan === 'premium'
-                      ? 'Acesso irrestrito ao Gemini IA, replanning inteligente e nuvem.'
-                      : 'Armazenamento SQLite local com backup automático.'}
-                  </p>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    const next = selectedPlan === 'premium' ? 'free' : 'premium';
-                    setSelectedPlan(next);
-                    sounds.playCheck();
-                    showSnackbar(next === 'premium' ? 'Modo Flow Pro ativado!' : 'Modo Gratuito selecionado.');
-                  }}
-                  data-testid="toggle-plan-btn"
+              {PRODUCT_FEATURES.monetization && (
+                <div
                   style={{
-                    padding: '8px 14px',
-                    borderRadius: '10px',
-                    backgroundColor: selectedPlan === 'premium' ? 'var(--accent-primary)' : 'var(--bg-elevated)',
-                    color: selectedPlan === 'premium' ? '#FFF' : 'var(--text-primary)',
-                    border: '1px solid var(--border-subtle)',
-                    fontSize: '12px',
-                    fontWeight: 600,
-                    cursor: 'pointer',
+                    padding: '16px',
+                    borderRadius: '16px',
+                    backgroundColor:
+                      selectedPlan === 'premium'
+                        ? 'rgba(99, 102, 241, 0.08)'
+                        : 'var(--bg-secondary)',
+                    border:
+                      selectedPlan === 'premium'
+                        ? '1px solid rgba(99, 102, 241, 0.35)'
+                        : '1px solid var(--border-subtle)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '12px',
+                    flexWrap: 'wrap',
                   }}
                 >
-                  {selectedPlan === 'premium' ? 'Ativo (Pro)' : 'Ativar Modo Pro (Teste)'}
-                </button>
-              </div>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Zap size={16} color="var(--accent-primary)" />
+                      <span style={{ fontSize: '14px', fontWeight: 700 }}>
+                        Plano Flow:{' '}
+                        {selectedPlan === 'premium' ? 'Pro / Premium ⚡' : 'Gratuito (Local)'}
+                      </span>
+                    </div>
+                    <p
+                      style={{
+                        margin: '4px 0 0',
+                        fontSize: '12px',
+                        color: 'var(--text-secondary)',
+                      }}
+                    >
+                      {selectedPlan === 'premium'
+                        ? 'Acesso irrestrito ao Gemini IA, replanning inteligente e nuvem.'
+                        : 'Armazenamento SQLite local com backup automático.'}
+                    </p>
+                  </div>
 
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const next = selectedPlan === 'premium' ? 'free' : 'premium';
+                      setSelectedPlan(next);
+                      sounds.playCheck();
+                      showSnackbar(
+                        next === 'premium' ? 'Modo Flow Pro ativado!' : 'Modo Gratuito selecionado.'
+                      );
+                    }}
+                    data-testid="toggle-plan-btn"
+                    style={{
+                      padding: '8px 14px',
+                      borderRadius: '10px',
+                      backgroundColor:
+                        selectedPlan === 'premium' ? 'var(--accent-primary)' : 'var(--bg-elevated)',
+                      color: selectedPlan === 'premium' ? '#FFF' : 'var(--text-primary)',
+                      border: '1px solid var(--border-subtle)',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {selectedPlan === 'premium' ? 'Ativo (Pro)' : 'Ativar Modo Pro (Teste)'}
+                  </button>
+                </div>
+              )}
               {/* Informações detalhadas de Quota de IA (se houver quota registrada) */}
-              {userProfile?.aiQuota && (
+              {PRODUCT_FEATURES.monetization && userProfile?.aiQuota && (
                 <div
                   style={{
                     marginTop: '12px',
@@ -1056,7 +1125,9 @@ export const UserProfileModal: React.FC = () => {
                     gap: '8px',
                   }}
                 >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+                  <div
+                    style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}
+                  >
                     <span style={{ color: 'var(--text-secondary)' }}>Consumo Mensal de IA:</span>
                     <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>
                       {userProfile.aiQuota.used} / {userProfile.aiQuota.monthlyLimit} requisições
@@ -1076,7 +1147,8 @@ export const UserProfileModal: React.FC = () => {
                         width: `${Math.min(
                           100,
                           Math.round(
-                            (userProfile.aiQuota.used / (userProfile.aiQuota.monthlyLimit || 1)) * 100
+                            (userProfile.aiQuota.used / (userProfile.aiQuota.monthlyLimit || 1)) *
+                              100
                           )
                         )}%`,
                         height: '100%',
@@ -1094,7 +1166,10 @@ export const UserProfileModal: React.FC = () => {
                       color: 'var(--text-muted)',
                     }}
                   >
-                    <span>Tokens: {userProfile.aiQuota.totalTokensConsumed?.toLocaleString('pt-BR') || 0}</span>
+                    <span>
+                      Tokens:{' '}
+                      {userProfile.aiQuota.totalTokensConsumed?.toLocaleString('pt-BR') || 0}
+                    </span>
                     <span>Renovação: {userProfile.aiQuota.resetDate || 'Próximo ciclo'}</span>
                   </div>
                 </div>
@@ -1110,14 +1185,22 @@ export const UserProfileModal: React.FC = () => {
                 style={{
                   padding: '18px 20px',
                   borderRadius: '18px',
-                  background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(16, 185, 129, 0.08))',
+                  background:
+                    'linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(16, 185, 129, 0.08))',
                   border: '1px solid rgba(99, 102, 241, 0.3)',
                   display: 'flex',
                   flexDirection: 'column',
                   gap: '12px',
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    flexWrap: 'wrap',
+                  }}
+                >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <div
                       style={{
@@ -1159,7 +1242,15 @@ export const UserProfileModal: React.FC = () => {
 
                 {/* Barra de Progresso de XP */}
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '5px' }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      fontSize: '11px',
+                      color: 'var(--text-secondary)',
+                      marginBottom: '5px',
+                    }}
+                  >
                     <span>Progresso para o próximo nível</span>
                     <span>{stats.productivityLevel.progressPercentage}%</span>
                   </div>
@@ -1205,11 +1296,20 @@ export const UserProfileModal: React.FC = () => {
                     gap: '4px',
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--accent-primary)' }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      color: 'var(--accent-primary)',
+                    }}
+                  >
                     <Clock size={15} />
                     <span style={{ fontSize: '11px', fontWeight: 600 }}>Tempo Focado</span>
                   </div>
-                  <span style={{ fontSize: '20px', fontWeight: 800, fontFamily: 'var(--font-mono)' }}>
+                  <span
+                    style={{ fontSize: '20px', fontWeight: 800, fontFamily: 'var(--font-mono)' }}
+                  >
                     {stats.totalPomodoroMinutes}m
                   </span>
                   <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
@@ -1229,11 +1329,15 @@ export const UserProfileModal: React.FC = () => {
                     gap: '4px',
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#10B981' }}>
+                  <div
+                    style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#10B981' }}
+                  >
                     <CheckCircle2 size={15} />
                     <span style={{ fontSize: '11px', fontWeight: 600 }}>Concluídas</span>
                   </div>
-                  <span style={{ fontSize: '20px', fontWeight: 800, fontFamily: 'var(--font-mono)' }}>
+                  <span
+                    style={{ fontSize: '20px', fontWeight: 800, fontFamily: 'var(--font-mono)' }}
+                  >
                     {stats.totalTasksCompleted}
                   </span>
                   <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
@@ -1253,11 +1357,15 @@ export const UserProfileModal: React.FC = () => {
                     gap: '4px',
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#EF4444' }}>
+                  <div
+                    style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#EF4444' }}
+                  >
                     <Flame size={15} />
                     <span style={{ fontSize: '11px', fontWeight: 600 }}>Sequência</span>
                   </div>
-                  <span style={{ fontSize: '20px', fontWeight: 800, fontFamily: 'var(--font-mono)' }}>
+                  <span
+                    style={{ fontSize: '20px', fontWeight: 800, fontFamily: 'var(--font-mono)' }}
+                  >
                     {stats.currentStreakDays} {stats.currentStreakDays === 1 ? 'dia' : 'dias'}
                   </span>
                   <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
@@ -1277,11 +1385,15 @@ export const UserProfileModal: React.FC = () => {
                     gap: '4px',
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#F59E0B' }}>
+                  <div
+                    style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#F59E0B' }}
+                  >
                     <TrendingUp size={15} />
                     <span style={{ fontSize: '11px', fontWeight: 600 }}>Eficiência</span>
                   </div>
-                  <span style={{ fontSize: '20px', fontWeight: 800, fontFamily: 'var(--font-mono)' }}>
+                  <span
+                    style={{ fontSize: '20px', fontWeight: 800, fontFamily: 'var(--font-mono)' }}
+                  >
                     {stats.efficiencyRate}%
                   </span>
                   <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
@@ -1355,8 +1467,12 @@ export const UserProfileModal: React.FC = () => {
                       style={{
                         padding: '12px',
                         borderRadius: '14px',
-                        backgroundColor: ach.unlocked ? 'var(--bg-secondary)' : 'rgba(255, 255, 255, 0.02)',
-                        border: ach.unlocked ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid var(--border-subtle)',
+                        backgroundColor: ach.unlocked
+                          ? 'var(--bg-secondary)'
+                          : 'rgba(255, 255, 255, 0.02)',
+                        border: ach.unlocked
+                          ? '1px solid rgba(16, 185, 129, 0.3)'
+                          : '1px solid var(--border-subtle)',
                         display: 'flex',
                         alignItems: 'center',
                         gap: '12px',
@@ -1368,7 +1484,9 @@ export const UserProfileModal: React.FC = () => {
                           width: '36px',
                           height: '36px',
                           borderRadius: '10px',
-                          backgroundColor: ach.unlocked ? 'rgba(16, 185, 129, 0.15)' : 'var(--bg-elevated)',
+                          backgroundColor: ach.unlocked
+                            ? 'rgba(16, 185, 129, 0.15)'
+                            : 'var(--bg-elevated)',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
@@ -1380,8 +1498,20 @@ export const UserProfileModal: React.FC = () => {
                       </div>
 
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                          <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                        <div
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                          }}
+                        >
+                          <span
+                            style={{
+                              fontSize: '13px',
+                              fontWeight: 700,
+                              color: 'var(--text-primary)',
+                            }}
+                          >
                             {ach.title}
                           </span>
                           <span
@@ -1394,7 +1524,14 @@ export const UserProfileModal: React.FC = () => {
                             {ach.unlocked ? 'Desbloqueado' : ach.progressText || 'Pendente'}
                           </span>
                         </div>
-                        <p style={{ margin: '2px 0 0', fontSize: '11px', color: 'var(--text-muted)', lineHeight: 1.3 }}>
+                        <p
+                          style={{
+                            margin: '2px 0 0',
+                            fontSize: '11px',
+                            color: 'var(--text-muted)',
+                            lineHeight: 1.3,
+                          }}
+                        >
                           {ach.description}
                         </p>
                       </div>

@@ -1,5 +1,7 @@
 'use client';
 
+import { PRODUCT_FEATURES } from '../config/productFeatures';
+
 import { useEffect } from 'react';
 import { useFlowStore } from '../store/useFlowStore';
 
@@ -110,7 +112,7 @@ export const useGlobalShortcuts = () => {
             break;
           case '6':
             e.preventDefault();
-            setActiveView('ai');
+            if (PRODUCT_FEATURES.aiAssistant) setActiveView('ai');
             break;
           case '7':
             e.preventDefault();

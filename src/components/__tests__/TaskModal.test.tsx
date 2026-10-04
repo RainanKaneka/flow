@@ -157,4 +157,43 @@ describe('TaskModal Component', () => {
     // 2026-09-24 foi quinta-feira (4)
     expect(createdTask?.daysOfWeek).toEqual([4]);
   });
+
+  it('mantém início automático desativado por padrão e permite ativá-lo por tarefa', () => {
+    useFlowStore.setState({ isTaskModalOpen: true });
+    render(<TaskModal />);
+
+    const autoStartCheckbox = screen.getByRole('checkbox', {
+      name: /Iniciar automaticamente no horário marcado/i,
+    });
+    expect(autoStartCheckbox).not.toBeChecked();
+    expect(autoStartCheckbox).toHaveAccessibleDescription(/Com o Flow aberto/i);
+    fireEvent.click(autoStartCheckbox);
+    fireEvent.change(screen.getByPlaceholderText(/Estudo de Rust/i), {
+      target: { value: 'Atividade automática' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Salvar Atividade/i }));
+
+    expect(useFlowStore.getState().tasks.find((item) => item.title === 'Atividade automática'))
+      .toMatchObject({ autoStart: true });
+  });
+
+  it('preserva a configuração de início automático ao editar e permite desativá-la', () => {
+    const existing = { ...useFlowStore.getState().tasks[0], autoStart: true };
+    useFlowStore.setState({ tasks: [existing], editingTask: existing, isTaskModalOpen: true });
+    const { unmount } = render(<TaskModal />);
+
+    expect(screen.getByRole('checkbox', { name: /Iniciar automaticamente/i })).toBeChecked();
+    fireEvent.click(screen.getByRole('button', { name: /Atualizar Atividade/i }));
+    expect(useFlowStore.getState().tasks[0].autoStart).toBe(true);
+    unmount();
+
+    useFlowStore.setState({
+      editingTask: useFlowStore.getState().tasks[0],
+      isTaskModalOpen: true,
+    });
+    render(<TaskModal />);
+    fireEvent.click(screen.getByRole('checkbox', { name: /Iniciar automaticamente/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Atualizar Atividade/i }));
+    expect(useFlowStore.getState().tasks[0].autoStart).toBe(false);
+  });
 });

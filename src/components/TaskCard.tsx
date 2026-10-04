@@ -5,6 +5,9 @@ import { Task } from '../types/routine';
 import { useFlowStore } from '../store/useFlowStore';
 import { sounds } from '../utils/audio';
 import { MoveToBacklogModal } from './MoveToBacklogModal';
+import { TaskProgressBadge, TaskStartButton } from './TaskProgressControl';
+import { useTaskProgressClock } from '../hooks/useTaskProgressClock';
+import { getTaskProgressStatus } from '../utils/taskProgress';
 import {
   Check,
   Clock,
@@ -55,6 +58,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
   const deleteTask = useFlowStore((s) => s.deleteTask);
   const moveTaskToBacklog = useFlowStore((s) => s.moveTaskToBacklog);
   const storeShiftTaskTime = useFlowStore((s) => s.shiftTaskTime);
+  const now = useTaskProgressClock();
 
   const [isBacklogModalOpen, setIsBacklogModalOpen] = useState(false);
 
@@ -69,6 +73,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
   const isCompleted = !!log?.completed;
   const completedAt = log?.completedAt;
   const timeSpentMinutes = log?.timeSpentMinutes || 0;
+  const progressStatus = getTaskProgressStatus(task, log, selectedDate, now);
 
   const checklist = task.checklist || [];
   const completedChecklistItems = checklist.filter((i) => i.completed).length;
@@ -227,6 +232,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
               </span>
 
               {/* Golden Rule Badge */}
+              <TaskProgressBadge status={progressStatus} />
               {task.isGoldenRule && (
                 <span
                   style={{
@@ -514,6 +520,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                   <span>Concluído às {completedAt}</span>
                 </div>
               )}
+              <TaskStartButton task={task} date={selectedDate} log={log} now={now} />
             </div>
           </div>
         </div>

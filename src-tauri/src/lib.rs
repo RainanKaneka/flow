@@ -1,5 +1,11 @@
 use std::process::Command;
 
+mod firebase_google_auth;
+use firebase_google_auth::{
+    cancel_firebase_google_auth, poll_firebase_google_auth, start_firebase_google_auth,
+    FirebaseGoogleAuthState,
+};
+
 #[tauri::command]
 async fn show_windows_toast(title: String, body: String) -> Result<(), String> {
     #[cfg(target_os = "windows")]
@@ -214,6 +220,7 @@ async fn open_backup_folder(folder_path: String) -> Result<(), String> {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .manage(FirebaseGoogleAuthState::default())
         .plugin(tauri_plugin_sql::Builder::default().build())
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_opener::init())
@@ -224,7 +231,10 @@ pub fn run() {
             pick_backup_folder,
             create_database_backup,
             list_database_backups,
-            open_backup_folder
+            open_backup_folder,
+            start_firebase_google_auth,
+            poll_firebase_google_auth,
+            cancel_firebase_google_auth
         ])
         .setup(|_app| {
             Ok(())

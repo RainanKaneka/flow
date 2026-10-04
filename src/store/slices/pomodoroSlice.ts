@@ -1,6 +1,7 @@
 import { StateCreator } from 'zustand';
 import { FlowStore, PomodoroState, PomodoroMode } from '../../types/routine';
 import { sounds } from '../../utils/audio';
+import { getCurrentTaskDate, getLocalDateString } from '../../utils/taskProgress';
 
 export interface PomodoroSliceState {
   pomodoro: PomodoroState;
@@ -35,13 +36,20 @@ export const createPomodoroSlice: StateCreator<FlowStore, [], [], PomodoroSlice>
 
   startPomodoro: (linkedTaskId?: string) => {
     sounds.playPomodoroStart();
+    const state = get();
+    const taskId = linkedTaskId !== undefined ? linkedTaskId : state.pomodoro.linkedTaskId;
+    const task = state.tasks.find((item) => item.id === taskId);
+    const now = new Date();
+    const date = task ? getCurrentTaskDate(task, now) || getLocalDateString(now) : null;
     set((state) => ({
       pomodoro: {
         ...state.pomodoro,
         isActive: true,
-        linkedTaskId: linkedTaskId !== undefined ? linkedTaskId : state.pomodoro.linkedTaskId,
+        linkedTaskId: taskId,
+        linkedTaskDate: date,
       },
     }));
+    if (taskId && date && state.pomodoro.mode === 'focus') get().startTask(taskId, date);
   },
 
   pausePomodoro: () => {
@@ -106,12 +114,20 @@ export const createPomodoroSlice: StateCreator<FlowStore, [], [], PomodoroSlice>
   },
 
   linkTaskToPomodoro: (taskId: string | null) => {
+    const state = get();
+    const task = state.tasks.find((item) => item.id === taskId);
+    const now = new Date();
+    const date = task ? getCurrentTaskDate(task, now) || getLocalDateString(now) : null;
     set((state) => ({
       pomodoro: {
         ...state.pomodoro,
         linkedTaskId: taskId,
+        linkedTaskDate: date,
       },
     }));
+    if (taskId && date && state.pomodoro.isActive && state.pomodoro.mode === 'focus') {
+      get().startTask(taskId, date);
+    }
   },
 
   tickPomodoro: () => {
@@ -141,12 +157,13 @@ export const createPomodoroSlice: StateCreator<FlowStore, [], [], PomodoroSlice>
     const updatedLogs = { ...state.logs };
     if (isFocus && state.pomodoro.linkedTaskId) {
       const taskId = state.pomodoro.linkedTaskId;
-      const date = state.selectedDate;
+      const date = state.pomodoro.linkedTaskDate || getLocalDateString(new Date());
       const key = `${date}_${taskId}`;
       const existingLog = updatedLogs[key];
 
       const currentMinutes = existingLog?.timeSpentMinutes || 0;
       updatedLogs[key] = {
+        ...existingLog,
         id: key,
         taskId,
         date,
@@ -178,6 +195,11 @@ export const createPomodoroSlice: StateCreator<FlowStore, [], [], PomodoroSlice>
 
     // Passar automaticamente caso autoAdvance esteja ativo (padrão: true)
     const shouldAutoAdvance = state.pomodoro.autoAdvance ?? true;
+    const nextTask = state.tasks.find((task) => task.id === state.pomodoro.linkedTaskId);
+    const now = new Date();
+    const nextTaskDate = shouldAutoAdvance && nextMode === 'focus' && nextTask
+      ? getCurrentTaskDate(nextTask, now) || getLocalDateString(now)
+      : state.pomodoro.linkedTaskDate;
 
     set({
       logs: updatedLogs,
@@ -188,8 +210,13 @@ export const createPomodoroSlice: StateCreator<FlowStore, [], [], PomodoroSlice>
         totalDurationSeconds: nextDuration,
         timeLeftSeconds: nextDuration,
         completedSessions: newCompletedSessions,
+        linkedTaskDate: nextTaskDate,
       },
     });
+    get().refreshTaskProgress();
+    if (shouldAutoAdvance && nextMode === 'focus' && state.pomodoro.linkedTaskId) {
+      get().startTask(state.pomodoro.linkedTaskId, nextTaskDate || undefined);
+    }
   },
 
   togglePomodoroAutoAdvance: () => {

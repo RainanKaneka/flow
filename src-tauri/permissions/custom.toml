@@ -8,5 +8,8 @@ commands.allow = [
   "pick_backup_folder",
   "create_database_backup",
   "list_database_backups",
-  "open_backup_folder"
+  "open_backup_folder",
+  "start_firebase_google_auth",
+  "poll_firebase_google_auth",
+  "cancel_firebase_google_auth"
 ]

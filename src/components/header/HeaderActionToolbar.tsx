@@ -1,7 +1,26 @@
+import { PRODUCT_FEATURES } from '../../config/productFeatures';
 import React from 'react';
-import { Sparkles, Sun, Moon, Plus, Timer, Bell, Database, Search, Cloud, CloudCheck, User } from 'lucide-react';
+import {
+  Sparkles,
+  Sun,
+  Moon,
+  Plus,
+  Timer,
+  Bell,
+  Database,
+  Search,
+  Cloud,
+  CloudCheck,
+  User,
+} from 'lucide-react';
 import { isNewerVersion, CURRENT_APP_VERSION } from '../../services/updateService';
-import { GoogleUser, GeminiConfig, FirebaseUserProfile, CloudSyncStatus, UserProfile } from '../../types/routine';
+import {
+  GoogleUser,
+  GeminiConfig,
+  FirebaseUserProfile,
+  CloudSyncStatus,
+  UserProfile,
+} from '../../types/routine';
 import { getPresetById } from '../../services/userProfileService';
 
 export interface HeaderActionToolbarProps {
@@ -110,43 +129,45 @@ export const HeaderActionToolbar: React.FC<HeaderActionToolbarProps> = ({
       )}
 
       {/* Conexão Google & Gemini */}
-      <button
-        onClick={onOpenGoogleAuthModal}
-        style={{
-          height: '36px',
-          padding: googleUser ? '0 12px 0 6px' : '0 12px',
-          borderRadius: '9999px',
-          background: 'var(--bg-secondary)',
-          border: '1px solid var(--border-subtle)',
-          color: googleUser || geminiConfig.apiKey ? '#6366F1' : 'var(--text-secondary)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px',
-          cursor: 'pointer',
-          transition: 'all 200ms var(--bezier-haptic)',
-          fontSize: '12px',
-          fontWeight: 600,
-        }}
-        title="Conexão Google & Chave Gemini IA (RF-19)"
-      >
-        {googleUser?.avatarUrl ? (
-          /* eslint-disable-next-line @next/next/no-img-element */
-          <img
-            src={googleUser.avatarUrl}
-            alt={googleUser.name}
-            style={{ width: '22px', height: '22px', borderRadius: '50%', objectFit: 'cover' }}
-          />
-        ) : (
-          <Sparkles size={14} color={geminiConfig.apiKey ? '#6366F1' : undefined} />
-        )}
-        <span>
-          {googleUser
-            ? googleUser.name.split(' ')[0]
-            : geminiConfig.apiKey
-              ? 'Gemini'
-              : 'Google / IA'}
-        </span>
-      </button>
+      {PRODUCT_FEATURES.aiAssistant && (
+        <button
+          onClick={onOpenGoogleAuthModal}
+          style={{
+            height: '36px',
+            padding: googleUser ? '0 12px 0 6px' : '0 12px',
+            borderRadius: '9999px',
+            background: 'var(--bg-secondary)',
+            border: '1px solid var(--border-subtle)',
+            color: googleUser || geminiConfig.apiKey ? '#6366F1' : 'var(--text-secondary)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            cursor: 'pointer',
+            transition: 'all 200ms var(--bezier-haptic)',
+            fontSize: '12px',
+            fontWeight: 600,
+          }}
+          title="Conexão Google & Chave Gemini IA (RF-19)"
+        >
+          {googleUser?.avatarUrl ? (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              src={googleUser.avatarUrl}
+              alt={googleUser.name}
+              style={{ width: '22px', height: '22px', borderRadius: '50%', objectFit: 'cover' }}
+            />
+          ) : (
+            <Sparkles size={14} color={geminiConfig.apiKey ? '#6366F1' : undefined} />
+          )}
+          <span>
+            {googleUser
+              ? googleUser.name.split(' ')[0]
+              : geminiConfig.apiKey
+                ? 'Gemini'
+                : 'Google / IA'}
+          </span>
+        </button>
+      )}
 
       {/* Lembretes & Notificações */}
       <button
@@ -216,7 +237,9 @@ export const HeaderActionToolbar: React.FC<HeaderActionToolbarProps> = ({
             height: '36px',
             borderRadius: '50%',
             background: firebaseUser ? 'rgba(99, 102, 241, 0.15)' : 'var(--bg-secondary)',
-            border: firebaseUser ? '1px solid rgba(99, 102, 241, 0.4)' : '1px solid var(--border-subtle)',
+            border: firebaseUser
+              ? '1px solid rgba(99, 102, 241, 0.4)'
+              : '1px solid var(--border-subtle)',
             color: firebaseUser ? 'var(--accent-primary)' : 'var(--text-secondary)',
             display: 'flex',
             alignItems: 'center',
@@ -301,7 +324,9 @@ export const HeaderActionToolbar: React.FC<HeaderActionToolbarProps> = ({
           data-testid="header-global-search-btn"
         >
           <Search size={14} color="var(--accent-primary)" />
-          <span className="hide-on-compact-desktop" style={{ color: 'var(--text-muted)' }}>Buscar...</span>
+          <span className="hide-on-compact-desktop" style={{ color: 'var(--text-muted)' }}>
+            Buscar...
+          </span>
           <kbd
             style={{
               fontSize: '10px',

@@ -1,3 +1,4 @@
+import { PRODUCT_FEATURES } from '../../config/productFeatures';
 import { StateCreator } from 'zustand';
 import {
   FlowStore,
@@ -150,7 +151,7 @@ export const createUiSlice: StateCreator<FlowStore, [], [], UiSlice> = (set, get
   },
 
   setActiveView: (view: AppView) => {
-    set({ activeView: view });
+    set({ activeView: view === 'ai' && !PRODUCT_FEATURES.aiAssistant ? 'routine' : view });
   },
 
   setRoutineViewMode: (mode: 'stream' | 'timeline') => {
@@ -239,9 +240,7 @@ export const createUiSlice: StateCreator<FlowStore, [], [], UiSlice> = (set, get
 
   openBackupModal: (tab?: BackupModalTab | any) => {
     const targetTab: BackupModalTab =
-      typeof tab === 'string' && (tab === 'export' || tab === 'import')
-        ? tab
-        : 'backup';
+      typeof tab === 'string' && (tab === 'export' || tab === 'import') ? tab : 'backup';
     set({ isBackupModalOpen: true, backupModalTab: targetTab });
   },
 

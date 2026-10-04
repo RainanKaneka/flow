@@ -1,5 +1,6 @@
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { getFirebaseFirestoreInstance, isFirebaseConfigured } from './firebaseConfig';
+import { toFirestoreData } from '../utils/firebaseData';
 import {
   Task,
   TaskLog,
@@ -137,7 +138,8 @@ export const calculateProfileStats = (
   const totalTasksCompleted = completedLogs.length;
 
   // 2. Tempo de Foco (Pomodoro + logs com timeSpentMinutes)
-  const pomodoroMinutes = (pomodoro.completedSessions || 0) * Math.round((pomodoro.totalDurationSeconds || 1500) / 60);
+  const pomodoroMinutes =
+    (pomodoro.completedSessions || 0) * Math.round((pomodoro.totalDurationSeconds || 1500) / 60);
   const logsMinutes = completedLogs.reduce((acc, curr) => acc + (curr.timeSpentMinutes || 0), 0);
   const totalPomodoroMinutes = pomodoroMinutes + logsMinutes;
 
@@ -146,9 +148,12 @@ export const calculateProfileStats = (
 
   // 4. Taxa de Eficiência
   const totalLoggedAttempts = Object.values(logs).length;
-  const efficiencyRate = totalLoggedAttempts > 0
-    ? Math.min(100, Math.round((totalTasksCompleted / totalLoggedAttempts) * 100))
-    : totalTasksCompleted > 0 ? 100 : 0;
+  const efficiencyRate =
+    totalLoggedAttempts > 0
+      ? Math.min(100, Math.round((totalTasksCompleted / totalLoggedAttempts) * 100))
+      : totalTasksCompleted > 0
+        ? 100
+        : 0;
 
   // 5. Categoria Predominante
   const categoryCountMap: Record<string, { count: number; minutes: number }> = {};
@@ -220,7 +225,10 @@ export const calculateProfileStats = (
 
   const range = nextLevelPoints - prevLevelPoints;
   const currentProgress = xp - prevLevelPoints;
-  const progressPercentage = Math.min(100, Math.max(0, Math.round((currentProgress / range) * 100)));
+  const progressPercentage = Math.min(
+    100,
+    Math.max(0, Math.round((currentProgress / range) * 100))
+  );
 
   // 7. Mural de Conquistas
   const achievements: ProfileAchievement[] = [
@@ -312,7 +320,7 @@ export const userProfileService = {
    */
   async ensureUserProfileInitialized(
     userId: string,
-    initialData?: { name?: string; email?: string; objective?: string }
+    initialData?: { name?: string; email?: string; objective?: string; avatarUrl?: string }
   ): Promise<UserProfile | null> {
     const db = getFirebaseFirestoreInstance();
     if (!db || !userId) return null;
@@ -328,6 +336,8 @@ export const userProfileService = {
       const defaultProfile: UserProfile = {
         name: initialData?.name || 'Usuário Flow',
         objective: initialData?.objective || 'Organizar minha rotina diária',
+        avatarPreset: 'spark',
+        ...(initialData?.avatarUrl ? { avatarUrl: initialData.avatarUrl } : {}),
         plan: 'free',
         premiumSince: null,
         premiumUntil: null,
@@ -361,7 +371,10 @@ export const userProfileService = {
 
       return defaultProfile;
     } catch (error) {
-      console.warn('[userProfileService] Falha ao inicializar perfil de usuário no Firestore:', error);
+      console.warn(
+        '[userProfileService] Falha ao inicializar perfil de usuário no Firestore:',
+        error
+      );
       return null;
     }
   },
@@ -378,9 +391,9 @@ export const userProfileService = {
       await setDoc(
         userDocRef,
         {
-          displayName: profile.name || undefined,
+          displayName: profile.name || 'Usuário Flow',
           profile: {
-            ...profile,
+            ...toFirestoreData(profile),
             updatedAt: new Date().toISOString(),
           },
           lastSeenAt: serverTimestamp(),

@@ -15,6 +15,8 @@ import * as firebaseApp from 'firebase/app';
 import * as firebaseAuth from 'firebase/auth';
 import * as firebaseFirestore from 'firebase/firestore';
 
+vi.mock('../../config/firebaseProject.json', () => ({ default: {} }));
+
 vi.mock('firebase/app', () => ({
   initializeApp: vi.fn().mockReturnValue({ name: '[DEFAULT]' }),
   getApps: vi.fn().mockReturnValue([]),

@@ -18,6 +18,9 @@ import {
   Repeat,
 } from 'lucide-react';
 import styles from './PomodoroView.module.css';
+import { TaskProgressBadge } from './TaskProgressControl';
+import { useTaskProgressClock } from '../hooks/useTaskProgressClock';
+import { getLocalDateString, getTaskProgressStatus } from '../utils/taskProgress';
 
 export const PomodoroView: React.FC = () => {
   const pomodoro = useFlowStore((s) => s.pomodoro);
@@ -33,10 +36,10 @@ export const PomodoroView: React.FC = () => {
   const setPomodoroMode = useFlowStore((s) => s.setPomodoroMode);
   const setPomodoroDuration = useFlowStore((s) => s.setPomodoroDuration);
   const linkTaskToPomodoro = useFlowStore((s) => s.linkTaskToPomodoro);
-  const tickPomodoro = useFlowStore((s) => s.tickPomodoro);
   const finishPomodoroSession = useFlowStore((s) => s.finishPomodoroSession);
   const togglePomodoroAutoAdvance = useFlowStore((s) => s.togglePomodoroAutoAdvance);
   const categories = useFlowStore((s) => s.categories);
+  const now = useTaskProgressClock();
 
   const [isLinkDropdownOpen, setIsLinkDropdownOpen] = useState(false);
   const linkDropdownRef = useRef<HTMLDivElement>(null);
@@ -53,16 +56,7 @@ export const PomodoroView: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isLinkDropdownOpen]);
 
-  // Intervalo de contagem regressiva
-  useEffect(() => {
-    if (!pomodoro.isActive) return;
-
-    const interval = setInterval(() => {
-      tickPomodoro();
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [pomodoro.isActive, tickPomodoro]);
+  // A página principal mantém o timer ativo também fora desta visualização.
 
   // Filtrar tarefas de hoje para vincular
   const [year, month, day] = selectedDate.split('-').map(Number);
@@ -86,8 +80,10 @@ export const PomodoroView: React.FC = () => {
   }, [tasks, routineTypes, effectiveRoutineTypeId, currentDayOfWeek, selectedDate]);
 
   const linkedTask = tasks.find((t) => t.id === pomodoro.linkedTaskId);
+  const linkedTaskDate = pomodoro.linkedTaskDate || getLocalDateString(now);
+  const linkedTaskLog = linkedTask ? logs[`${linkedTaskDate}_${linkedTask.id}`] : undefined;
   const linkedTaskTime = linkedTask
-    ? logs[`${selectedDate}_${linkedTask.id}`]?.timeSpentMinutes || 0
+    ? linkedTaskLog?.timeSpentMinutes || 0
     : 0;
 
   // Formatação de minutos e segundos
@@ -143,6 +139,9 @@ export const PomodoroView: React.FC = () => {
                   ? `Vinculado a: ${linkedTask.title} (${linkedTaskTime} min acumulados hoje)`
                   : 'Foco livre ou vincule a uma tarefa da rotina abaixo'}
               </p>
+              {linkedTask && (
+                <TaskProgressBadge status={getTaskProgressStatus(linkedTask, linkedTaskLog, linkedTaskDate, now)} />
+              )}
             </div>
           </div>
 

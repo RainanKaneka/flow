@@ -13,6 +13,9 @@ import {
   CalendarDayData,
 } from '../utils/calendarMonth';
 import { sounds } from '../utils/audio';
+import { getTaskProgressStatus } from '../utils/taskProgress';
+import { useTaskProgressClock } from '../hooks/useTaskProgressClock';
+import { TaskProgressBadge, TaskStartButton } from './TaskProgressControl';
 import styles from './CalendarMonthView.module.css';
 import { MoveToBacklogModal } from './MoveToBacklogModal';
 import { DeleteTaskConfirmModal } from './DeleteTaskConfirmModal';
@@ -27,6 +30,7 @@ import {
   Target,
   Inbox,
   Trash2,
+  Play,
 } from 'lucide-react';
 
 export const CalendarMonthView: React.FC = () => {
@@ -46,6 +50,7 @@ export const CalendarMonthView: React.FC = () => {
 
   const [backlogTargetTask, setBacklogTargetTask] = useState<Task | null>(null);
   const [deleteTargetTask, setDeleteTargetTask] = useState<Task | null>(null);
+  const currentNow = useTaskProgressClock();
 
   const todayStr = getTodayDateString();
 
@@ -283,7 +288,8 @@ export const CalendarMonthView: React.FC = () => {
                 {/* Prévia das Tarefas */}
                 <div className={styles.taskListPreview}>
                   {day.tasks.slice(0, 3).map((task) => {
-                    const isDone = !!logs[`${day.dateStr}_${task.id}`]?.completed;
+                    const status = getTaskProgressStatus(task, logs[`${day.dateStr}_${task.id}`], day.dateStr, currentNow);
+                    const isDone = status === 'completed';
                     const cat = categories.find((c) => c.id === task.categoryId) || {
                       id: task.categoryId,
                       name: 'Geral',
@@ -293,8 +299,8 @@ export const CalendarMonthView: React.FC = () => {
                     return (
                       <div
                         key={task.id}
-                        className={`${styles.taskPill} ${isDone ? styles.taskPillCompleted : ''}`}
-                        title={`${task.title} (${task.startTime} - ${task.endTime})`}
+                        className={`${styles.taskPill} ${isDone ? styles.taskPillCompleted : ''} ${status === 'in_progress' ? styles.taskPillInProgress : ''}`}
+                        title={`${task.title} (${task.startTime} - ${task.endTime})${status === 'in_progress' ? ' • Em andamento' : ''}`}
                       >
                         <div
                           className={styles.taskDot}
@@ -303,6 +309,9 @@ export const CalendarMonthView: React.FC = () => {
                         <span className={styles.taskPillText}>
                           {task.title}
                         </span>
+                        {status === 'in_progress' && (
+                          <Play size={10} fill="currentColor" aria-label="Em andamento" className={styles.taskProgressIcon} />
+                        )}
                       </div>
                     );
                   })}
@@ -370,7 +379,9 @@ export const CalendarMonthView: React.FC = () => {
         {selectedDay.tasks.length > 0 ? (
           <div className={styles.inspectorTasksList}>
             {selectedDay.tasks.map((task) => {
-              const isDone = !!logs[`${selectedDate}_${task.id}`]?.completed;
+              const log = logs[`${selectedDate}_${task.id}`];
+              const status = getTaskProgressStatus(task, log, selectedDate, currentNow);
+              const isDone = status === 'completed';
               const cat = categories.find((c) => c.id === task.categoryId) || {
                 id: task.categoryId,
                 name: 'Geral',
@@ -378,7 +389,7 @@ export const CalendarMonthView: React.FC = () => {
               };
 
               return (
-                <div key={task.id} className={styles.inspectorTaskItem}>
+                <div key={task.id} className={styles.inspectorTaskItem} data-testid={`calendar-inspector-task-${task.id}`}>
                   <div className={styles.inspectorTaskInfo}>
                     <button
                       type="button"
@@ -420,6 +431,7 @@ export const CalendarMonthView: React.FC = () => {
                           alignItems: 'center',
                           gap: '6px',
                           marginTop: '2px',
+                          flexWrap: 'wrap',
                         }}
                       >
                         <span
@@ -434,12 +446,20 @@ export const CalendarMonthView: React.FC = () => {
                         <span className={styles.inspectorTaskTime}>
                           {task.startTime} - {task.endTime} ({task.targetMinutes}m)
                         </span>
+                        <TaskProgressBadge status={status} />
                       </div>
                     </div>
                   </div>
 
                   {/* Ações da Tarefa: Mover para o Backlog e Excluir */}
                   <div className={styles.inspectorTaskActions}>
+                    <TaskStartButton
+                      task={task}
+                      date={selectedDate}
+                      log={log}
+                      now={currentNow}
+                      compact
+                    />
                     <button
                       type="button"
                       onClick={() => setBacklogTargetTask(task)}

@@ -1,4 +1,4 @@
-name: Build Flow Desktop Setup (.exe)
+name: Build Flow Desktop Setup
 
 on:
   push:
@@ -12,7 +12,6 @@ jobs:
   build-tauri:
     name: Build Windows Desktop App
     runs-on: windows-latest
-
     permissions:
       contents: write
 
@@ -23,7 +22,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
 
       - name: Setup Rust toolchain
@@ -34,16 +33,29 @@ jobs:
         with:
           workspaces: './src-tauri -> target'
 
-      - name: Install Frontend Dependencies
-        run: npm ci || npm install
+      - name: Validate release version
+        shell: pwsh
+        run: |
+          $version = (Get-Content src-tauri/tauri.conf.json | ConvertFrom-Json).version
+          $packageVersion = (Get-Content package.json | ConvertFrom-Json).version
+          if ($version -ne $packageVersion) { throw "App and installer versions differ" }
+          if ($env:GITHUB_REF_TYPE -eq 'tag') {
+            if ($env:GITHUB_REF_NAME -ne "v$version") { throw "Release tag differs from installer version" }
+            if (-not (Test-Path -LiteralPath "docs/releases/v$version.md")) { throw "Release notes are missing" }
+          }
+          "RELEASE_TAG=v$version" >> $env:GITHUB_ENV
+          "RELEASE_NAME=Flow Desktop v$version" >> $env:GITHUB_ENV
 
-      - name: Build Next.js Static Bundle
-        run: npm run build
+      - name: Install frontend dependencies
+        run: npm ci
 
-      - name: Build Tauri Desktop Installer
-        run: npx tauri build --verbose
+      - name: Test application
+        run: npm test
 
-      - name: Upload Windows Setup Artifact (.exe / .msi)
+      - name: Build desktop installers
+        run: npx tauri build
+
+      - name: Upload Windows artifacts
         uses: actions/upload-artifact@v4
         with:
           name: Flow-Windows-Setup-x64
@@ -51,42 +63,23 @@ jobs:
             src-tauri/target/release/bundle/nsis/*.exe
             src-tauri/target/release/bundle/msi/*.msi
             src-tauri/target/release/flow.exe
-          if-no-files-found: warn
+          if-no-files-found: error
           retention-days: 14
 
-      - name: Determine Release Tag and Name
-        id: release_info
-        shell: pwsh
-        run: |
-          $tauriConf = Get-Content src-tauri/tauri.conf.json | ConvertFrom-Json
-          $version = $tauriConf.version
-          if ("${{ github.ref_type }}" -eq "tag") {
-            $tag = "${{ github.ref_name }}"
-          } else {
-            $tag = "v$version"
-          }
-          echo "RELEASE_TAG=$tag" >> $env:GITHUB_ENV
-          echo "RELEASE_NAME=Flow Desktop $tag" >> $env:GITHUB_ENV
-          echo "VERSION=$version" >> $env:GITHUB_ENV
-
-      - name: Publish to GitHub Releases (Direct One-Click .exe)
+      - name: Publish GitHub release
+        if: github.ref_type == 'tag'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.RELEASE_TAG }}
           name: ${{ env.RELEASE_NAME }}
+          body_path: docs/releases/${{ env.RELEASE_TAG }}.md
           draft: false
           prerelease: false
+          make_latest: true
+          fail_on_unmatched_files: true
           files: |
             src-tauri/target/release/bundle/nsis/*.exe
             src-tauri/target/release/bundle/msi/*.msi
             src-tauri/target/release/flow.exe
-          body: |
-            ## 🌊 Flow — Instalador Desktop Oficial para Windows (${{ env.RELEASE_TAG }})
-
-            Baixe o instalador `.exe` direto abaixo (sem precisar extrair nada, apenas dê dois cliques para instalar):
-
-            - 🚀 **Instalador NSIS `.exe`** (Recomendado: instalador completo com assistente e atalhos na Área de Trabalho)
-            - 📦 **Instalador MSI** (Pacote corporativo Windows)
-            - ⚡ **Executável Portátil** (`flow.exe`)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

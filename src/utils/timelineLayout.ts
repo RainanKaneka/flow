@@ -1,5 +1,6 @@
 import { Task, TaskLog } from '../types/routine';
 import { timeToMinutes } from './routineReplan';
+import { getTaskProgressStatus } from './taskProgress';
 
 export interface TimelineTaskItem {
   type: 'task';
@@ -8,7 +9,7 @@ export interface TimelineTaskItem {
   startTime: string;
   endTime: string;
   durationMinutes: number;
-  status: 'completed' | 'in_progress' | 'upcoming';
+  status: 'completed' | 'in_progress' | 'pending';
   isCurrent: boolean;
 }
 
@@ -52,7 +53,7 @@ export function buildTimelineItems(
   tasks: Task[],
   logs: Record<string, TaskLog>,
   selectedDate: string,
-  nowMinutes?: number
+  now: Date = new Date()
 ): TimelineItem[] {
   if (!tasks || tasks.length === 0) {
     return [];
@@ -64,6 +65,8 @@ export function buildTimelineItems(
   );
 
   const items: TimelineItem[] = [];
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  const nowMinutes = selectedDate === today ? now.getHours() * 60 + now.getMinutes() : undefined;
 
   for (let i = 0; i < sortedTasks.length; i++) {
     const task = sortedTasks[i];
@@ -95,24 +98,16 @@ export function buildTimelineItems(
       }
     }
 
-    // 2. Determina status da tarefa
+    // O horário atual e o estado de execução são informações independentes.
     const logKey = `${selectedDate}_${task.id}`;
     const log = logs[logKey];
-    const isCompleted = !!log?.completed;
 
     const isCurrent =
       nowMinutes !== undefined &&
       nowMinutes >= taskStartMin &&
       nowMinutes < taskEndMin;
 
-    let status: 'completed' | 'in_progress' | 'upcoming';
-    if (isCompleted) {
-      status = 'completed';
-    } else if (isCurrent) {
-      status = 'in_progress';
-    } else {
-      status = 'upcoming';
-    }
+    const status = getTaskProgressStatus(task, log, selectedDate, now);
 
     items.push({
       type: 'task',
