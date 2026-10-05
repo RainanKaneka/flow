@@ -3,29 +3,32 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { BackupModal } from '../BackupModal';
 import { useFlowStore } from '../../store/useFlowStore';
-import { backupService } from '../../services/backupService';
+import { backupService, isTauriEnvironment } from '../../services/backupService';
 import * as exportImportService from '../../services/exportImportService';
 
 vi.mock('../../services/backupService', () => ({
   formatBytes: vi.fn((bytes: number) => `${bytes / 1024} KB`),
+  isTauriEnvironment: vi.fn(() => true),
   backupService: {
     getDefaultBackupDir: vi.fn().mockResolvedValue('C:\\Users\\Test\\Documents\\FlowBackups'),
     pickBackupFolder: vi.fn().mockResolvedValue('D:\\BackupsCustom'),
     createBackup: vi.fn().mockResolvedValue({
       success: true,
       backup: {
-        filePath: 'C:\\Users\\Test\\Documents\\FlowBackups\\flow_backup_2026-09-23.db',
-        fileName: 'flow_backup_2026-09-23.db',
+        filePath: 'C:\\Users\\Test\\Documents\\FlowBackups\\flow_backup_2026-09-23.flowbackup',
+        fileName: 'flow_backup_2026-09-23.flowbackup',
         fileSizeBytes: 61440,
         createdAt: '2026-09-23T14:00:00Z',
+        includesRewards: true,
       },
     }),
     listBackups: vi.fn().mockResolvedValue([
       {
-        filePath: 'C:\\Users\\Test\\Documents\\FlowBackups\\flow_backup_2026-09-23.db',
-        fileName: 'flow_backup_2026-09-23.db',
+        filePath: 'C:\\Users\\Test\\Documents\\FlowBackups\\flow_backup_2026-09-23.flowbackup',
+        fileName: 'flow_backup_2026-09-23.flowbackup',
         fileSizeBytes: 61440,
         createdAt: '2026-09-23T14:00:00Z',
+        includesRewards: true,
       },
     ]),
     openBackupFolder: vi.fn().mockResolvedValue(undefined),
@@ -35,6 +38,7 @@ vi.mock('../../services/backupService', () => ({
 describe('BackupModal Component', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(isTauriEnvironment).mockReturnValue(true);
     useFlowStore.setState({
       isBackupModalOpen: true,
       backupModalTab: 'backup',
@@ -76,11 +80,21 @@ describe('BackupModal Component', () => {
     expect(container).toBeEmptyDOMElement();
   });
 
+  it('não apresenta o backup SQLite como disponível no navegador', () => {
+    vi.mocked(isTauriEnvironment).mockReturnValue(false);
+    render(<BackupModal />);
+    expect(screen.getByText('Backup apenas no desktop')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /fazer backup agora/i })).toBeDisabled();
+    expect(screen.getByRole('switch', { name: /ativar backup automático diário/i })).toBeDisabled();
+    expect(screen.getByLabelText(/pasta de destino dos backups:/i)).toBeDisabled();
+    expect(screen.getByRole('tab', { name: /exportar dados/i })).toBeEnabled();
+  });
+
   it('deve renderizar o cabeçalho, status do banco e pasta configurada', async () => {
     render(<BackupModal />);
 
     expect(await screen.findByRole('heading', { name: /central de dados & backup/i })).toBeInTheDocument();
-    expect(screen.getByText(/sqlite nativo conectado/i)).toBeInTheDocument();
+    expect(screen.getByText(/sqlite nativo disponível/i)).toBeInTheDocument();
     expect(screen.getByText(/backup automático diário/i)).toBeInTheDocument();
 
     const folderInput = screen.getByLabelText(/pasta de destino dos backups:/i) as HTMLInputElement;
@@ -111,7 +125,7 @@ describe('BackupModal Component', () => {
     });
 
     expect(
-      await screen.findByText(/backup gerado com sucesso: flow_backup_2026-09-23\.db/i)
+      await screen.findByText(/backup gerado com sucesso: flow_backup_2026-09-23\.flowbackup/i)
     ).toBeInTheDocument();
   });
 

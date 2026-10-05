@@ -3,6 +3,10 @@
 import { PRODUCT_FEATURES } from '../config/productFeatures';
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useFlowStore } from '../store/useFlowStore';
+import { firebaseAuthService } from '../services/firebaseAuthService';
+import { restoreFirebaseAccount } from '../services/firebaseSessionService';
+import accountStyles from './UserProfileAccount.module.css';
+import { FishCompanion } from './rewards/FishCompanion';
 import {
   X,
   User,
@@ -25,6 +29,7 @@ import {
   Flame,
   TrendingUp,
   Folder,
+  LoaderCircle,
 } from 'lucide-react';
 import {
   AVATAR_PRESETS,
@@ -56,6 +61,7 @@ export const UserProfileModal: React.FC = () => {
   const tasks = useFlowStore((s) => s.tasks);
   const logs = useFlowStore((s) => s.logs);
   const categories = useFlowStore((s) => s.categories);
+  const rewardWallet = useFlowStore((s) => s.rewards?.wallet);
 
   const firebaseUser = useFlowStore((s) => s.firebaseUser);
   const googleUser = useFlowStore((s) => s.googleUser);
@@ -73,6 +79,8 @@ export const UserProfileModal: React.FC = () => {
   const [selectedPlan, setSelectedPlan] = useState<'free' | 'premium'>('free');
   const [isSaved, setIsSaved] = useState(false);
   const [isSyncingCloud, setIsSyncingCloud] = useState(false);
+  const [isSigningInGoogle, setIsSigningInGoogle] = useState(false);
+  const [googleAuthError, setGoogleAuthError] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -86,6 +94,7 @@ export const UserProfileModal: React.FC = () => {
       setAvatarUrl(userProfile?.avatarUrl || '');
       setSelectedPlan(userProfile?.plan || 'free');
       setIsSaved(false);
+      setGoogleAuthError(null);
     }
   }, [isProfileModalOpen]);
 
@@ -102,12 +111,45 @@ export const UserProfileModal: React.FC = () => {
 
   // Estatísticas calculadas dinamicamente
   const stats = useMemo(() => {
-    return calculateProfileStats(tasks, logs, pomodoro, categories);
-  }, [tasks, logs, pomodoro, categories]);
+    return calculateProfileStats(tasks, logs, pomodoro, categories, rewardWallet);
+  }, [tasks, logs, pomodoro, categories, rewardWallet]);
 
   if (!isProfileModalOpen) return null;
 
   const activePreset = getPresetById(avatarPreset);
+  const hasConnectedAccount = firebaseUser && !firebaseUser.isAnonymous && !googleAuthError;
+
+  const handleGoogleSignIn = async () => {
+    if (isSigningInGoogle) return;
+    setIsSigningInGoogle(true);
+    setGoogleAuthError(null);
+    try {
+      const user = await firebaseAuthService.signInWithGoogle();
+      await restoreFirebaseAccount(user);
+      const state = useFlowStore.getState();
+      if (state.firebaseUser?.uid !== user.uid) return;
+      const profile = state.userProfile;
+      setName(profile?.name || user.displayName || 'Usuário Flow');
+      setObjective(profile?.objective || 'Organizar minha rotina diária');
+      setBio(profile?.bio || '');
+      setAvatarPreset(profile?.avatarPreset || 'spark');
+      setAvatarUrl(profile?.avatarUrl || '');
+      setSelectedPlan(profile?.plan || 'free');
+      setIsSaved(false);
+      showSnackbar('Conta Google conectada. Seu perfil está pronto!');
+    } catch (error) {
+      const code = (error as { code?: string } | null)?.code;
+      setGoogleAuthError(
+        code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request'
+          ? 'A conexão foi cancelada. Você pode tentar novamente.'
+          : error instanceof Error
+            ? error.message
+            : 'Não foi possível conectar sua conta Google. Tente novamente.'
+      );
+    } finally {
+      setIsSigningInGoogle(false);
+    }
+  };
 
   const handleSaveProfile = async () => {
     const updatedData = {
@@ -267,6 +309,7 @@ export const UserProfileModal: React.FC = () => {
           <div style={{ display: 'flex', alignItems: 'center', gap: '18px', flexWrap: 'wrap' }}>
             {/* Avatar em Destaque */}
             <div
+              className="reward-profile-avatar"
               style={{
                 width: '68px',
                 height: '68px',
@@ -453,6 +496,62 @@ export const UserProfileModal: React.FC = () => {
           {/* TAB 1: PERFIL & AVATAR */}
           {activeTab === 'perfil' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
+              <section className={accountStyles.card} aria-label="Conta do Flow">
+                <div className={accountStyles.row}>
+                  <div className={accountStyles.details}>
+                    <h3 className={accountStyles.title}>
+                      {hasConnectedAccount && !isSigningInGoogle ? (
+                        <CloudCheck size={16} aria-hidden="true" />
+                      ) : (
+                        <Cloud size={16} aria-hidden="true" />
+                      )}
+                      Sua conta Flow
+                    </h3>
+                    <p className={accountStyles.description}>
+                      {isSigningInGoogle
+                        ? 'Conclua a conexão com Google no navegador.'
+                        : hasConnectedAccount
+                          ? `Conectado como ${firebaseUser.email || firebaseUser.displayName}`
+                          : 'Crie sua conta ou entre com Google para guardar seu perfil na nuvem.'}
+                    </p>
+                  </div>
+                  {hasConnectedAccount && !isSigningInGoogle ? (
+                    <button
+                      type="button"
+                      className={accountStyles.button}
+                      onClick={() => {
+                        closeProfileModal();
+                        openAuthSyncModal();
+                      }}
+                    >
+                      Gerenciar Conta
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className={accountStyles.button}
+                      onClick={handleGoogleSignIn}
+                      disabled={isSigningInGoogle}
+                      aria-busy={isSigningInGoogle}
+                    >
+                      {isSigningInGoogle && (
+                        <LoaderCircle
+                          size={16}
+                          className={accountStyles.spinner}
+                          aria-hidden="true"
+                        />
+                      )}
+                      {isSigningInGoogle ? 'Conectando com Google…' : 'Criar conta com Google'}
+                    </button>
+                  )}
+                </div>
+                {googleAuthError && (
+                  <p role="alert" className={accountStyles.error}>
+                    {googleAuthError}
+                  </p>
+                )}
+              </section>
+              <FishCompanion currentAvatar={avatarUrl} onUseAvatar={(url) => { setAvatarUrl(url); sounds.playHapticClick(); }} />
               {/* Seção 1: Seleção de Avatar */}
               <div>
                 <label
@@ -1585,6 +1684,7 @@ export const UserProfileModal: React.FC = () => {
             <button
               type="button"
               onClick={handleSaveProfile}
+              disabled={isSigningInGoogle}
               data-testid="save-profile-btn"
               style={{
                 padding: '9px 22px',

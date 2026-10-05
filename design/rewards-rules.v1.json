@@ -1,0 +1,65 @@
+{
+  "version": "flow-rewards-v1-draft",
+  "status": "prototype-only",
+  "resources": { "xp": "permanent", "coins": "cosmetics-only", "tickets": "fishing-only" },
+  "task": { "xp": 50, "coins": 5, "dailyLimit": 5, "confirmationWindowSeconds": 5 },
+  "firstTask": { "xp": 25, "coins": 10, "tickets": 1, "dailyLimit": 1 },
+  "dailyGoals": {
+    "1": { "xp": 15, "coins": 5, "tickets": 1 },
+    "2": { "xp": 30, "coins": 7, "tickets": 1 },
+    "3": { "xp": 50, "coins": 10, "tickets": 1 }
+  },
+  "defaultDailyGoal": 3,
+  "focus": { "minimumCompletedMinutes": 25, "xp": 20, "coins": 2, "dailyLimit": 3 },
+  "dailyCoinsCap": 50,
+  "weeklyGoal": {
+    "activeDays": 4,
+    "xp": 100,
+    "coins": 20,
+    "tickets": 0,
+    "outsideDailyCap": true,
+    "weekStartsOn": "monday"
+  },
+  "levelThresholds": [0, 250, 600, 1200, 2500],
+  "extendedLevelFormula": "For level n >= 6: 2500 + 750 * (n - 5) + 250 * (n - 5)^2",
+  "legacyWelcomeGift": { "coins": 15, "oncePerAccount": true },
+  "offlineClaimWindowDays": 7,
+  "catalog": [
+    { "id": "accent.sage.v1", "name": "Sálvia", "slot": "accent", "coins": 15, "stage": 2 },
+    { "id": "theme.forest.v1", "name": "Bosque", "slot": "theme", "coins": 80, "stage": 2 },
+    { "id": "frame.horizon.v1", "name": "Horizonte", "slot": "frame", "coins": 120, "stage": 2 },
+    {
+      "id": "pet.accessory.v1",
+      "name": "Acessório inicial",
+      "slot": "petAccessory",
+      "coins": 90,
+      "stage": 3
+    },
+    {
+      "id": "aquarium.decor.v1",
+      "name": "Decoração inicial",
+      "slot": "aquariumDecoration",
+      "coins": 150,
+      "stage": 4
+    },
+    {
+      "id": "pet.second.v1",
+      "name": "Segundo companheiro",
+      "slot": "pet",
+      "coins": 300,
+      "stage": 5
+    },
+    { "id": "theme.special.v1", "name": "Tema especial", "slot": "theme", "coins": 600, "stage": 5 }
+  ],
+  "fishing": {
+    "stage": 4,
+    "ticketCost": 1,
+    "guaranteedCatch": true,
+    "duplicateStreakBeforeGuaranteedNew": 5,
+    "initialSpecies": 8,
+    "rarityWeights": { "common": 55, "uncommon": 30, "rare": 12, "legendary": 3 },
+    "speciesPerRarity": { "common": 4, "uncommon": 2, "rare": 1, "legendary": 1 },
+    "coinRewards": false,
+    "ticketsExpire": false
+  }
+}

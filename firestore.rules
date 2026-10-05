@@ -8,6 +8,20 @@ service cloud.firestore {
       return request.auth != null && request.auth.uid == userId;
     }
 
+    function isValidUser(data) {
+      return data.keys().hasOnly(['displayName','email','plan','premiumSince','premiumUntil','aiQuota','profile','createdAt','lastSeenAt'])
+        && (!('displayName' in data) || (data.displayName is string && data.displayName.size() <= 200))
+        && (!('email' in data) || (data.email is string && data.email.size() <= 320))
+        && (!('profile' in data) || (data.profile is map && data.profile.keys().size() <= 24));
+    }
+    function isValidSync(data) {
+      return data.keys().hasAll(['tasks','routineTypes','categories','logs','backlog','notes'])
+        && data.keys().hasOnly(['tasks','routineTypes','categories','logs','backlog','notes','reminderSettings','backupSettings','lastUpdatedClient','version','serverTimestamp'])
+        && data.tasks is list && data.tasks.size() <= 3000 && data.routineTypes is list && data.routineTypes.size() <= 100
+        && data.categories is list && data.categories.size() <= 500 && data.logs is map && data.logs.keys().size() <= 15000
+        && data.backlog is list && data.backlog.size() <= 3000 && data.notes is list && data.notes.size() <= 3000;
+    }
+
     // Campos sensíveis de monetização e quotas que NÃO podem ser alterados pelo cliente
     function protectedFieldsNotModified() {
       return !request.resource.data.diff(resource.data).affectedKeys().hasAny([
@@ -15,26 +29,471 @@ service cloud.firestore {
       ]);
     }
 
+// Reward schema (private to the authenticated owner):
+// rewardsWallet/main: bounded integers, immutable timezone/offset, catalog-only owned items,
+//   nine goal periods at most; revision and lastEvent link each economic transaction.
+// rewardReceipts/{id}: immutable operation identity, time, deltas and wallet revision.
+// rewardDays/{epochDay}: five task / three focus awards, fifty daily coins, frozen goal.
+// rewardWeeks/{mondayEpochDay}: unique active days and a single weekly bonus.
+// rewardsPreferences/main: cosmetic equipment and visibility; never contains a balance.
+// fishingProgress/main: v1 aggregate, eleven catalog counters, discovery times, two pity
+//   counters, category duplicates, revision, lastCapture, starterClaimed/imported flags.
+// fishCaptures/{id}: immutable species, kind, cost, rules version and linked revisions.
+// fishImports/guest_v1: immutable, one-time local origin; no currency or pity import.
+// aquariumPreferences/main: <=5 discovered species, favorite, <=40-char nicknames, motion.
+
+function rewardWalletPath(uid) { return /databases/$(database)/documents/users/$(uid)/rewardsWallet/main; }
+function rewardReceiptPath(uid, id) { return /databases/$(database)/documents/users/$(uid)/rewardReceipts/$(id); }
+function rewardDayPath(uid, day) { return /databases/$(database)/documents/users/$(uid)/rewardDays/$(string(day)); }
+function rewardWeekPath(uid, day) { return /databases/$(database)/documents/users/$(uid)/rewardWeeks/$(string(day - ((day + 3) % 7))); }
+function rewardItems() { return ['accent.sage.v1', 'theme.forest.v1', 'frame.horizon.v1']; }
+function rewardAchievements() { return ['first_step', 'pomodoro_hero', 'task_streak_3', 'task_streak_7', 'routine_master', 'time_warrior']; }
+function boundedInt(n, max) { return n is int && n >= 0 && n <= max; }
+function smaller(a,b) { return a < b ? a : b; }
+function larger(a,b) { return a > b ? a : b; }
+function validGoal(g) {
+  return g is map && g.keys().hasAll(['day','target','weekdays']) && g.keys().hasOnly(['day','target','weekdays'])
+    && boundedInt(g.day, 100000) && g.target in [1,2,3] && g.weekdays is list && g.weekdays.size() >= 1
+    && g.weekdays.size() <= 7 && g.weekdays.toSet().size() == g.weekdays.size() && g.weekdays.hasOnly([0,1,2,3,4,5,6]);
+}
+function rewardGoal(g,index) {
+  return index == -1 ? {'day':0,'target':3,'weekdays':[0,1,2,3,4,5,6]} : g[index];
+}
+function correctGoalIndex(g,index,day) {
+  return index == -1 ? g[g.size()-1].day > day
+    : index >= 0 && index < g.size() && g[index].day <= day && (index == 0 || g[index-1].day > day);
+}
+function isValidRewardWallet(w,initial) {
+  // On update, exact transitions also validate every changed field and preserve all others.
+  return initial ? w.keys().hasAll(['version','xp','coins','tickets','taskCount','focusCount','streak','bestStreak','lastActiveDay','owned','legacyAchievements','legacyXp','timezone','offset','goals','revision','lastEvent'])
+    && w.keys().hasOnly(['version','xp','coins','tickets','taskCount','focusCount','streak','bestStreak','lastActiveDay','owned','legacyAchievements','legacyXp','timezone','offset','goals','revision','lastEvent'])
+    && w.version == 1 && boundedInt(w.xp,2000000000) && boundedInt(w.legacyXp,1000000000)
+    && boundedInt(w.coins,1000000000) && boundedInt(w.tickets,1000000000)
+    && boundedInt(w.taskCount,1000000000) && boundedInt(w.focusCount,1000000000)
+    && boundedInt(w.streak,100000) && boundedInt(w.bestStreak,100000) && w.lastActiveDay is int && w.lastActiveDay >= -1 && w.lastActiveDay <= 100000
+    && w.owned is list && w.owned.size() <= 3 && w.owned.toSet().size() == w.owned.size() && w.owned.hasOnly(rewardItems())
+    && w.legacyAchievements is list && w.legacyAchievements.size() <= 6 && w.legacyAchievements.toSet().size() == w.legacyAchievements.size() && w.legacyAchievements.hasOnly(rewardAchievements())
+    && w.timezone is string && w.timezone.size() > 0 && w.timezone.size() <= 64
+    // Older goal entries are validated when first inserted; transitions preserve their exact values.
+    && w.offset is int && w.offset >= -840 && w.offset <= 840 && w.goals is list && w.goals.size() >= 1 && w.goals.size() <= 9 && validGoal(w.goals[0])
+    && boundedInt(w.revision,2000000000) && w.lastEvent is string && w.lastEvent.size() <= 240
+    : boundedInt(w.xp,2000000000) && boundedInt(w.coins,1000000000) && boundedInt(w.tickets,1000000000) && boundedInt(w.revision,2000000000);
+}
+function initialRewardWallet(w) {
+  return w.xp == 0 && w.legacyXp == 0 && w.coins == 0 && w.tickets == 0 && w.taskCount == 0 && w.focusCount == 0
+    && w.streak == 0 && w.bestStreak == 0 && w.lastActiveDay == -1 && w.owned == [] && w.legacyAchievements == []
+    && w.goals == [{'day':0,'target':3,'weekdays':[0,1,2,3,4,5,6]}] && w.revision == 0 && w.lastEvent == '';
+}
+function isValidRewardReceipt(e) {
+  return e.keys().hasAll(['id','kind','day','sourceId','occurredAt','xp','coins','tickets','weeklyBonus','revision'])
+    && e.keys().hasOnly(['id','kind','day','sourceId','occurredAt','xp','coins','tickets','weeklyBonus','revision','focusSeconds','graceUntil','goalIndex','streakGoalIndexes','continuesStreak'])
+    && e.id is string && e.id.size() > 0 && e.id.size() <= 240 && e.sourceId is string && e.sourceId.size() > 0 && e.sourceId.size() <= 180
+    && e.kind in ['task','focus','purchase','goal','migration','fishing','aquatic-purchase'] && boundedInt(e.day,100000)
+    && e.occurredAt is int && e.occurredAt > 0 && e.occurredAt <= request.time.toMillis() + 60000
+    && e.occurredAt >= request.time.toMillis() - 604800000
+    && boundedInt(e.xp,1000000000) && e.coins is int && e.coins >= -120 && e.coins <= 70 && e.tickets is int && e.tickets >= -1 && e.tickets <= 2
+    && e.weeklyBonus is bool && boundedInt(e.revision,2000000000)
+    && (!('focusSeconds' in e) || boundedInt(e.focusSeconds,86400)) && (!('graceUntil' in e) || boundedInt(e.graceUntil,8640000000000))
+    && (!('goalIndex' in e) || (e.goalIndex is int && e.goalIndex >= -1 && e.goalIndex <= 8))
+    && (!('continuesStreak' in e) || e.continuesStreak is bool)
+    && (!('streakGoalIndexes' in e) || (e.streakGoalIndexes is list && e.streakGoalIndexes.size() == 7
+      && e.streakGoalIndexes.hasOnly([-1,0,1,2,3,4,5,6,7,8]) && e.streakGoalIndexes[0] is int && e.streakGoalIndexes[1] is int
+      && e.streakGoalIndexes[2] is int && e.streakGoalIndexes[3] is int && e.streakGoalIndexes[4] is int && e.streakGoalIndexes[5] is int && e.streakGoalIndexes[6] is int));
+}
+function isValidRewardDay(d) {
+  return d.keys().hasAll(['tasks','focus','coins','goal','planned']) && d.keys().hasOnly(['tasks','focus','coins','goal','planned'])
+    && d.tasks is int && d.focus is int && d.coins is int && d.goal is int && d.planned is bool;
+}
+function isValidRewardWeek(w, monday) {
+  return w.keys().hasAll(['days','rewarded']) && w.keys().hasOnly(['days','rewarded']) && w.rewarded is bool
+    // Every element is an integer day appended by expectedRewardWeek; that exact map is
+    // checked by rewardEarnValid in the same atomic request. No independent list edits exist.
+    && w.days is list && w.days.size() <= 7;
+}
+function beforeRewardDay(uid, w, e) {
+  let path = rewardDayPath(uid,e.day);
+  let g = rewardGoal(w.goals,e.goalIndex);
+  return exists(path) ? get(path).data : {'tasks':0,'focus':0,'coins':0,'goal':g.target,'planned':((e.day+4)%7) in g.weekdays};
+}
+function beforeRewardWeek(uid, day) {
+  let path = rewardWeekPath(uid,day);
+  return exists(path) ? get(path).data : {'days':[],'rewarded':false};
+}
+function rewardFlags(e,d) {
+  let task = e.kind == 'task' && d.tasks < 5;
+  let focus = e.kind == 'focus' && d.focus < 3;
+  let first = task && d.tasks == 0;
+  let goal = task && d.tasks + 1 == d.goal && d.planned;
+  return {'task':task,'focus':focus,'first':first,'goal':goal};
+}
+function plannedBetween(g,day,end,index) {
+  // A missing history period means every day was planned, so it can never justify a rest day.
+  return day >= end || (index >= 0 && index < g.size() && g[index].day <= day
+    && (index == 0 || g[index-1].day > day) && !(((day+4)%7) in g[index].weekdays));
+}
+function rewardStreakContinues(w,e) {
+  let day=e.day;
+  let previous=w.lastActiveDay;
+  let g=w.goals;
+  let indexes=e.streakGoalIndexes;
+  return day == previous+1 || (previous >= 0 && day-previous <= 8
+    && plannedBetween(g,previous+1,day,indexes[0]) && plannedBetween(g,previous+2,day,indexes[1])
+    && plannedBetween(g,previous+3,day,indexes[2]) && plannedBetween(g,previous+4,day,indexes[3])
+    && plannedBetween(g,previous+5,day,indexes[4]) && plannedBetween(g,previous+6,day,indexes[5])
+    && plannedBetween(g,previous+7,day,indexes[6]));
+}
+function expectedRewardDay(e,d,f) {
+  let offered = (f.task ? 5 : 0) + (f.first ? 10 : 0) + (f.goal ? (d.goal == 1 ? 5 : d.goal == 2 ? 7 : 10) : 0) + (f.focus ? 2 : 0);
+  return {'tasks':d.tasks+(f.task ? 1 : 0),'focus':d.focus+(f.focus ? 1 : 0),'coins':smaller(50,d.coins+offered),'goal':d.goal,'planned':d.planned};
+}
+function expectedRewardWeek(e,w,f) {
+  let days = f.task && !(e.day in w.days) ? w.days.concat([e.day]) : w.days;
+  return {'days':days,'rewarded':w.rewarded || days.size() >= 4};
+}
+function rewardEarnValid(uid,old,w,e) {
+  let d = beforeRewardDay(uid,old,e);
+  let week = beforeRewardWeek(uid,e.day);
+  let f = rewardFlags(e,d);
+  let nd = expectedRewardDay(e,d,f);
+  let nw = expectedRewardWeek(e,week,f);
+  let bonus = !week.rewarded && nw.rewarded;
+  let xp = (f.task ? 50 : 0)+(f.first ? 25 : 0)+(f.goal ? (d.goal == 1 ? 15 : d.goal == 2 ? 30 : 50) : 0)+(f.focus ? 20 : 0)+(bonus ? 100 : 0);
+  // The companion receipt-create rule verifies this evidence in the same transaction,
+  // distributing the work across writes to remain within Rules expression limits.
+  let streak = f.task && e.day > old.lastActiveDay ? (e.continuesStreak ? old.streak+1 : 1) : old.streak;
+  let eventDay = int(math.floor((e.occurredAt + old.offset * 60000) / 86400000));
+  return e.kind in ['task','focus'] && e.keys().hasAll(['focusSeconds','graceUntil','goalIndex','streakGoalIndexes','continuesStreak'])
+    && (exists(rewardDayPath(uid,e.day)) || correctGoalIndex(old.goals,e.goalIndex,e.day))
+    && e.sourceId.matches('^[A-Za-z0-9_.-]{1,180}$') && e.id == (e.kind == 'focus' ? 'focus_'+e.sourceId : 'task_'+string(e.day)+'_'+e.sourceId)
+    && (e.day == eventDay || (e.kind == 'task' && e.day == eventDay-1 && e.occurredAt <= e.graceUntil && e.graceUntil <= (e.day+2)*86400000-old.offset*60000+7200000))
+    && (e.kind != 'focus' || e.focusSeconds >= 1500)
+    && getAfter(rewardDayPath(uid,e.day)).data == nd && getAfter(rewardWeekPath(uid,e.day)).data == nw
+    && e.xp == xp && e.coins == nd.coins-d.coins+(bonus ? 20 : 0) && e.tickets == (f.first ? 1 : 0)+(f.goal ? 1 : 0) && e.weeklyBonus == bonus
+    && w.xp == old.xp+e.xp && w.coins == old.coins+e.coins && w.tickets == old.tickets+e.tickets
+    && w.taskCount == old.taskCount+(f.task ? 1 : 0) && w.focusCount == old.focusCount+(f.focus ? 1 : 0)
+    && w.streak == streak && w.bestStreak == larger(old.bestStreak,streak) && w.lastActiveDay == (f.task ? larger(old.lastActiveDay,e.day) : old.lastActiveDay)
+    && w.diff(old).affectedKeys().hasOnly(['xp','coins','tickets','taskCount','focusCount','streak','bestStreak','lastActiveDay','revision','lastEvent']);
+}
+function rewardPrice(id) { return id == 'accent.sage.v1' ? 15 : id == 'theme.forest.v1' ? 80 : 120; }
+function rewardPurchaseValid(old,w,e) {
+  return e.kind == 'purchase' && e.sourceId in rewardItems() && e.id == 'purchase_'+e.sourceId
+    && !(e.sourceId in old.owned) && w.owned == old.owned.concat([e.sourceId])
+    && e.xp == 0 && e.coins == -rewardPrice(e.sourceId) && e.tickets == 0 && !e.weeklyBonus
+    && w.coins == old.coins+e.coins && w.diff(old).affectedKeys().hasOnly(['coins','owned','revision','lastEvent']);
+}
+function rewardGoalValid(old,w,e) {
+  let tomorrow = int(math.floor((request.time.toMillis()+old.offset*60000) / 86400000))+1;
+  let remaining = old.goals[0].day == tomorrow ? old.goals.removeAll([old.goals[0]]) : old.goals;
+  let trimmed = remaining.size() == 9 ? remaining.removeAll([remaining[8]]) : remaining;
+  return e.kind == 'goal' && e.id.matches('^goal_[A-Za-z0-9-]{1,80}$') && e.sourceId == e.id
+    && e.xp == 0 && e.coins == 0 && e.tickets == 0 && !e.weeklyBonus
+    && validGoal(w.goals[0]) && w.goals[0].day == tomorrow && w.goals == [w.goals[0]].concat(trimmed)
+    && w.diff(old).affectedKeys().hasOnly(['goals','revision','lastEvent']);
+}
+function rewardMigrationValid(old,w,e) {
+  return e.kind == 'migration' && e.id == 'migration_v1' && e.sourceId == e.id && !e.weeklyBonus
+    && e.coins == 15 && e.tickets == 0 && w.coins == old.coins+15
+    && boundedInt(w.legacyXp,1000000000) && w.legacyXp >= old.legacyXp && w.xp == larger(old.xp,w.legacyXp) && e.xp == w.xp-old.xp
+    && w.owned is list && w.owned.size() <= 3 && w.owned.toSet().size() == w.owned.size() && w.owned.hasOnly(rewardItems()) && w.owned.hasAll(old.owned)
+    && w.legacyAchievements is list && w.legacyAchievements.size() <= 6 && w.legacyAchievements.toSet().size() == w.legacyAchievements.size() && w.legacyAchievements.hasOnly(rewardAchievements()) && w.legacyAchievements.hasAll(old.legacyAchievements)
+    && w.diff(old).affectedKeys().hasOnly(['xp','legacyXp','coins','owned','legacyAchievements','revision','lastEvent']);
+}
+function rewardTransition(uid,old,w) {
+  let e = getAfter(rewardReceiptPath(uid,w.lastEvent)).data;
+  return w.revision == old.revision+1 && !exists(rewardReceiptPath(uid,w.lastEvent))
+    // Receipt creation validates its schema in the same atomic transaction (not twice).
+    && e.id == w.lastEvent && e.revision == w.revision
+    && (e.kind in ['task','focus'] ? rewardEarnValid(uid,old,w,e)
+      : e.kind == 'purchase' ? rewardPurchaseValid(old,w,e)
+      : e.kind == 'goal' ? rewardGoalValid(old,w,e) : e.kind == 'fishing' ? rewardFishValid(uid,old,w,e) : e.kind == 'aquatic-purchase' ? rewardAquaticPurchaseValid(uid,old,w,e) : rewardMigrationValid(old,w,e));
+}
+function linkedRewardOperation(uid,e) {
+  let old = get(rewardWalletPath(uid)).data;
+  let w = getAfter(rewardWalletPath(uid)).data;
+  return w.revision == old.revision+1 && w.lastEvent == e.id && e.revision == w.revision;
+}
+function rewardEvidenceValid(uid,e) {
+  let old=get(rewardWalletPath(uid)).data;
+  return !(e.kind in ['task','focus']) || e.continuesStreak == (e.kind == 'task' && e.day > old.lastActiveDay && rewardStreakContinues(old,e));
+}
+function linkedRewardPeriod(uid,day,isWeek) {
+  let w = getAfter(rewardWalletPath(uid)).data;
+  let e = getAfter(rewardReceiptPath(uid,w.lastEvent)).data;
+  return e.kind in ['task','focus'] && !exists(rewardReceiptPath(uid,e.id)) && linkedRewardOperation(uid,e)
+    && (isWeek ? string(e.day-((e.day+3)%7)) == day : string(e.day) == day);
+}
+function isValidRewardPreferences(p,uid) {
+  let owned = get(rewardWalletPath(uid)).data.owned;
+  return p.keys().hasAll(['visible','equipped']) && p.keys().hasOnly(['visible','equipped']) && p.visible is bool
+    && p.equipped is map && p.equipped.keys().hasOnly(['accent','theme','frame'])
+    && (!('accent' in p.equipped) || (p.equipped.accent == 'accent.sage.v1' && p.equipped.accent in owned))
+    && (!('theme' in p.equipped) || (p.equipped.theme == 'theme.forest.v1' && p.equipped.theme in owned))
+    && (!('frame' in p.equipped) || (p.equipped.frame == 'frame.horizon.v1' && p.equipped.frame in owned));
+}
+// Personal fish collection: client RNG; immutable captures and atomic ticket charges.
+ function fishIds() { return ['goldfish','koi','neon','clownfish','catfish','guppy','angelfish','pufferfish','betta','mandarin','discus']; }
+ function fishZeros() { return {'goldfish':0,'koi':0,'neon':0,'clownfish':0,'catfish':0,'guppy':0,'angelfish':0,'pufferfish':0,'betta':0,'mandarin':0,'discus':0}; }
+ function fishingPath(uid) { return /databases/$(database)/documents/users/$(uid)/fishingProgress/main; }
+ function capturePath(uid,id) { return /databases/$(database)/documents/users/$(uid)/fishCaptures/$(id); }
+ function fishImportPath(uid) { return /databases/$(database)/documents/users/$(uid)/fishImports/guest_v1; }
+ function fishRarity(id) {
+   return id in ['betta','mandarin'] ? 'rare' : id == 'discus' ? 'legendary'
+     : id in ['guppy','angelfish','pufferfish'] ? 'uncommon' : 'common';
+ }
+ function raritySpecies(rarity) {
+   return rarity == 'legendary' ? ['discus'] : rarity == 'rare' ? ['betta','mandarin']
+     : rarity == 'uncommon' ? ['guppy','angelfish','pufferfish'] : ['koi','neon','clownfish','catfish'];
+ }
+ function initialFishing(p) {
+   return p == {'version':1,'revision':0,'lastCapture':'','starterClaimed':false,'imported':false,
+     'discovered':[],'counts':fishZeros(),'discoveredAt':fishZeros(),'sinceRare':0,'sinceLegendary':0,
+     'duplicates':{'common':0,'uncommon':0,'rare':0,'legendary':0}};
+ }
+ function validFishCapture(e) {
+   return e.keys().hasAll(['id','kind','species','rarity','caughtAt','cost','rulesVersion','revision','walletRevision','discovery','guarantee'])
+     && e.keys().hasOnly(['id','kind','species','rarity','caughtAt','cost','rulesVersion','revision','walletRevision','discovery','guarantee'])
+     && e.id is string && (e.kind == 'starter' ? e.id == 'starter_v1' : e.kind == 'normal' && e.id.matches('^fish_[A-Za-z0-9-]{1,80}$'))
+     && e.species in fishIds() && e.rarity == fishRarity(e.species) && e.rulesVersion == 1 && e.cost in [0,1]
+     && e.caughtAt is int && e.caughtAt > 0 && e.caughtAt <= request.time.toMillis()+60000
+     && boundedInt(e.revision,2000000000) && boundedInt(e.walletRevision,2000000000)
+     && e.discovery is bool && e.guarantee in ['none','rare','legendary'];
+ }
+ function fishGuarantee(old,e) {
+   let guarantee = old.sinceLegendary == 29 ? 'legendary' : old.sinceRare == 9 ? 'rare' : 'none';
+   let missing = raritySpecies(e.rarity).removeAll(old.discovered);
+   return e.species != 'goldfish' && e.guarantee == guarantee
+     && (guarantee == 'legendary' ? e.rarity == 'legendary' : guarantee == 'rare' ? e.rarity in ['rare','legendary'] : true)
+     && (old.duplicates[e.rarity] == 3 && missing.size() > 0 ? e.species in missing : true);
+ }
+ function fishCounters(old,p,e) {
+   let normal = e.kind == 'normal';
+   let missing = raritySpecies(e.rarity).removeAll(old.discovered);
+   let duplicate = !e.discovery && missing.size() > 0 ? smaller(3,old.duplicates[e.rarity]+1) : 0;
+   return p.sinceRare == (!normal ? old.sinceRare : e.rarity in ['rare','legendary'] ? 0 : old.sinceRare+1)
+     && p.sinceLegendary == (!normal ? old.sinceLegendary : e.rarity == 'legendary' ? 0 : old.sinceLegendary+1)
+     && (normal ? p.duplicates.diff(old.duplicates).affectedKeys().hasOnly([e.rarity]) && p.duplicates[e.rarity] == duplicate : p.duplicates == old.duplicates);
+ }
+ function fishCaptureTransition(uid,old,p) {
+   let e = getAfter(capturePath(uid,p.lastCapture)).data;
+   let wallet = get(rewardWalletPath(uid)).data;
+   let nextWallet = getAfter(rewardWalletPath(uid)).data;
+   return !exists(capturePath(uid,p.lastCapture)) && e.id == p.lastCapture && e.revision == p.revision && p.revision == old.revision+1
+     && p.diff(old).affectedKeys().hasOnly(['revision','lastCapture','starterClaimed','counts','discoveredAt','discovered','sinceRare','sinceLegendary','duplicates'])
+     && p.counts.diff(old.counts).affectedKeys().hasOnly([e.species]) && p.counts[e.species] == old.counts[e.species]+1 && boundedInt(p.counts[e.species],1000000)
+     && e.discovery == (old.counts[e.species] == 0) && p.discovered == (e.discovery ? old.discovered.concat([e.species]) : old.discovered)
+     && p.discoveredAt.diff(old.discoveredAt).affectedKeys().hasOnly([e.species]) && p.discoveredAt[e.species] == (e.discovery ? e.caughtAt : old.discoveredAt[e.species])
+     && p.starterClaimed == (old.starterClaimed || e.kind == 'starter') && fishCounters(old,p,e)
+     && e.walletRevision == nextWallet.revision
+     && (e.kind == 'starter' ? !old.starterClaimed && e.species == 'goldfish' && e.cost == 0 && e.guarantee == 'none' && nextWallet == wallet
+       : e.cost == 1 && fishGuarantee(old,e) && nextWallet.lastEvent == e.id && nextWallet.revision == wallet.revision+1 && nextWallet.tickets == wallet.tickets-1);
+ }
+ function rewardFishValid(uid,old,w,e) {
+   let capture = getAfter(capturePath(uid,e.id)).data;
+   let progress = getAfter(fishingPath(uid)).data;
+   return e.kind == 'fishing' && e.xp == 0 && e.coins == 0 && e.tickets == -1 && !e.weeklyBonus
+     && capture.kind == 'normal' && capture.cost == 1 && capture.id == e.id && capture.species == e.sourceId && capture.walletRevision == w.revision && capture.caughtAt == e.occurredAt
+     && progress.lastCapture == e.id && progress.revision == get(fishingPath(uid)).data.revision+1
+     && old.tickets >= 1 && w.tickets == old.tickets-1 && w.diff(old).affectedKeys().hasOnly(['tickets','revision','lastEvent']);
+ }
+ function validFishImportSpecies(old,p,imported,id) {
+   let count = imported.counts[id];
+   let date = imported.discoveredAt[id];
+   let oldDate = old.discoveredAt[id];
+   let expectedDate = date == 0 ? oldDate : oldDate == 0 ? date : smaller(date,oldDate);
+   return boundedInt(count,1000000) && boundedInt(date,8640000000000) && (count == 0 ? date == 0 : date > 0 && date <= request.time.toMillis()+60000)
+     && p.counts[id] == larger(old.counts[id],count) && p.discoveredAt[id] == expectedDate
+     && ((id in p.discovered) == (p.counts[id] > 0));
+ }
+ function fishImportTransition(uid,old,p) {
+   let imported = getAfter(fishImportPath(uid)).data;
+   return !old.imported && p.imported && !exists(fishImportPath(uid)) && p.revision == old.revision+1
+     && p.diff(old).affectedKeys().hasOnly(['revision','imported','starterClaimed','counts','discoveredAt','discovered'])
+     && p.starterClaimed == (old.starterClaimed || p.counts.goldfish > 0)
+     && p.counts is map && p.counts.keys() == old.counts.keys() && p.discoveredAt is map && p.discoveredAt.keys() == old.discoveredAt.keys()
+     && p.discovered is list && p.discovered.size() <= 11 && p.discovered.toSet().size() == p.discovered.size() && p.discovered.hasOnly(fishIds())
+     && validFishImportSpecies(old,p,imported,'goldfish')
+     && validFishImportSpecies(old,p,imported,'koi')
+     && validFishImportSpecies(old,p,imported,'neon')
+     && validFishImportSpecies(old,p,imported,'clownfish')
+     && validFishImportSpecies(old,p,imported,'catfish')
+     && validFishImportSpecies(old,p,imported,'guppy')
+     ;
+ }
+ function validFishImport(uid,i) {
+   let old = get(fishingPath(uid)).data;
+   let p = getAfter(fishingPath(uid)).data;
+   return i.keys().hasAll(['source','version','counts','discoveredAt']) && i.keys().hasOnly(['source','version','counts','discoveredAt'])
+     && i.source == 'guest' && i.version == 1 && i.counts is map && i.counts.keys().hasAll(fishIds()) && i.counts.keys().hasOnly(fishIds())
+     && i.discoveredAt is map && i.discoveredAt.keys().hasAll(fishIds()) && i.discoveredAt.keys().hasOnly(fishIds())
+     && p.imported && p.revision == old.revision+1
+     // Each write validates part of the import. Both documents must commit atomically.
+     && validFishImportSpecies(old,p,i,'angelfish')
+     && validFishImportSpecies(old,p,i,'pufferfish')
+     && validFishImportSpecies(old,p,i,'betta')
+     && validFishImportSpecies(old,p,i,'mandarin')
+     && validFishImportSpecies(old,p,i,'discus');
+ }
+ function validFishNickname(p,owned,id) {
+   return !(id in p.nicknames) || (id in owned && p.nicknames[id] is string && p.nicknames[id].size() <= 40);
+ }
+ function validFishPosition(p,owned,id) {
+   return !('positions' in p) || !(id in p.positions) || (id in owned && p.positions[id] is map
+     && p.positions[id].keys().hasAll(['x','y']) && p.positions[id].keys().hasOnly(['x','y'])
+     && boundedInt(p.positions[id].x,100) && boundedInt(p.positions[id].y,100));
+ }
+ function validAquarium(uid,p) {
+   let owned = getAfter(fishingPath(uid)).data.discovered;
+   return p.keys().hasAll(['displayed','favorite','nicknames','motion']) && p.keys().hasOnly(['displayed','favorite','nicknames','motion','positions'])
+     && p.displayed is list && p.displayed.size() <= 5 && p.displayed.toSet().size() == p.displayed.size() && p.displayed.hasOnly(owned)
+     && (p.favorite == null || p.favorite in owned) && p.motion is bool && p.nicknames is map && p.nicknames.keys().hasOnly(owned)
+     && (!('positions' in p) || (p.positions is map && p.positions.keys().hasOnly(owned)
+       && validFishPosition(p,owned,'goldfish') && validFishPosition(p,owned,'koi') && validFishPosition(p,owned,'neon')
+       && validFishPosition(p,owned,'clownfish') && validFishPosition(p,owned,'catfish') && validFishPosition(p,owned,'guppy')
+       && validFishPosition(p,owned,'angelfish') && validFishPosition(p,owned,'pufferfish') && validFishPosition(p,owned,'betta')
+       && validFishPosition(p,owned,'mandarin') && validFishPosition(p,owned,'discus')))
+     && validFishNickname(p,owned,'goldfish')
+     && validFishNickname(p,owned,'koi')
+     && validFishNickname(p,owned,'neon')
+     && validFishNickname(p,owned,'clownfish')
+     && validFishNickname(p,owned,'catfish')
+     && validFishNickname(p,owned,'guppy')
+     && validFishNickname(p,owned,'angelfish')
+     && validFishNickname(p,owned,'pufferfish')
+     && validFishNickname(p,owned,'betta')
+     && validFishNickname(p,owned,'mandarin')
+     && validFishNickname(p,owned,'discus');
+ }
+ // Aquatic cosmetics: owner-only inventory, immutable milestones, atomic coin purchases.
+ function aquaticInventoryPath(uid) { return /databases/$(database)/documents/users/$(uid)/aquaticInventory/main; }
+ function aquaticMilestonePath(uid,id) { return /databases/$(database)/documents/users/$(uid)/aquaticMilestones/$(id); }
+ function aquaticImportPath(uid) { return /databases/$(database)/documents/users/$(uid)/aquaticImports/guest_v1; }
+ function aquaticItems() { return ['decor.lantern.v1','decor.arch.v1','decor.garden.v1','background.dusk.v1','background.moon.v1','frame.ripple.v1']; }
+ function aquaticPrice(id) { return id == 'decor.lantern.v1' ? 40 : id == 'decor.arch.v1' || id == 'frame.ripple.v1' ? 60 : id == 'decor.garden.v1' ? 80 : id == 'background.dusk.v1' ? 100 : 120; }
+ function initialAquaticInventory(i) { return i == {'version':1,'revision':0,'lastOperation':'','owned':[],'claimed':[],'imported':false}; }
+ function rewardAquaticPurchaseValid(uid,old,w,e) {
+   let before = get(aquaticInventoryPath(uid)).data;
+   let after = getAfter(aquaticInventoryPath(uid)).data;
+   return e.kind == 'aquatic-purchase' && e.sourceId in aquaticItems() && e.id == 'aquatic_'+e.sourceId
+     && !(e.sourceId in before.owned) && after.owned == before.owned.concat([e.sourceId])
+     && after.revision == before.revision+1 && after.lastOperation == e.id
+     && e.xp == 0 && e.coins == -aquaticPrice(e.sourceId) && e.tickets == 0 && !e.weeklyBonus
+     && old.coins >= aquaticPrice(e.sourceId) && w.coins == old.coins+e.coins && w.diff(old).affectedKeys().hasOnly(['coins','revision','lastEvent']);
+ }
+ function validAquaticMilestone(uid,m) {
+   let p = getAfter(fishingPath(uid)).data;
+   let old = get(aquaticInventoryPath(uid)).data;
+   let next = getAfter(aquaticInventoryPath(uid)).data;
+   return m.keys().hasAll(['id','kind','target','threshold','revision']) && m.keys().hasOnly(['id','kind','target','threshold','revision'])
+     && (m.kind == 'collection' ? m.target == 'collection' && m.threshold in [1,5,11] && m.id == 'collection_'+string(m.threshold) && p.discovered.size() >= m.threshold
+       : m.kind == 'mastery' && m.target in fishIds() && m.threshold in [3,5,10] && m.id == 'mastery_'+m.target+'_'+string(m.threshold) && p.counts[m.target] >= m.threshold)
+     && next.revision == old.revision+1 && next.lastOperation == m.id && next.claimed == old.claimed.concat([m.id]) && m.revision == next.revision;
+ }
+ function aquaticInventoryTransition(uid,old,i) {
+   return i.revision == old.revision+1 && boundedInt(i.revision,2000000000)
+     && (i.imported != old.imported ? !old.imported && i.imported && !exists(aquaticImportPath(uid)) && i.lastOperation == 'guest_v1'
+       && i.owned == old.owned.concat(getAfter(aquaticImportPath(uid)).data.owned.removeAll(old.owned)) && i.diff(old).affectedKeys().hasOnly(['revision','lastOperation','owned','imported'])
+       : i.owned != old.owned ? i.diff(old).affectedKeys().hasOnly(['revision','lastOperation','owned'])
+         && getAfter(rewardWalletPath(uid)).data.lastEvent == i.lastOperation && linkedRewardOperation(uid,getAfter(rewardReceiptPath(uid,i.lastOperation)).data)
+         && rewardAquaticPurchaseValid(uid,get(rewardWalletPath(uid)).data,getAfter(rewardWalletPath(uid)).data,getAfter(rewardReceiptPath(uid,i.lastOperation)).data)
+       : i.diff(old).affectedKeys().hasOnly(['revision','lastOperation','claimed']) && !exists(aquaticMilestonePath(uid,i.lastOperation)) && validAquaticMilestone(uid,getAfter(aquaticMilestonePath(uid,i.lastOperation)).data));
+ }
+ function validAquaticImport(uid,i) {
+   let old = get(aquaticInventoryPath(uid)).data;
+   let next = getAfter(aquaticInventoryPath(uid)).data;
+   return i.keys().hasAll(['version','owned']) && i.keys().hasOnly(['version','owned']) && i.version == 1
+     && i.owned is list && i.owned.size() <= 6 && i.owned.toSet().size() == i.owned.size() && i.owned.hasOnly(aquaticItems())
+     && !old.imported && next.imported && next.revision == old.revision+1 && next.lastOperation == 'guest_v1';
+ }
+ function validAquaticStyle(uid,p) {
+   let i = getAfter(aquaticInventoryPath(uid)).data;
+   return p.keys().hasAll(['background','decorations','frame','title','nameplates','glide','mode','sound']) && p.keys().hasOnly(['background','decorations','frame','title','nameplates','glide','mode','sound'])
+     && p.background in ['base','dusk','moon'] && (p.background == 'base' || ('background.'+p.background+'.v1') in i.owned)
+     && p.decorations is list && p.decorations.size() <= 3 && p.decorations.toSet().size() == p.decorations.size() && p.decorations.hasOnly(['lantern','arch','garden'])
+     && (!('lantern' in p.decorations) || 'decor.lantern.v1' in i.owned) && (!('arch' in p.decorations) || 'decor.arch.v1' in i.owned) && (!('garden' in p.decorations) || 'decor.garden.v1' in i.owned)
+     && p.frame in ['none','ripple','complete'] && (p.frame == 'none' || p.frame == 'ripple' && 'frame.ripple.v1' in i.owned || p.frame == 'complete' && 'collection_11' in i.claimed)
+     && p.title in ['none','first','explorer','collector'] && (p.title == 'none' || p.title == 'first' && 'collection_1' in i.claimed || p.title == 'explorer' && 'collection_5' in i.claimed || p.title == 'collector' && 'collection_11' in i.claimed)
+     && p.nameplates is bool && p.glide is bool && p.sound is bool && p.mode in ['interactive','simple'];
+ }
+ match /users/{uid}/aquaticInventory/{id} {
+   allow read: if isOwner(uid);
+   allow create: if isOwner(uid) && id == 'main' && initialAquaticInventory(request.resource.data);
+   allow update: if isOwner(uid) && id == 'main' && aquaticInventoryTransition(uid,resource.data,request.resource.data);
+ }
+ match /users/{uid}/aquaticMilestones/{id} {
+   allow read: if isOwner(uid);
+   allow create: if isOwner(uid) && id == request.resource.data.id && validAquaticMilestone(uid,request.resource.data);
+ }
+ match /users/{uid}/aquaticImports/{id} {
+   allow read: if isOwner(uid);
+   allow create: if isOwner(uid) && id == 'guest_v1' && validAquaticImport(uid,request.resource.data);
+ }
+ match /users/{uid}/aquaticStyle/{id} {
+   allow read: if isOwner(uid);
+   allow create, update: if isOwner(uid) && id == 'main' && validAquaticStyle(uid,request.resource.data);
+ }
+ match /users/{uid}/fishingProgress/{id} {
+   allow read: if isOwner(uid);
+   allow create: if isOwner(uid) && id == 'main' && initialFishing(request.resource.data);
+   allow update: if isOwner(uid) && id == 'main' && (request.resource.data.imported != resource.data.imported
+     ? fishImportTransition(uid,resource.data,request.resource.data) : fishCaptureTransition(uid,resource.data,request.resource.data));
+ }
+ match /users/{uid}/fishCaptures/{id} {
+   allow read: if isOwner(uid);
+   allow create: if isOwner(uid) && validFishCapture(request.resource.data) && id == request.resource.data.id
+     && getAfter(fishingPath(uid)).data.lastCapture == id && getAfter(fishingPath(uid)).data.revision == request.resource.data.revision
+     && request.resource.data.revision == get(fishingPath(uid)).data.revision+1;
+ }
+ match /users/{uid}/fishImports/{id} {
+   allow read: if isOwner(uid);
+   allow create: if isOwner(uid) && id == 'guest_v1' && validFishImport(uid,request.resource.data);
+ }
+ match /users/{uid}/aquariumPreferences/{id} {
+   allow read: if isOwner(uid);
+   allow create, update: if isOwner(uid) && id == 'main' && validAquarium(uid,request.resource.data);
+ }
+match /users/{uid}/rewardsWallet/{id} {
+  allow read: if isOwner(uid);
+  allow create: if isOwner(uid) && id == 'main' && isValidRewardWallet(request.resource.data,true) && initialRewardWallet(request.resource.data);
+  allow update: if isOwner(uid) && id == 'main' && isValidRewardWallet(request.resource.data,false) && rewardTransition(uid,resource.data,request.resource.data);
+}
+match /users/{uid}/rewardReceipts/{id} {
+  allow read: if isOwner(uid);
+  allow create: if isOwner(uid) && isValidRewardReceipt(request.resource.data) && request.resource.data.id == id && linkedRewardOperation(uid,request.resource.data) && rewardEvidenceValid(uid,request.resource.data);
+}
+match /users/{uid}/rewardDays/{day} {
+  allow read: if isOwner(uid);
+  allow create, update: if isOwner(uid) && isValidRewardDay(request.resource.data) && linkedRewardPeriod(uid,day,false);
+}
+match /users/{uid}/rewardWeeks/{day} {
+  allow read: if isOwner(uid);
+  allow create, update: if isOwner(uid) && isValidRewardWeek(request.resource.data,int(day)) && linkedRewardPeriod(uid,day,true);
+}
+match /users/{uid}/rewardsPreferences/{id} {
+  allow read: if isOwner(uid);
+  allow create, update: if isOwner(uid) && id == 'main' && isValidRewardPreferences(request.resource.data,uid);
+}
+
     // Regras para a partição do usuário em /users/{userId}
     match /users/{userId} {
       // Leitura permitida para o próprio usuário autenticado
       allow read: if isOwner(userId);
 
       // Criação inicial: cliente só pode criar com plan 'free' (ou omitido) e sem fraudar quotas
-      allow create: if isOwner(userId)
+      allow create: if isOwner(userId) && isValidUser(request.resource.data)
         && (!('plan' in request.resource.data) || request.resource.data.plan == 'free')
         && (!('aiQuota' in request.resource.data) || request.resource.data.aiQuota.monthlyLimit <= 1000);
 
       // Atualização: cliente não pode alterar plano, datas de vigência ou quotas diretamente
       // (Atualizações de plano/quota são gerenciadas pelo backend via Cloud Functions / Admin SDK)
-      allow update: if isOwner(userId) && protectedFieldsNotModified();
+      allow update: if isOwner(userId) && isValidUser(request.resource.data) && protectedFieldsNotModified();
 
       // Deleção de conta pelo próprio usuário
       allow delete: if isOwner(userId);
 
       // Subcoleções do usuário (sync/state, logs, etc.)
-      match /{collection}/{docId} {
-        allow read, write: if isOwner(userId);
+      match /sync/{docId} {
+        allow read, delete: if isOwner(userId) && docId == 'state';
+        allow create, update: if isOwner(userId) && docId == 'state' && isValidSync(request.resource.data);
       }
     }
   }

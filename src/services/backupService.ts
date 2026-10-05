@@ -101,13 +101,7 @@ export class BackupService {
           fileName,
         });
       } else {
-        // Fallback para ambiente de desenvolvimento web / testes
-        backupInfo = {
-          filePath: `${targetFolder}/${fileName}`,
-          fileName,
-          fileSizeBytes: 61440,
-          createdAt: new Date().toISOString(),
-        };
+        throw new Error('O backup SQLite está disponível apenas no aplicativo desktop. No navegador, use Exportar Dados.');
       }
 
       // Atualiza estado global
@@ -115,7 +109,7 @@ export class BackupService {
         lastBackupDate: today,
         lastBackupTime: new Date().toISOString(),
         lastBackupStatus: 'success',
-        lastBackupFileName: fileName,
+        lastBackupFileName: backupInfo.fileName,
         lastBackupError: null,
       });
 
@@ -180,6 +174,7 @@ export class BackupService {
    * Rotina Diária: Executa o backup automaticamente caso ainda não tenha sido feito hoje
    */
   async checkAndRunDailyBackup(): Promise<boolean> {
+    if (!isTauriEnvironment()) return false;
     const store = useFlowStore.getState();
     const settings = store.backupSettings;
 

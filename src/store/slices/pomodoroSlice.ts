@@ -47,6 +47,10 @@ export const createPomodoroSlice: StateCreator<FlowStore, [], [], PomodoroSlice>
         isActive: true,
         linkedTaskId: taskId,
         linkedTaskDate: date,
+        rewardSessionId: state.pomodoro.rewardSessionId || (state.pomodoro.mode === 'focus' ? crypto.randomUUID() : null),
+        observedFocusSeconds: state.pomodoro.observedFocusSeconds || 0,
+        rewardTickAt: state.pomodoro.isActive ? state.pomodoro.rewardTickAt : Date.now(),
+        rewardOwnerAtStart: state.pomodoro.rewardSessionId ? state.pomodoro.rewardOwnerAtStart : state.rewardOwner,
       },
     }));
     if (taskId && date && state.pomodoro.mode === 'focus') get().startTask(taskId, date);
@@ -72,6 +76,9 @@ export const createPomodoroSlice: StateCreator<FlowStore, [], [], PomodoroSlice>
           isActive: false,
           timeLeftSeconds: dur,
           totalDurationSeconds: dur,
+          rewardSessionId: null,
+          observedFocusSeconds: 0,
+          rewardTickAt: null,
         },
       };
     });
@@ -92,6 +99,9 @@ export const createPomodoroSlice: StateCreator<FlowStore, [], [], PomodoroSlice>
         isActive: false,
         totalDurationSeconds: dur,
         timeLeftSeconds: dur,
+        rewardSessionId: null,
+        observedFocusSeconds: 0,
+        rewardTickAt: null,
         preferredFocusDurationSeconds:
           mode === 'focus' ? dur : state.pomodoro.preferredFocusDurationSeconds || 25 * 60,
       },
@@ -109,6 +119,9 @@ export const createPomodoroSlice: StateCreator<FlowStore, [], [], PomodoroSlice>
           state.pomodoro.mode === 'focus'
             ? seconds
             : state.pomodoro.preferredFocusDurationSeconds || 25 * 60,
+        rewardSessionId: null,
+        observedFocusSeconds: 0,
+        rewardTickAt: null,
       },
     }));
   },
@@ -135,6 +148,11 @@ export const createPomodoroSlice: StateCreator<FlowStore, [], [], PomodoroSlice>
     if (!state.pomodoro.isActive) return;
 
     const nextSecs = state.pomodoro.timeLeftSeconds - 1;
+    const tickAt = Date.now();
+    // Only elapsed time observed while running counts. Repeated calls, pauses and a closed
+    // application cannot turn a changed timer duration into a completed focus session.
+    const observed = state.pomodoro.rewardTickAt === null || state.pomodoro.rewardTickAt === undefined ? 0 : Math.max(0, Math.min(5, (tickAt - state.pomodoro.rewardTickAt) / 1000));
+    set((s) => ({ pomodoro: { ...s.pomodoro, rewardTickAt: tickAt, observedFocusSeconds: (s.pomodoro.observedFocusSeconds || 0) + (s.pomodoro.mode === 'focus' ? observed : 0) } }));
     if (nextSecs <= 0) {
       get().finishPomodoroSession();
     } else {
@@ -152,6 +170,9 @@ export const createPomodoroSlice: StateCreator<FlowStore, [], [], PomodoroSlice>
     const state = get();
     const isFocus = state.pomodoro.mode === 'focus';
     const sessionMinutes = Math.round(state.pomodoro.totalDurationSeconds / 60);
+    if (isFocus && state.pomodoro.isActive && state.pomodoro.timeLeftSeconds <= 1 && state.pomodoro.rewardSessionId && state.pomodoro.rewardOwnerAtStart === state.rewardOwner && (state.pomodoro.observedFocusSeconds || 0) >= 1500) {
+      get().recordFocusReward(state.pomodoro.rewardSessionId, Math.floor(state.pomodoro.observedFocusSeconds || 0));
+    }
 
     // Se vinculado a uma tarefa e modo foco, registrar tempo real focado (RF-13)
     const updatedLogs = { ...state.logs };
@@ -211,6 +232,10 @@ export const createPomodoroSlice: StateCreator<FlowStore, [], [], PomodoroSlice>
         timeLeftSeconds: nextDuration,
         completedSessions: newCompletedSessions,
         linkedTaskDate: nextTaskDate,
+        rewardSessionId: shouldAutoAdvance && nextMode === 'focus' ? crypto.randomUUID() : null,
+        observedFocusSeconds: 0,
+        rewardTickAt: shouldAutoAdvance ? Date.now() : null,
+        rewardOwnerAtStart: shouldAutoAdvance && nextMode === 'focus' ? state.rewardOwner : null,
       },
     });
     get().refreshTaskProgress();

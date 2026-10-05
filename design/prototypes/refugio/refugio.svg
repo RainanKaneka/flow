@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 550" fill="none">
+  <title>Capivara descansando ao lado de um lago no Refúgio Flow</title>
+  <defs>
+    <linearGradient id="sky" x1="420" y1="0" x2="420" y2="420" gradientUnits="userSpaceOnUse"><stop stop-color="#dce7da"/><stop offset="1" stop-color="#bfceba"/></linearGradient>
+    <linearGradient id="water" x1="420" y1="290" x2="420" y2="550" gradientUnits="userSpaceOnUse"><stop stop-color="#a5c1bb"/><stop offset="1" stop-color="#8caaa7"/></linearGradient>
+  </defs>
+  <path fill="url(#sky)" d="M0 0h840v550H0z"/>
+  <circle cx="648" cy="102" r="43" fill="#f1edcc"/>
+  <path d="M-25 220c92-75 148-4 231-39s150-77 255-39 126-36 237-20 167 80 180 107v105H-25Z" fill="#adbfa6"/>
+  <path d="M-26 264c112-80 179-3 279-28 153-39 184-14 266-20 101-9 234-22 353 47v94H-26Z" fill="#91ad98"/>
+  <path d="M0 325c132-47 226-63 357-27 73 20 123 5 218-13 126-24 195 11 265 37v228H0Z" fill="url(#water)"/>
+  <path d="M435 355c43-7 101-9 165-2m-47 27h96m-194 42h88m149-81h49m-90 116h124m-227 15h56" stroke="#d6e0d2" stroke-width="3" stroke-linecap="round" opacity=".65"/>
+  <path d="M-10 333c112-48 227-53 339-11 110 42 94 92 162 108 23 5 32 18 20 30-20 21-198 51-285 91H-10Z" fill="#b9c39e"/>
+  <path d="M-10 376c94-34 176-31 229-17 21 5 8 17-25 27-57 16-94 42-53 63 23 12 92 14 170 7 96-9 134 3 99 17-42 17-119 29-182 77H-10Z" fill="#cad0ac"/>
+  <path d="M0 550v-52c101-13 173 29 260 11 64-13 103-37 167-19 62 17 154 17 183 60Z" fill="#8fa983"/>
+  <path d="M759 415c29-20 63-33 90-32v167h-36c-39-41-104-93-54-135Z" fill="#a6b994"/>
+  <path d="M84 297v-91m0 55c-27-38-28-66-7-73 31-10 66 61 7 73Z" stroke="#6c8769" stroke-width="9" stroke-linecap="round"/>
+  <path d="M33 175c-7-39 16-52 44-62 13-41 60-42 73-9 36-14 74 14 65 39 15 25 2 49-29 51-49 3-69-6-104 9-24 10-51 0-49-28Z" fill="#6e967e"/>
+  <path d="M102 109c20-16 52-5 50 13-25 18-41 30-67 22-26-9-13-27 17-35Z" fill="#87aa87"/>
+  <path d="M6 439c20-27 29-37 55-47m-27 54c-1-25-13-41-28-44m40 40c27-11 43-6 55 8" stroke="#6d886e" stroke-width="5" stroke-linecap="round"/>
+  <path d="M712 285v-86m0 39c-20-25-19-48-2-61 27 11 45 45 2 61Z" stroke="#6a8165" stroke-width="6" stroke-linecap="round"/>
+  <path d="M666 150c-17-34 2-57 28-64 19-24 50-7 54 10 40-8 56 25 41 44 14 22 0 44-33 43-23-1-52 6-69 0-29-2-35-22-21-33Z" fill="#789a79"/>
+  <path d="M775 438v-84m0 35c-27-24-40-36-29-55 25-6 56 29 29 55Zm0-17c15-21 26-33 37-23 10 17-12 32-37 23Z" stroke="#6c896d" stroke-width="5" stroke-linecap="round"/>
+  <ellipse cx="296" cy="411" rx="135" ry="17" fill="#6e805e" opacity=".24"/>
+  <path d="M181 383c-3-45 15-76 43-92 33-19 102-23 152-5 42 15 40 79 18 98-24 21-144 28-190 16-17-4-23-11-23-17Z" fill="#a17955"/>
+  <path d="M245 288c36-18 96-22 133 2 32 21 33 59 15 75-27 23-107 18-130-3-17-15-22-36-18-74Z" fill="#b18a63"/>
+  <path d="M209 364c-9 8-18 30-9 42 6 9 27 10 35 4 4-10 2-30-3-40m93 5c-9 8-12 24-5 33 5 8 25 10 35 2 6-8 4-28-2-37" fill="#936c4e"/>
+  <path d="M231 300c-4-29 9-39 28-42 33-5 61 15 64 39 6 45-8 70-43 74-32 4-61-8-62-31-1-16 9-23 13-40Z" fill="#bb9470"/>
+  <path d="M238 278c-5-18 4-32 15-30 11 2 19 23 12 28" fill="#a57953"/>
+  <path d="M276 270c-1-20 9-31 18-27 9 5 12 26 5 34" fill="#a57953"/>
+  <path d="M241 331c8-5 22-6 37-3 7 2 10 10 7 17-4 12-26 17-43 11-12-4-16-19-1-25Z" fill="#c5a280"/>
+  <path d="M256 315c4 3 8 3 12-1m-30 3c3 2 6 2 9-1" stroke="#4a4335" stroke-width="3" stroke-linecap="round"/>
+  <ellipse cx="242" cy="337" rx="4" ry="3" fill="#685443"/>
+  <path d="M249 348c6 2 12 1 16-3" stroke="#7d624d" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="m333 312 4-2m15 16 5-3m-17 35 4-1" stroke="#926d4d" stroke-width="3" stroke-linecap="round"/>
+  <path d="M487 341c5-15 13-17 21-5 9-15 18-17 22-6 17-8 25 5 14 13-21 9-41 12-57-2Z" fill="#668d76"/>
+  <path d="M565 419c6-13 15-17 25-9 11-17 21-16 22-3 16-5 21 7 10 15-23 7-42 8-57-3Z" fill="#74977d"/>
+  <path d="M58 504c11-17 23-19 31-6m-17 22c9-9 17-11 29-5m590-16c10-14 22-14 32-3m-30 17c8-7 17-8 24-5" stroke="#638566" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="134" cy="419" r="3" fill="#f2e8c8"/><circle cx="139" cy="431" r="3" fill="#f2e8c8"/><circle cx="126" cy="431" r="3" fill="#f2e8c8"/>
+  <path d="m508 90 9 3 8-3m-143 24 7 3 7-3" stroke="#789681" stroke-width="2.5" stroke-linecap="round"/>
+</svg>

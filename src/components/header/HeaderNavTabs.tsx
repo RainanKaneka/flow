@@ -10,6 +10,7 @@ import {
   Sparkles,
   Clock,
   Calendar,
+  Leaf,
 } from 'lucide-react';
 import styles from './HeaderNavTabs.module.css';
 
@@ -133,6 +134,9 @@ export const HeaderNavTabs: React.FC<HeaderNavTabsProps> = ({
       </button>
 
       {/* 6: IA Assistant Tab */}
+      <button onClick={() => onSelectView('rewards')} title="Refúgio e recompensas" className={`${styles.tabBtn} ${activeView === 'rewards' ? styles.tabBtnActive : ''}`} aria-current={activeView === 'rewards' ? 'page' : undefined}>
+        <Leaf size={13} /><span>Refúgio</span>
+      </button>
       {PRODUCT_FEATURES.aiAssistant && (
         <button
           onClick={() => onSelectView('ai')}

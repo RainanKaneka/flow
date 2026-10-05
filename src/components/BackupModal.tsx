@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useFlowStore } from '../store/useFlowStore';
-import { backupService, formatBytes } from '../services/backupService';
+import { backupService, formatBytes, isTauriEnvironment } from '../services/backupService';
 import {
   generateTasksCsv,
   generateCompletionsCsv,
@@ -17,7 +17,7 @@ import {
   downloadAllCsvs,
   downloadSqlExport,
 } from '../services/exportImportService';
-import { BackupInfo, BackupModalTab, ImportMode, ImportValidationResult } from '../types/routine';
+import { BackupInfo, ImportMode, ImportValidationResult } from '../types/routine';
 import {
   Database,
   X,
@@ -36,13 +36,12 @@ import {
   FileJson,
   FileCode,
   Layers,
-  ArrowRight,
   FileText,
-  AlertTriangle,
   UploadCloud,
 } from 'lucide-react';
 
 export const BackupModal: React.FC = () => {
+  const isDesktop = isTauriEnvironment();
   const isBackupModalOpen = useFlowStore((s) => s.isBackupModalOpen);
   const closeBackupModal = useFlowStore((s) => s.closeBackupModal);
   const backupModalTab = useFlowStore((s) => s.backupModalTab);
@@ -426,6 +425,7 @@ export const BackupModal: React.FC = () => {
         style={{
           width: '100%',
           maxWidth: '640px',
+          minWidth: 0,
           maxHeight: '90vh',
           display: 'flex',
           flexDirection: 'column',
@@ -435,11 +435,13 @@ export const BackupModal: React.FC = () => {
         <div
           className="double-bezel-inner"
           style={{
-            padding: '24px',
+            padding: 'clamp(14px, 4vw, 24px)',
             display: 'flex',
             flexDirection: 'column',
             gap: '18px',
             overflowY: 'auto',
+            overflowX: 'hidden',
+            minWidth: 0,
           }}
         >
           {/* Header Principal */}
@@ -452,7 +454,7 @@ export const BackupModal: React.FC = () => {
               borderBottom: '1px solid var(--border-subtle)',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
               <div
                 style={{
                   width: '40px',
@@ -463,11 +465,12 @@ export const BackupModal: React.FC = () => {
                   alignItems: 'center',
                   justifyContent: 'center',
                   color: 'var(--accent-primary)',
+                  flexShrink: 0,
                 }}
               >
                 <Database size={20} />
               </div>
-              <div>
+              <div style={{ minWidth: 0 }}>
                 <h3
                   id="backup-modal-title"
                   style={{ fontSize: '18px', fontWeight: 700, margin: 0 }}
@@ -475,7 +478,7 @@ export const BackupModal: React.FC = () => {
                   Central de Dados & Backup
                 </h3>
                 <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: '2px 0 0' }}>
-                  Persistência SQLite, Exportação em JSON/CSV e Restauração de Rotinas
+                  Backup local completo, exportação e restauração de rotinas
                 </p>
               </div>
             </div>
@@ -495,6 +498,7 @@ export const BackupModal: React.FC = () => {
                 alignItems: 'center',
                 justifyContent: 'center',
                 transition: 'all 150ms',
+                flexShrink: 0,
               }}
             >
               <X size={18} />
@@ -511,6 +515,7 @@ export const BackupModal: React.FC = () => {
               borderRadius: '12px',
               backgroundColor: 'var(--bg-elevated)',
               border: '1px solid var(--border-subtle)',
+              minWidth: 0,
             }}
           >
             <button
@@ -520,6 +525,7 @@ export const BackupModal: React.FC = () => {
               onClick={() => setBackupModalTab('backup')}
               style={{
                 flex: 1,
+                minWidth: 0,
                 padding: '9px 12px',
                 borderRadius: '8px',
                 border: 'none',
@@ -548,6 +554,7 @@ export const BackupModal: React.FC = () => {
               onClick={() => setBackupModalTab('export')}
               style={{
                 flex: 1,
+                minWidth: 0,
                 padding: '9px 12px',
                 borderRadius: '8px',
                 border: 'none',
@@ -576,6 +583,7 @@ export const BackupModal: React.FC = () => {
               onClick={() => setBackupModalTab('import')}
               style={{
                 flex: 1,
+                minWidth: 0,
                 padding: '9px 12px',
                 borderRadius: '8px',
                 border: 'none',
@@ -609,6 +617,8 @@ export const BackupModal: React.FC = () => {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: '8px',
                   padding: '10px 14px',
                   borderRadius: '10px',
                   backgroundColor: 'var(--bg-elevated)',
@@ -620,20 +630,21 @@ export const BackupModal: React.FC = () => {
                 >
                   <HardDrive size={15} color="#10B981" />
                   <span>
-                    Banco Ativo: <strong>flow.db</strong>
+                    Dados locais: <strong>rotina e Refúgio</strong>
                   </span>
                 </div>
                 <span
                   style={{
                     fontSize: '11px',
-                    color: '#10B981',
-                    backgroundColor: 'rgba(16, 185, 129, 0.12)',
+                    color: isDesktop ? '#10B981' : 'var(--text-secondary)',
+                    backgroundColor: isDesktop ? 'rgba(16, 185, 129, 0.12)' : 'var(--bg-hover)',
                     padding: '2px 8px',
                     borderRadius: '9999px',
                     fontWeight: 600,
+                    whiteSpace: 'nowrap',
                   }}
                 >
-                  SQLite Nativo Conectado
+                  {isDesktop ? 'SQLite nativo disponível' : 'Backup apenas no desktop'}
                 </span>
               </div>
 
@@ -663,7 +674,7 @@ export const BackupModal: React.FC = () => {
                     <div
                       style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}
                     >
-                      Gera uma cópia de segurança na pasta local ao abrir o Flow a cada novo dia
+                      Salva rotina, peixes e recompensas na pasta local uma vez por dia
                     </div>
                   </div>
 
@@ -671,19 +682,21 @@ export const BackupModal: React.FC = () => {
                   <button
                     type="button"
                     role="switch"
-                    aria-checked={backupSettings.enabled}
+                    aria-checked={isDesktop && backupSettings.enabled}
                     aria-label="Ativar Backup Automático Diário"
+                    disabled={!isDesktop}
                     onClick={handleToggleEnabled}
                     style={{
                       width: '44px',
                       height: '24px',
                       borderRadius: '12px',
-                      backgroundColor: backupSettings.enabled
+                      backgroundColor: isDesktop && backupSettings.enabled
                         ? 'var(--accent-primary)'
                         : 'var(--border-focus)',
                       border: 'none',
                       position: 'relative',
-                      cursor: 'pointer',
+                      cursor: isDesktop ? 'pointer' : 'not-allowed',
+                      opacity: isDesktop ? 1 : 0.55,
                       transition: 'all 200ms',
                       flexShrink: 0,
                     }}
@@ -696,7 +709,7 @@ export const BackupModal: React.FC = () => {
                         backgroundColor: '#FFFFFF',
                         position: 'absolute',
                         top: '3px',
-                        left: backupSettings.enabled ? '23px' : '3px',
+                        left: isDesktop && backupSettings.enabled ? '23px' : '3px',
                         transition: 'all 200ms',
                       }}
                     />
@@ -716,12 +729,14 @@ export const BackupModal: React.FC = () => {
                   <div>
                     <span style={{ color: 'var(--text-muted)' }}>Último backup: </span>
                     <strong style={{ color: 'var(--text-primary)' }}>
-                      {formatDate(backupSettings.lastBackupTime)}
+                      {isDesktop ? formatDate(backupSettings.lastBackupTime) : '—'}
                     </strong>
                   </div>
                   <div>
                     <span style={{ color: 'var(--text-muted)' }}>Status: </span>
-                    {backupSettings.lastBackupStatus === 'success' ? (
+                    {!isDesktop ? (
+                      <span style={{ color: 'var(--text-secondary)' }}>Disponível no desktop</span>
+                    ) : backupSettings.lastBackupStatus === 'success' ? (
                       <span style={{ color: '#10B981', fontWeight: 600 }}>Realizado</span>
                     ) : backupSettings.lastBackupStatus === 'error' ? (
                       <span style={{ color: '#EF4444', fontWeight: 600 }}>Falhou</span>
@@ -749,20 +764,22 @@ export const BackupModal: React.FC = () => {
                   <div
                     style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}
                   >
-                    Local onde os arquivos snapshot <code>.db</code> são armazenados
+                    Pasta que guarda as cópias completas <code>.flowbackup</code>
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', gap: '8px' }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                   <input
                     type="text"
                     aria-label="Pasta de destino dos backups:"
+                    disabled={!isDesktop}
                     value={localFolderPath}
                     onChange={(e) => setLocalFolderPath(e.target.value)}
                     onBlur={handleFolderBlur}
                     placeholder="Selecione a pasta de backup..."
                     style={{
                       flex: 1,
+                      minWidth: '150px',
                       backgroundColor: 'var(--bg-primary)',
                       border: '1px solid var(--border-subtle)',
                       borderRadius: '8px',
@@ -777,7 +794,7 @@ export const BackupModal: React.FC = () => {
                     type="button"
                     aria-label="Escolher pasta..."
                     onClick={handlePickFolder}
-                    disabled={isPickingFolder}
+                    disabled={!isDesktop || isPickingFolder}
                     className="btn-island"
                     style={{
                       padding: '8px 14px',
@@ -800,11 +817,14 @@ export const BackupModal: React.FC = () => {
                     alignItems: 'center',
                     justifyContent: 'space-between',
                     paddingTop: '4px',
+                    flexWrap: 'wrap',
+                    gap: '6px',
                   }}
                 >
                   <button
                     type="button"
                     onClick={handleResetDefaultFolder}
+                    disabled={!isDesktop}
                     style={{
                       background: 'transparent',
                       border: 'none',
@@ -825,6 +845,7 @@ export const BackupModal: React.FC = () => {
                   <button
                     type="button"
                     onClick={handleOpenFolder}
+                    disabled={!isDesktop}
                     style={{
                       background: 'transparent',
                       border: 'none',
@@ -880,7 +901,7 @@ export const BackupModal: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleManualBackup}
-                  disabled={isLoading}
+                  disabled={isLoading || !isDesktop}
                   className="btn-island btn-island-primary"
                   style={{
                     flex: 1,
@@ -892,14 +913,15 @@ export const BackupModal: React.FC = () => {
                     gap: '8px',
                     fontSize: '13px',
                     fontWeight: 700,
-                    cursor: isLoading ? 'not-allowed' : 'pointer',
-                    opacity: isLoading ? 0.7 : 1,
+                    cursor: isLoading || !isDesktop ? 'not-allowed' : 'pointer',
+                    opacity: isLoading || !isDesktop ? 0.7 : 1,
                   }}
                 >
                   <DownloadCloud size={16} />
                   <span>{isLoading ? 'Gerando Cópia...' : 'Fazer Backup Agora'}</span>
                 </button>
               </div>
+              {!isDesktop && <small style={{ color: 'var(--text-secondary)' }}>No navegador, use a aba Exportar Dados. O backup SQLite é criado no aplicativo desktop.</small>}
 
               {/* Lista de Backups Recentes na Pasta */}
               {backupsList.length > 0 && (
@@ -980,6 +1002,9 @@ export const BackupModal: React.FC = () => {
                           >
                             {b.fileName}
                           </span>
+                          <span style={{ color: 'var(--text-muted)', fontSize: '10px' }}>
+                            {b.includesRewards ? 'Rotina + Refúgio' : 'Somente rotina'}
+                          </span>
                         </div>
                         <span style={{ color: 'var(--text-muted)' }}>
                           {formatBytes(b.fileSizeBytes)}
@@ -989,6 +1014,10 @@ export const BackupModal: React.FC = () => {
                   </div>
                 </div>
               )}
+              <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '11px', lineHeight: 1.5 }}>
+                Guarde a pasta .flowbackup inteira. Para recuperar os dois bancos, feche o Flow antes
+                de restaurá-los; a importação de JSON nesta tela recupera somente a rotina.
+              </p>
             </div>
           )}
 
@@ -997,7 +1026,7 @@ export const BackupModal: React.FC = () => {
           {/* ============================================================== */}
           {backupModalTab === 'export' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {/* Card 1: Pacote Completo JSON */}
+              {/* Card 1: Rotina em JSON */}
               <div
                 style={{
                   padding: '16px',
@@ -1033,7 +1062,7 @@ export const BackupModal: React.FC = () => {
                     </div>
                     <div>
                       <div style={{ fontSize: '14px', fontWeight: 600 }}>
-                        Pacote Completo em JSON (.json)
+                        Dados da rotina em JSON (.json)
                       </div>
                       <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
                         Ideal para backup geral, sincronização e migração de máquina
@@ -1063,7 +1092,7 @@ export const BackupModal: React.FC = () => {
                   }}
                 >
                   Exporta tarefas, categorias, tipos de rotina, backlog, notas e histórico de
-                  conclusões em formato JSON estruturado com metadados de versão.
+                  conclusões. Peixes e recompensas ficam no backup SQLite do desktop.
                 </div>
 
                 <div

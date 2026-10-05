@@ -9,6 +9,7 @@ import { createNotesSlice } from './slices/notesSlice';
 import { createPomodoroSlice } from './slices/pomodoroSlice';
 import { createAiSlice } from './slices/aiSlice';
 import { createAuthSyncSlice } from './slices/authSyncSlice';
+import { createRewardsSlice } from './slices/rewardsSlice';
 import { initDb, loadStateFromDb, syncStateToDb, runLocalStorageMigration } from '../services/dbService';
 
 export { getTodayDateString };
@@ -25,6 +26,7 @@ export const useFlowStore = create<FlowStore>()(
         ...createPomodoroSlice(...a),
         ...createAiSlice(...a),
         ...createAuthSyncSlice(...a),
+        ...createRewardsSlice(...a),
       }),
       {
         name: 'flow-app-v1-clean',
@@ -43,6 +45,11 @@ export const useFlowStore = create<FlowStore>()(
           firebaseUser: state.firebaseUser,
           cloudSyncStatus: state.cloudSyncStatus,
         }),
+        // A closed application is not an observed focus session. Resume explicitly after reopening.
+        merge: (persisted, current) => {
+          const saved = persisted as Partial<FlowStore>;
+          return { ...current, ...saved, pomodoro: saved.pomodoro ? { ...current.pomodoro, ...saved.pomodoro, isActive: false, rewardTickAt: null } : current.pomodoro };
+        },
       }
     )
   )

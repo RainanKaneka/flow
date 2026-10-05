@@ -1,0 +1,27 @@
+{
+  "seed": 20261005,
+  "players": 2000,
+  "maxCaptures": 300,
+  "firstRare": {
+    "median": 5,
+    "p90": 10,
+    "max": 10
+  },
+  "firstLegendary": {
+    "median": 20,
+    "p90": 30,
+    "max": 30
+  },
+  "fullCollection": {
+    "completed": 2000,
+    "median": 30,
+    "p90": 37,
+    "max": 80
+  },
+  "effectiveRarities": {
+    "common": 29395,
+    "uncommon": 16282,
+    "rare": 8085,
+    "legendary": 2736
+  }
+}

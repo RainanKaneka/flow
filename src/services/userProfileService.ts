@@ -1,6 +1,8 @@
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { getFirebaseFirestoreInstance, isFirebaseConfigured } from './firebaseConfig';
 import { toFirestoreData } from '../utils/firebaseData';
+import type { RewardWallet } from '../types/rewards';
+import { rewardAchievements, rewardLevel } from './rewards/engine';
 import {
   Task,
   TaskLog,
@@ -131,7 +133,8 @@ export const calculateProfileStats = (
   tasks: Task[],
   logs: Record<string, TaskLog>,
   pomodoro: PomodoroSession,
-  categories: Category[]
+  categories: Category[],
+  rewardWallet?: RewardWallet | null
 ): UserProfileStats => {
   // 1. Tarefas Concluídas
   const completedLogs = Object.values(logs).filter((l) => l.completed);
@@ -288,14 +291,17 @@ export const calculateProfileStats = (
     currentStreakDays,
     efficiencyRate,
     topCategory,
-    productivityLevel: {
+    productivityLevel: rewardWallet ? rewardLevel(rewardWallet.xp) : {
       levelNumber,
       title,
       points: xp,
       nextLevelPoints,
       progressPercentage,
     },
-    achievements,
+    achievements: rewardWallet ? achievements.map((achievement) => {
+      const unlocked = rewardAchievements(rewardWallet).includes(achievement.id);
+      return { ...achievement, unlocked, progressText: unlocked ? 'Conquista permanente' : achievement.progressText };
+    }) : achievements,
   };
 };
 

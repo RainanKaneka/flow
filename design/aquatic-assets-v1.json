@@ -1,0 +1,51 @@
+{
+  "generator": "built-in image_gen",
+  "reference": "public/rewards/environments/aquarium.png",
+  "assets": [
+    {
+      "id": "lantern",
+      "width": 96,
+      "height": 96,
+      "transparent": true,
+      "prompt": "Use case: stylized-concept. Production 2D pixel art game asset for Flow, cozy collectible fish aquarium. Input image is a STYLE REFERENCE ONLY. Match crisp square pixel clusters, turquoise aquatic palette and warm accents, front side view, no text, no UI, no fish, no watermark. A single small bronze underwater lantern sitting on a rounded rock with a tuft of moss, warm amber glass, charming simple silhouette. Entire object centered with generous transparent padding. True transparent RGBA background, no scene or frame. Logical 96x96 sprite, no blurry edges.",
+      "source": "C:\\Users\\Rainan\\.codex\\generated_images\\01a0ffb2-7f46-7fb1-8c0d-338deb4da8cf\\exec-359e3de9-19b9-4e48-95b1-a7e9d289a4f4.png",
+      "destination": "public/rewards/decorations/lantern.png"
+    },
+    {
+      "id": "arch",
+      "width": 96,
+      "height": 96,
+      "transparent": true,
+      "prompt": "Use case: stylized-concept. Production 2D pixel art game asset for Flow, cozy collectible fish aquarium. Input image is a STYLE REFERENCE ONLY. Match crisp square pixel clusters, turquoise aquatic palette and warm accents, front side view, no text, no UI, no fish, no watermark. A single small ancient stone arch aquarium ornament, gray teal stones and small moss tufts, an open hole visible through the arch. Entire object centered with generous transparent padding. True transparent RGBA background, no scene or frame. Logical 96x96 sprite, no blurry edges.",
+      "source": "C:\\Users\\Rainan\\.codex\\generated_images\\01a0ffb2-7f46-7fb1-8c0d-338deb4da8cf\\exec-907ad9a0-ddd8-4017-b1f4-482403cf1b9f.png",
+      "destination": "public/rewards/decorations/arch.png"
+    },
+    {
+      "id": "garden",
+      "width": 96,
+      "height": 96,
+      "transparent": true,
+      "prompt": "Use case: stylized-concept. Production 2D pixel art game asset for Flow, cozy collectible fish aquarium. Input image is a STYLE REFERENCE ONLY. Match crisp square pixel clusters, turquoise aquatic palette and warm accents, front side view, no text, no UI, no fish, no watermark. A single aquarium ornament consisting of a little cluster of three softly colored pink water lilies and broad green aquatic leaves on one smooth pebble, low compact silhouette. Entire object centered with generous transparent padding. True transparent RGBA background, no scene or frame. Logical 96x96 sprite, no blurry edges.",
+      "source": "C:\\Users\\Rainan\\.codex\\generated_images\\01a0ffb2-7f46-7fb1-8c0d-338deb4da8cf\\exec-157e5c62-f3e1-4b49-8065-9225b350a14a.png",
+      "destination": "public/rewards/decorations/garden.png"
+    },
+    {
+      "id": "dusk",
+      "width": 480,
+      "height": 288,
+      "transparent": false,
+      "prompt": "Use case: stylized-concept. Production 2D pixel art game asset for Flow, cozy collectible fish aquarium. Input image is a STYLE REFERENCE ONLY. Match crisp square pixel clusters, turquoise aquatic palette and warm accents, front side view, no text, no UI, no fish, no watermark. A full aquarium environment at golden dusk: underwater front side view, pale sandy bottom, rocks and reeds concentrated along the bottom and outer edges, spacious unobstructed middle water for fish sprites. Soft warm apricot sunlight rays through teal water, cozy and readable. Canvas aspect ratio 5:3, composition matching reference aquarium but a distinct dusk mood. Crisp pixel art logical grid 480x288, opaque full background.",
+      "source": "C:\\Users\\Rainan\\.codex\\generated_images\\01a0ffb2-7f46-7fb1-8c0d-338deb4da8cf\\exec-6c8cba80-deaf-4443-a262-601d136c86c7.png",
+      "destination": "public/rewards/environments/dusk.png"
+    },
+    {
+      "id": "moon",
+      "width": 480,
+      "height": 288,
+      "transparent": false,
+      "prompt": "Use case: stylized-concept. Production 2D pixel art game asset for Flow, cozy collectible fish aquarium. Input image is a STYLE REFERENCE ONLY. Match crisp square pixel clusters, turquoise aquatic palette and warm accents, front side view, no text, no UI, no fish, no watermark. A full aquarium environment in moonlight: underwater front side view, blue sand and rocks with a few pale luminous aquatic flowers along bottom and sides, spacious unobstructed middle water for fish sprites. Indigo and sapphire water with soft silvery moonbeams, tranquil, readable and never near black. Canvas aspect ratio 5:3, composition matching reference aquarium but a distinct moonlit mood. Crisp pixel art logical grid 480x288, opaque full background.",
+      "source": "C:\\Users\\Rainan\\.codex\\generated_images\\01a0ffb2-7f46-7fb1-8c0d-338deb4da8cf\\exec-9f1609dd-e21b-4a99-8e8c-0fcd8024f9d6.png",
+      "destination": "public/rewards/environments/moon.png"
+    }
+  ]
+}

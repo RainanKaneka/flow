@@ -136,6 +136,7 @@ export const createTaskSlice: StateCreator<FlowStore, [], [], TaskSlice> = (set,
         },
       },
     }));
+    get().recordTaskReward(taskId, date, isCompleted);
   },
 
   saveTask: (taskData) => {

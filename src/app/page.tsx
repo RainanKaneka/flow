@@ -37,6 +37,9 @@ import { useGoogleTokenRefresh } from '../hooks/useGoogleTokenRefresh';
 import { useCloudSync } from '../hooks/useCloudSync';
 import { useFirebaseSession } from '../hooks/useFirebaseSession';
 import { useTaskProgressScheduler } from '../hooks/useTaskProgressScheduler';
+import { useRewards } from '../hooks/useRewards';
+import { RewardsView } from '../components/RewardsView';
+import { RewardDailyProgress } from '../components/rewards/RewardDailyProgress';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { Sparkles, Compass, RefreshCw, Database, Clock, List, CheckCircle2 } from 'lucide-react';
 
@@ -49,6 +52,7 @@ export default function Home() {
   const isFirebaseSessionReady = useFirebaseSession();
 
   const activeView = useFlowStore((s) => s.activeView);
+  const theme = useFlowStore((s) => s.theme);
   const tasks = useFlowStore((s) => s.tasks);
   const routineTypes = useFlowStore((s) => s.routineTypes);
   const selectedRoutineTypeId = useFlowStore((s) => s.selectedRoutineTypeId);
@@ -63,13 +67,15 @@ export default function Home() {
 
   useCloudSync(isDbReady && isFirebaseSessionReady);
   useTaskProgressScheduler(isDbReady);
+  useRewards(isDbReady && isFirebaseSessionReady);
+  const rewardStatus = useFlowStore((s) => s.rewardStatus);
   const [oauthBrowserToken, setOauthBrowserToken] = useState<string | null>(null);
   const openBackupModal = useFlowStore((s) => s.openBackupModal);
   const openOnboardingModal = useFlowStore((s) => s.openOnboardingModal);
   const backupSettings = useFlowStore((s) => s.backupSettings);
 
   // Inicializa rotina diária de backup quando o banco de dados estiver pronto
-  useDailyBackupScheduler(isDbReady);
+  useDailyBackupScheduler(isDbReady && isFirebaseSessionReady && rewardStatus !== 'loading');
 
   // Inicializa o Banco de Dados Nativo (Tauri SQLite)
   useEffect(() => {
@@ -77,6 +83,11 @@ export default function Home() {
       setIsDbReady(true);
     });
   }, []);
+
+  // Apply the saved appearance after hydration as well as when the user changes it.
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', theme === 'dark');
+  }, [theme]);
 
   // Background ticker para Pomodoro ativo (RF-7 / RF-13)
   useEffect(() => {
@@ -186,7 +197,7 @@ export default function Home() {
     );
   }
 
-  const isWideView = ['calendar', 'timeline', 'dashboard', 'notes'].includes(activeView);
+  const isWideView = ['calendar', 'timeline', 'dashboard', 'notes', 'rewards'].includes(activeView);
 
   return (
     <div style={{ minHeight: '100vh', paddingBottom: '60px' }}>
@@ -201,6 +212,7 @@ export default function Home() {
         className={`responsive-main ${isWideView ? 'responsive-main-wide' : ''}`}
       >
         {/* Renderização Condicional da View Selecionada com Isolamento de Falhas */}
+        {activeView === 'rewards' && <ErrorBoundary viewName="Refúgio"><RewardsView /></ErrorBoundary>}
         {activeView === 'dashboard' && (
           <ErrorBoundary viewName="Painel de Métricas">
             <DashboardView />
@@ -246,6 +258,7 @@ export default function Home() {
         {activeView === 'routine' && (
           <ErrorBoundary viewName="Rotina Diária">
             {/* Daily Stats Bar */}
+            <RewardDailyProgress />
             <DailyStatsBar />
 
             {/* Philosophy Card - Dinâmico por Tipo de Rotina */}

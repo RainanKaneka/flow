@@ -1,6 +1,6 @@
 {
   "name": "flow",
-  "version": "5.0.0",
+  "version": "5.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -15,6 +15,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
+    "test:rewards:firebase": "vitest run --config vitest.rewards.config.mts",
     "emulators:start": "npx firebase-tools emulators:start",
     "emulators:export": "npx firebase-tools emulators:export ./firebase-emulator-data",
     "emulators:import": "npx firebase-tools emulators:start --import=./firebase-emulator-data",

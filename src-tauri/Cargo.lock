@@ -1135,10 +1135,11 @@ dependencies = [
 
 [[package]]
 name = "flow"
-version = "5.0.0"
+version = "5.1.0"
 dependencies = [
  "serde",
  "serde_json",
+ "sqlx",
  "tauri",
  "tauri-build",
  "tauri-plugin-notification",

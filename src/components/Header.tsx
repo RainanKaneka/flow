@@ -73,7 +73,7 @@ export const Header: React.FC = () => {
         }}
       >
         {/* Brand & Tabs */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '20px', minWidth: 0, maxWidth: '100%', flexWrap: 'wrap' }}>
           <HeaderBrand />
           <HeaderNavTabs
             activeView={activeView}

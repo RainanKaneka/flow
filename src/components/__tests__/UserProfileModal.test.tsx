@@ -1,8 +1,24 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { UserProfileModal } from '../UserProfileModal';
 import { useFlowStore } from '../../store/useFlowStore';
+import { firebaseAuthService } from '../../services/firebaseAuthService';
+import { userProfileService } from '../../services/userProfileService';
+import { FirebaseUserProfile } from '../../types/routine';
+
+vi.mock('../../services/firebaseAuthService', () => ({
+  firebaseAuthService: { signInWithGoogle: vi.fn() },
+}));
+
+const googleAccount: FirebaseUserProfile = {
+  uid: 'google-profile-user',
+  displayName: 'Conta Google',
+  email: 'google@example.com',
+  photoURL: 'https://example.com/google-avatar.png',
+  isAnonymous: false,
+  providerId: 'google.com',
+};
 
 // Mock do audio
 vi.mock('../../utils/audio', () => ({
@@ -22,6 +38,7 @@ vi.mock('../../services/userProfileService', async () => {
       isCloudConfigured: vi.fn(() => true),
       saveUserProfileToCloud: vi.fn().mockResolvedValue(true),
       fetchUserProfileFromCloud: vi.fn().mockResolvedValue(null),
+      ensureUserProfileInitialized: vi.fn(),
     },
   };
 });
@@ -29,8 +46,19 @@ vi.mock('../../services/userProfileService', async () => {
 describe('UserProfileModal Component', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(firebaseAuthService.signInWithGoogle).mockReset().mockResolvedValue(googleAccount);
+    vi.mocked(userProfileService.ensureUserProfileInitialized).mockReset().mockResolvedValue({
+      name: 'Meu perfil Google',
+      objective: 'Objetivo salvo na nuvem',
+      bio: 'Minha bio',
+      avatarUrl: googleAccount.photoURL!,
+      avatarPreset: 'zen',
+    });
     useFlowStore.setState({
       isProfileModalOpen: false,
+      firebaseUser: null,
+      googleUser: null,
+      isAuthSyncModalOpen: false,
       userProfile: {
         name: 'Rainan',
         objective: 'Foco Total',
@@ -102,6 +130,107 @@ describe('UserProfileModal Component', () => {
 
     expect(screen.queryByTestId('toggle-plan-btn')).not.toBeInTheDocument();
     expect(screen.queryByText(/Plano Flow/)).not.toBeInTheDocument();
+  });
+
+  it('permite criar/entrar com Google diretamente na aba Perfil e carrega o perfil da conta', async () => {
+    useFlowStore.setState({ isProfileModalOpen: true });
+    render(<UserProfileModal />);
+    fireEvent.click(screen.getByRole('button', { name: 'Criar conta com Google' }));
+
+    await waitFor(() =>
+      expect(screen.getByTestId('profile-name-input')).toHaveValue('Meu perfil Google')
+    );
+    expect(firebaseAuthService.signInWithGoogle).toHaveBeenCalledTimes(1);
+    expect(userProfileService.ensureUserProfileInitialized).toHaveBeenCalledWith(
+      googleAccount.uid,
+      {
+        name: googleAccount.displayName,
+        email: googleAccount.email,
+        avatarUrl: googleAccount.photoURL,
+      }
+    );
+    expect(useFlowStore.getState().firebaseUser).toEqual(googleAccount);
+    expect(screen.getByTestId('profile-objective-input')).toHaveValue('Objetivo salvo na nuvem');
+    expect(screen.getByRole('img', { name: 'Meu perfil Google' })).toHaveAttribute(
+      'src',
+      googleAccount.photoURL
+    );
+    expect(screen.getByText('Conectado como google@example.com')).toBeInTheDocument();
+    expect(useFlowStore.getState().isAuthSyncModalOpen).toBe(false);
+  });
+
+  it('bloqueia cliques duplicados e salvar o perfil enquanto o login está pendente', async () => {
+    let finish!: (user: FirebaseUserProfile) => void;
+    vi.mocked(firebaseAuthService.signInWithGoogle).mockReturnValueOnce(
+      new Promise((resolve) => {
+        finish = resolve;
+      })
+    );
+    useFlowStore.setState({ isProfileModalOpen: true });
+    render(<UserProfileModal />);
+    fireEvent.click(screen.getByRole('button', { name: 'Criar conta com Google' }));
+    const pendingButton = screen.getByRole('button', { name: 'Conectando com Google…' });
+    expect(pendingButton).toBeDisabled();
+    expect(screen.getByTestId('save-profile-btn')).toBeDisabled();
+    fireEvent.click(pendingButton);
+    expect(firebaseAuthService.signInWithGoogle).toHaveBeenCalledTimes(1);
+    await act(async () => {
+      finish(googleAccount);
+    });
+    expect(screen.getByTestId('save-profile-btn')).toBeEnabled();
+  });
+
+  it('mostra cancelamento, mantém as edições locais e permite tentar novamente', async () => {
+    vi.mocked(firebaseAuthService.signInWithGoogle).mockRejectedValueOnce(
+      Object.assign(new Error('Popup closed'), { code: 'auth/popup-closed-by-user' })
+    );
+    useFlowStore.setState({ isProfileModalOpen: true });
+    render(<UserProfileModal />);
+    fireEvent.change(screen.getByTestId('profile-name-input'), {
+      target: { value: 'Nome editado' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Criar conta com Google' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('A conexão foi cancelada');
+    expect(screen.getByTestId('profile-name-input')).toHaveValue('Nome editado');
+    expect(useFlowStore.getState().firebaseUser).toBeNull();
+    expect(userProfileService.ensureUserProfileInitialized).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Criar conta com Google' }));
+    await waitFor(() =>
+      expect(screen.getByText('Conectado como google@example.com')).toBeInTheDocument()
+    );
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('não anuncia sucesso se o perfil não puder ser carregado e permite repetir o login', async () => {
+    vi.mocked(userProfileService.ensureUserProfileInitialized).mockResolvedValueOnce(null);
+    useFlowStore.setState({ isProfileModalOpen: true });
+    render(<UserProfileModal />);
+    fireEvent.click(screen.getByRole('button', { name: 'Criar conta com Google' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'não foi possível carregar o perfil'
+    );
+    expect(screen.getByRole('button', { name: 'Criar conta com Google' })).toBeEnabled();
+  });
+
+  it('oferece criação de conta Google para convidados', () => {
+    useFlowStore.setState({
+      isProfileModalOpen: true,
+      firebaseUser: { ...googleAccount, uid: 'guest', isAnonymous: true, providerId: 'anonymous' },
+    });
+    render(<UserProfileModal />);
+    expect(screen.getByRole('button', { name: 'Criar conta com Google' })).toBeEnabled();
+  });
+
+  it('mostra a conta conectada e abre seu gerenciamento sem sobrepor os modais', () => {
+    useFlowStore.setState({ isProfileModalOpen: true, firebaseUser: googleAccount });
+    render(<UserProfileModal />);
+    expect(
+      screen.queryByRole('button', { name: 'Criar conta com Google' })
+    ).not.toBeInTheDocument();
+    expect(screen.getByText('Conectado como google@example.com')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Gerenciar Conta' }));
+    expect(useFlowStore.getState().isProfileModalOpen).toBe(false);
+    expect(useFlowStore.getState().isAuthSyncModalOpen).toBe(true);
   });
 
   it('deve permitir alternar para a aba de Estatísticas & Conquistas e exibir métricas', () => {

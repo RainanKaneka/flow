@@ -1,0 +1,176 @@
+{
+  "generator": "built-in image_gen",
+  "assets": [
+    {
+      "id": "goldfish",
+      "source": "C:\\Users\\Rainan\\.codex\\generated_images\\01a0ffb2-7f46-7fb1-8c0d-338deb4da8cf\\exec-2edd3833-a06b-474f-8660-a3c4fc8896e1.png",
+      "destination": "public/rewards/fish/goldfish.png",
+      "width": 96,
+      "height": 96,
+      "transparent": true
+    },
+    {
+      "id": "angelfish",
+      "source": "C:\\Users\\Rainan\\.codex\\generated_images\\01a0ffb2-7f46-7fb1-8c0d-338deb4da8cf\\exec-bf399be3-30a4-49ab-b119-a3cca2aeed87.png",
+      "destination": "public/rewards/fish/angelfish.png",
+      "width": 96,
+      "height": 96,
+      "transparent": true
+    },
+    {
+      "id": "aquarium",
+      "source": "C:\\Users\\Rainan\\.codex\\generated_images\\01a0ffb2-7f46-7fb1-8c0d-338deb4da8cf\\exec-2d0abd02-51dd-496f-bc3b-eafed873680c.png",
+      "destination": "public/rewards/environments/aquarium.png",
+      "width": 480,
+      "height": 288,
+      "transparent": false
+    },
+    {
+      "id": "lake",
+      "source": "C:\\Users\\Rainan\\.codex\\generated_images\\01a0ffb2-7f46-7fb1-8c0d-338deb4da8cf\\exec-c38d85c8-6483-48c2-8951-b9fc477c9ab4.png",
+      "destination": "public/rewards/environments/lake.png",
+      "width": 480,
+      "height": 288,
+      "transparent": false
+    },
+    {
+      "id": "betta",
+      "source": "C:\\Users\\Rainan\\.codex\\generated_images\\01a0ffb2-7f46-7fb1-8c0d-338deb4da8cf\\exec-7b458937-91dd-48c5-9274-d9f52b78fd0c.png",
+      "destination": "public/rewards/fish/betta.png",
+      "width": 96,
+      "height": 96,
+      "transparent": true
+    },
+    {
+      "id": "koi",
+      "source": "C:\\Users\\Rainan\\.codex\\generated_images\\01a0ffb2-7f46-7fb1-8c0d-338deb4da8cf\\exec-d035fc30-62b8-4656-ba66-07848e31921a.png",
+      "destination": "public/rewards/fish/koi.png",
+      "width": 96,
+      "height": 96,
+      "transparent": true
+    },
+    {
+      "id": "guppy",
+      "source": "C:\\Users\\Rainan\\.codex\\generated_images\\01a0ffb2-7f46-7fb1-8c0d-338deb4da8cf\\exec-e1a63976-68ba-4151-878d-154a67cf2356.png",
+      "destination": "public/rewards/fish/guppy.png",
+      "width": 96,
+      "height": 96,
+      "transparent": true
+    },
+    {
+      "id": "neon",
+      "source": "C:\\Users\\Rainan\\.codex\\generated_images\\01a0ffb2-7f46-7fb1-8c0d-338deb4da8cf\\exec-aa1d5b7e-591a-486b-b6e6-d5891834f21a.png",
+      "destination": "public/rewards/fish/neon.png",
+      "width": 96,
+      "height": 96,
+      "transparent": true
+    },
+    {
+      "id": "clownfish",
+      "source": "C:\\Users\\Rainan\\.codex\\generated_images\\01a0ffb2-7f46-7fb1-8c0d-338deb4da8cf\\exec-42bda024-2da8-49ee-baaf-2129317b0009.png",
+      "destination": "public/rewards/fish/clownfish.png",
+      "width": 96,
+      "height": 96,
+      "transparent": true
+    },
+    {
+      "id": "pufferfish",
+      "source": "C:\\Users\\Rainan\\.codex\\generated_images\\01a0ffb2-7f46-7fb1-8c0d-338deb4da8cf\\exec-f0638e56-39be-4442-8f57-effd61a3acec.png",
+      "destination": "public/rewards/fish/pufferfish.png",
+      "width": 96,
+      "height": 96,
+      "transparent": true
+    },
+    {
+      "id": "mandarin",
+      "source": "C:\\Users\\Rainan\\.codex\\generated_images\\01a0ffb2-7f46-7fb1-8c0d-338deb4da8cf\\exec-c5cd478b-e11e-4650-a658-9a7c6b11bd1d.png",
+      "destination": "public/rewards/fish/mandarin.png",
+      "width": 96,
+      "height": 96,
+      "transparent": true
+    },
+    {
+      "id": "catfish",
+      "source": "C:\\Users\\Rainan\\.codex\\generated_images\\01a0ffb2-7f46-7fb1-8c0d-338deb4da8cf\\exec-52d1701a-7666-437c-9164-385730ac1800.png",
+      "destination": "public/rewards/fish/catfish.png",
+      "width": 96,
+      "height": 96,
+      "transparent": true
+    },
+    {
+      "id": "discus",
+      "source": "C:\\Users\\Rainan\\.codex\\generated_images\\01a0ffb2-7f46-7fb1-8c0d-338deb4da8cf\\exec-9d5f22af-c9a2-460e-9bcf-d7c19e9ab5b9.png",
+      "destination": "public/rewards/fish/discus.png",
+      "width": 96,
+      "height": 96,
+      "transparent": true
+    }
+  ],
+  "prompts": [
+    {
+      "id": "goldfish",
+      "ref": "referencias/peixe-dourado-pixel-aprovado.png",
+      "prompt": "Use case: background-extraction. Edit target: the supplied approved Flow goldfish pixel art. Prepare ONE production fish sprite with genuinely transparent background. Preserve this exact golden orange friendly goldfish design, large shiny black eye, cream belly, stepped dark orange outline, rounded body and flowing fan tail. Right facing side view. Simplify the tiny scale noise into clean pixel clusters on a coherent logical 96x96 grid, nearest-neighbor look, hard stepped pixel edges. Center the complete fish in a square canvas with 12% transparent margin, no cropping. No text, no shadows outside the fish, no decoration. This is a game sprite to be displayed at 100-160px, not a concept poster. Remove ivory background entirely; alpha everywhere outside fish."
+    },
+    {
+      "id": "angelfish",
+      "ref": "05-acara-bandeira.png",
+      "prompt": "Use case: background-extraction. Edit target: the supplied approved Flow angelfish pixel art. Prepare ONE production fish sprite with genuinely transparent background. Preserve the golden cream body, charcoal vertical stripes, tall triangular dorsal and lower fins, thin trailing feelers, large friendly black eye and stepped brown outline. Right facing side view. Clean pixel clusters on a coherent logical 96x96 grid, nearest-neighbor look, hard stepped edges. Center complete fish in square canvas with 12% transparent margin, no cropping. No text, no outside shadow or decoration. Game sprite displayed at 100-160px. Remove ivory background entirely."
+    },
+    {
+      "id": "aquarium",
+      "ref": "aquario-conceito.png",
+      "prompt": "Use case: precise-object-edit. Supporting reference: approved Flow aquarium concept. Create ONLY the underwater environment artwork, NOT the UI. A landscape pixel art aquarium background, view straight into clear turquoise-blue water, bright surface at top, soft stepped light rays, layered dark blue depths, plants mostly along left and right edges and bottom corners, small rocks and warm sandy floor at bottom. Preserve the cozy pixel art language of the reference. Broad clear middle area for fish sprites. Logical 480x288 pixel grid enlarged with sharp stepped blocks. NO fish, NO bubbles over the center, NO text, NO UI, NO borders, NO controls. Opaque landscape 5:3 image."
+    },
+    {
+      "id": "lake",
+      "ref": "pesca-conceito.png",
+      "prompt": "Use case: precise-object-edit. Supporting reference: approved Flow fishing concept. Create ONLY the fishing environment artwork, NOT the UI. Cozy landscape pixel art quiet forest lake, small wooden dock at left with fishing rod leaning toward center, red bobber on water near middle, distant sunlit forest, water lilies at right. Show water surface in upper half and clear turquoise underwater cross section in lower half with plants and sand at edges; leave broad uncluttered center. Match clean colorful cozy pixel art in reference. Logical 480x288 grid enlarged with crisp stepped blocks. NO fish, NO text, NO UI, NO frames, NO controls. Opaque landscape 5:3 image."
+    },
+    {
+      "id": "betta",
+      "ref": "01-betta-azul.png",
+      "prompt": "Use case: background-extraction. Edit target: approved Flow pixel art royal blue and turquoise betta with large flowing fan fins. Prepare ONE production fish sprite with genuinely transparent background. Preserve the exact reference species silhouette, colors, large friendly shiny black eye, fin shape and stepped dark outline. Right facing side view. Clean detailed pixel clusters on a coherent logical 96x96 grid, nearest-neighbor look and hard stepped edges. Complete fish centered in square canvas with 12% transparent margin. No cropping, no text, no labels, no shadow or decoration outside the fish. Displayed at 96-160px in a cozy aquarium game. Remove the ivory background entirely; all pixels outside fish fully transparent. Match the approved goldfish pixel style. Do not turn this into vector art or smooth illustration."
+    },
+    {
+      "id": "koi",
+      "ref": "02-carpa-koi.png",
+      "prompt": "Use case: background-extraction. Edit target: approved Flow pixel art cream koi with orange and charcoal patches, tiny whiskers. Prepare ONE production fish sprite with genuinely transparent background. Preserve the exact reference species silhouette, colors, large friendly shiny black eye, fin shape and stepped dark outline. Right facing side view. Clean detailed pixel clusters on a coherent logical 96x96 grid, nearest-neighbor look and hard stepped edges. Complete fish centered in square canvas with 12% transparent margin. No cropping, no text, no labels, no shadow or decoration outside the fish. Displayed at 96-160px in a cozy aquarium game. Remove the ivory background entirely; all pixels outside fish fully transparent. Match the approved goldfish pixel style. Do not turn this into vector art or smooth illustration."
+    },
+    {
+      "id": "guppy",
+      "ref": "03-guppy-aurora.png",
+      "prompt": "Use case: background-extraction. Edit target: approved Flow pixel art small turquoise guppy with a broad pastel pink-lilac aurora fan tail. Prepare ONE production fish sprite with genuinely transparent background. Preserve the exact reference species silhouette, colors, large friendly shiny black eye, fin shape and stepped dark outline. Right facing side view. Clean detailed pixel clusters on a coherent logical 96x96 grid, nearest-neighbor look and hard stepped edges. Complete fish centered in square canvas with 12% transparent margin. No cropping, no text, no labels, no shadow or decoration outside the fish. Displayed at 96-160px in a cozy aquarium game. Remove the ivory background entirely; all pixels outside fish fully transparent. Match the approved goldfish pixel style. Do not turn this into vector art or smooth illustration."
+    },
+    {
+      "id": "neon",
+      "ref": "04-tetra-neon.png",
+      "prompt": "Use case: background-extraction. Edit target: approved Flow pixel art slender neon tetra with bright blue stripe, red lower body and pale fins. Prepare ONE production fish sprite with genuinely transparent background. Preserve the exact reference species silhouette, colors, large friendly shiny black eye, fin shape and stepped dark outline. Right facing side view. Clean detailed pixel clusters on a coherent logical 96x96 grid, nearest-neighbor look and hard stepped edges. Complete fish centered in square canvas with 12% transparent margin. No cropping, no text, no labels, no shadow or decoration outside the fish. Displayed at 96-160px in a cozy aquarium game. Remove the ivory background entirely; all pixels outside fish fully transparent. Match the approved goldfish pixel style. Do not turn this into vector art or smooth illustration."
+    },
+    {
+      "id": "clownfish",
+      "ref": "06-peixe-palhaco.png",
+      "prompt": "Use case: background-extraction. Edit target: approved Flow pixel art orange clownfish with three cream-white bands edged dark brown. Prepare ONE production fish sprite with genuinely transparent background. Preserve the exact reference species silhouette, colors, large friendly shiny black eye, fin shape and stepped dark outline. Right facing side view. Clean detailed pixel clusters on a coherent logical 96x96 grid, nearest-neighbor look and hard stepped edges. Complete fish centered in square canvas with 12% transparent margin. No cropping, no text, no labels, no shadow or decoration outside the fish. Displayed at 96-160px in a cozy aquarium game. Remove the ivory background entirely; all pixels outside fish fully transparent. Match the approved goldfish pixel style. Do not turn this into vector art or smooth illustration."
+    },
+    {
+      "id": "pufferfish",
+      "ref": "07-baiacu-limao.png",
+      "prompt": "Use case: background-extraction. Edit target: approved Flow pixel art round yellow pufferfish with small soft spikes, olive spots and cream belly. Prepare ONE production fish sprite with genuinely transparent background. Preserve the exact reference species silhouette, colors, large friendly shiny black eye, fin shape and stepped dark outline. Right facing side view. Clean detailed pixel clusters on a coherent logical 96x96 grid, nearest-neighbor look and hard stepped edges. Complete fish centered in square canvas with 12% transparent margin. No cropping, no text, no labels, no shadow or decoration outside the fish. Displayed at 96-160px in a cozy aquarium game. Remove the ivory background entirely; all pixels outside fish fully transparent. Match the approved goldfish pixel style. Do not turn this into vector art or smooth illustration."
+    },
+    {
+      "id": "mandarin",
+      "ref": "08-peixe-mandarim.png",
+      "prompt": "Use case: background-extraction. Edit target: approved Flow pixel art blue-turquoise mandarin fish with orange swirling patterns. Prepare ONE production fish sprite with genuinely transparent background. Preserve the exact reference species silhouette, colors, large friendly shiny black eye, fin shape and stepped dark outline. Right facing side view. Clean detailed pixel clusters on a coherent logical 96x96 grid, nearest-neighbor look and hard stepped edges. Complete fish centered in square canvas with 12% transparent margin. No cropping, no text, no labels, no shadow or decoration outside the fish. Displayed at 96-160px in a cozy aquarium game. Remove the ivory background entirely; all pixels outside fish fully transparent. Match the approved goldfish pixel style. Do not turn this into vector art or smooth illustration."
+    },
+    {
+      "id": "catfish",
+      "ref": "09-bagre-mel.png",
+      "prompt": "Use case: background-extraction. Edit target: approved Flow pixel art honey brown spotted catfish with long delicate whiskers. Prepare ONE production fish sprite with genuinely transparent background. Preserve the exact reference species silhouette, colors, large friendly shiny black eye, fin shape and stepped dark outline. Right facing side view. Clean detailed pixel clusters on a coherent logical 96x96 grid, nearest-neighbor look and hard stepped edges. Complete fish centered in square canvas with 12% transparent margin. No cropping, no text, no labels, no shadow or decoration outside the fish. Displayed at 96-160px in a cozy aquarium game. Remove the ivory background entirely; all pixels outside fish fully transparent. Match the approved goldfish pixel style. Do not turn this into vector art or smooth illustration."
+    },
+    {
+      "id": "discus",
+      "ref": "10-disco-rubi.png",
+      "prompt": "Use case: background-extraction. Edit target: approved Flow pixel art rounded red ruby discus with luminous turquoise bands. Prepare ONE production fish sprite with genuinely transparent background. Preserve the exact reference species silhouette, colors, large friendly shiny black eye, fin shape and stepped dark outline. Right facing side view. Clean detailed pixel clusters on a coherent logical 96x96 grid, nearest-neighbor look and hard stepped edges. Complete fish centered in square canvas with 12% transparent margin. No cropping, no text, no labels, no shadow or decoration outside the fish. Displayed at 96-160px in a cozy aquarium game. Remove the ivory background entirely; all pixels outside fish fully transparent. Match the approved goldfish pixel style. Do not turn this into vector art or smooth illustration."
+    }
+  ]
+}

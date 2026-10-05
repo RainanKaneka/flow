@@ -68,22 +68,25 @@ describe('backupService', () => {
       (window as any).__TAURI__ = true;
       const today = getTodayDateString();
       const expectedFileName = `flow_backup_${today}.db`;
+      const backupFolder = expectedFileName.replace(/\.db$/, '.flowbackup');
       const fakeBackup = {
-        filePath: `C:\\Backups\\${expectedFileName}`,
-        fileName: expectedFileName,
+        filePath: `C:\\Backups\\${backupFolder}`,
+        fileName: backupFolder,
         fileSizeBytes: 61440,
         createdAt: new Date().toISOString(),
+        includesRewards: true,
       };
       mockInvoke.mockResolvedValueOnce(fakeBackup);
 
       const res = await backupService.createBackup({ isManual: false });
       expect(res.success).toBe(true);
-      expect(res.backup?.fileName).toBe(expectedFileName);
+      expect(res.backup?.fileName).toBe(backupFolder);
 
       const state = useFlowStore.getState().backupSettings;
       expect(state.lastBackupStatus).toBe('success');
       expect(state.lastBackupDate).toBe(today);
-      expect(state.lastBackupFileName).toBe(expectedFileName);
+      expect(state.lastBackupFileName).toBe(backupFolder);
+      expect(mockInvoke).toHaveBeenCalledWith('create_database_backup', expect.objectContaining({ fileName: expectedFileName }));
 
       delete (window as any).__TAURI__;
     });
@@ -101,6 +104,15 @@ describe('backupService', () => {
       expect(state.lastBackupError).toContain('Acesso negado ao diretório');
 
       delete (window as any).__TAURI__;
+    });
+
+    it('não informa backup concluído no navegador sem criar um arquivo real', async () => {
+      delete (window as any).__TAURI__;
+      delete (window as any).__TAURI_INTERNALS__;
+      const res = await backupService.createBackup({ isManual: true });
+      expect(res.success).toBe(false);
+      expect(res.error).toContain('aplicativo desktop');
+      expect(useFlowStore.getState().backupSettings.lastBackupStatus).toBe('error');
     });
   });
 

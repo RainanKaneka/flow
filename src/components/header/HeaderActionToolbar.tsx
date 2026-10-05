@@ -73,7 +73,7 @@ export const HeaderActionToolbar: React.FC<HeaderActionToolbarProps> = ({
   onOpenNewTaskModal,
 }) => {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', maxWidth: '100%' }}>
       {/* Mini Live Timer Pill (se o pomodoro estiver ativo e estivermos em outra aba) */}
       {pomodoroActive && activeView !== 'pomodoro' && (
         <button
@@ -222,7 +222,7 @@ export const HeaderActionToolbar: React.FC<HeaderActionToolbarProps> = ({
             cursor: 'pointer',
             transition: 'all 200ms var(--bezier-haptic)',
           }}
-          title="Backup do Banco SQLite (Fase 2)"
+          title="Backup local de rotina e Refúgio"
         >
           <Database size={15} />
         </button>
@@ -370,11 +370,13 @@ export const HeaderActionToolbar: React.FC<HeaderActionToolbarProps> = ({
             /* eslint-disable-next-line @next/next/no-img-element */
             <img
               src={userProfile.avatarUrl}
+              className="reward-profile-avatar"
               alt={userProfile.name}
               style={{ width: '26px', height: '26px', borderRadius: '50%', objectFit: 'cover' }}
             />
           ) : userProfile?.avatarPreset ? (
             <div
+              className="reward-profile-avatar"
               style={{
                 width: '26px',
                 height: '26px',

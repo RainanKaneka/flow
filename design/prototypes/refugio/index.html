@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="pt-BR" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Refúgio Flow — protótipo da etapa 1</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script src="prototype.js" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Ir para o conteúdo</a>
+    <div class="prototype-bar">
+      <p>
+        <strong>Protótipo do Refúgio</strong
+        ><span>Dados fictícios. As alterações ficam nesta prévia.</span>
+      </p>
+      <div class="review-controls">
+        <label for="scenario">Cenário</label>
+        <select id="scenario">
+          <option value="new">Primeiro uso</option>
+          <option value="existing">Usuário atual</option>
+          <option value="offline">Sem conexão</option>
+          <option value="error">Falha na confirmação</option>
+          <option value="loading">Carregando</option>
+        </select>
+        <button id="reset" class="text-button" type="button">Recomeçar</button>
+      </div>
+    </div>
+    <header class="app-header">
+      <a href="#refugio" class="brand" aria-label="Flow, abrir Refúgio"
+        ><span class="brand-mark" aria-hidden="true">f</span>flow<span class="brand-divider"></span
+        ><span class="brand-subtitle">seu espaço de rotina</span></a
+      >
+      <div class="header-actions">
+        <button
+          id="theme-toggle"
+          class="icon-button"
+          type="button"
+          aria-label="Ativar tema claro"
+        ></button>
+        <button
+          id="preferences-open"
+          class="icon-button"
+          type="button"
+          aria-label="Abrir preferências"
+        ></button>
+        <button
+          class="profile-avatar"
+          type="button"
+          data-view="perfil"
+          aria-label="Abrir perfil de Marina"
+        >
+          M
+        </button>
+      </div>
+    </header>
+    <div class="app-shell">
+      <div class="navigation-row">
+        <nav aria-label="Áreas do Refúgio">
+          <button type="button" data-view="refugio" aria-current="page">Refúgio</button>
+          <button type="button" data-view="catalogo">Catálogo</button>
+          <button type="button" data-view="perfil">Perfil</button>
+          <button type="button" data-view="regras">Como funciona</button>
+        </nav>
+        <div id="wallet" class="wallet" aria-label="Seu progresso"></div>
+      </div>
+      <main id="main" tabindex="-1">
+        <div id="connection-state"></div>
+        <div id="view"></div>
+      </main>
+      <footer class="app-footer">
+        <span>Um pouco de progresso também é progresso.</span
+        ><span>Refúgio Flow · estudo de interface</span>
+      </footer>
+    </div>
+    <div
+      id="announcement"
+      class="announcement"
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+    ></div>
+    <dialog id="preferences" class="dialog">
+      <form id="preferences-form">
+        <div class="dialog-heading">
+          <h2>Sua rotina, seu ritmo</h2>
+          <button
+            type="button"
+            class="icon-button"
+            data-close-dialog
+            aria-label="Fechar preferências"
+          >
+            ×
+          </button>
+        </div>
+        <p>Escolha uma meta que caiba no seu dia.</p>
+        <fieldset>
+          <legend>Meta diária de tarefas</legend>
+          <div class="goal-options">
+            <label
+              ><input type="radio" name="goal" value="1" /><span
+                >1 tarefa<small>+15 XP · +5 moedas</small></span
+              ></label
+            >
+            <label
+              ><input type="radio" name="goal" value="2" /><span
+                >2 tarefas<small>+30 XP · +7 moedas</small></span
+              ></label
+            >
+            <label
+              ><input type="radio" name="goal" value="3" checked /><span
+                >3 tarefas<small>+50 XP · +10 moedas</small></span
+              ></label
+            >
+          </div>
+        </fieldset>
+        <p class="helper">
+          Cada meta também entrega um bilhete. Mudanças valem a partir de amanhã.
+        </p>
+        <fieldset>
+          <legend>Dias planejados</legend>
+          <div class="week-options">
+            <label><input type="checkbox" name="days" value="1" checked /><span>Seg</span></label>
+            <label><input type="checkbox" name="days" value="2" checked /><span>Ter</span></label>
+            <label><input type="checkbox" name="days" value="3" checked /><span>Qua</span></label>
+            <label><input type="checkbox" name="days" value="4" checked /><span>Qui</span></label>
+            <label><input type="checkbox" name="days" value="5" checked /><span>Sex</span></label>
+            <label><input type="checkbox" name="days" value="6" /><span>Sáb</span></label>
+            <label><input type="checkbox" name="days" value="0" /><span>Dom</span></label>
+          </div>
+        </fieldset>
+        <label class="check-preference"
+          ><input type="checkbox" name="motion" /><span>Reduzir movimento</span></label
+        >
+        <label class="check-preference"
+          ><input type="checkbox" name="visible" checked /><span
+            >Mostrar recompensas e Refúgio</span
+          ></label
+        >
+        <p id="preferences-error" class="inline-error" role="alert"></p>
+        <div class="dialog-actions">
+          <button type="button" class="secondary-button" data-close-dialog>Cancelar</button
+          ><button class="primary-button" type="submit">Salvar preferências</button>
+        </div>
+      </form>
+    </dialog>
+    <dialog id="purchase" class="dialog"><div id="purchase-content"></div></dialog>
+  </body>
+</html>
