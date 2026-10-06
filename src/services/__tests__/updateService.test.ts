@@ -30,6 +30,8 @@ describe('updateService', () => {
 
   describe('checkForUpdates', () => {
     const originalFetch = globalThis.fetch;
+    const [major, minor] = CURRENT_APP_VERSION.split('.').map(Number);
+    const nextVersion = `${major}.${minor + 1}.0`;
 
     beforeEach(() => {
       globalThis.fetch = vi.fn();
@@ -41,11 +43,11 @@ describe('updateService', () => {
 
     it('deve retornar informações de atualização quando houver nova versão com asset .exe', async () => {
       const mockRelease = {
-        tag_name: 'v5.2.0',
-        name: 'Flow v5.2.0 - Grande Lançamento',
-        body: 'Notas de atualização da v5.2.0',
+        tag_name: `v${nextVersion}`,
+        name: `Flow v${nextVersion} - Grande Lançamento`,
+        body: `Notas de atualização da v${nextVersion}`,
         published_at: '2026-09-22T12:00:00Z',
-        html_url: `https://github.com/${GITHUB_REPO}/releases/tag/v5.2.0`,
+        html_url: `https://github.com/${GITHUB_REPO}/releases/tag/v${nextVersion}`,
         assets: [
           {
             name: 'flow-installer.exe',
@@ -65,8 +67,8 @@ describe('updateService', () => {
       expect(update).not.toBeNull();
       expect(update?.hasUpdate).toBe(true);
       expect(update?.currentVersion).toBe(CURRENT_APP_VERSION);
-      expect(update?.latestVersion).toBe('5.2.0');
-      expect(update?.releaseName).toBe('Flow v5.2.0 - Grande Lançamento');
+      expect(update?.latestVersion).toBe(nextVersion);
+      expect(update?.releaseName).toBe(`Flow v${nextVersion} - Grande Lançamento`);
       expect(update?.downloadUrl).toBe('https://github.com/releases/flow-installer.exe');
     });
 
