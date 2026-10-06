@@ -87,8 +87,29 @@ describe('aquatic interface connected to real local capture actions', () => {
     const frame = vi.spyOn(window, 'requestAnimationFrame');
     render(<AquariumScene fishing={fishing} onSelect={vi.fn()} />);
     expect(screen.getByRole('button', { name: 'Selecionar Douradinho' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Selecionar Douradinho' }).querySelector('[data-motion="off"]')).toBeInTheDocument();
     expect(frame).not.toHaveBeenCalled();
     frame.mockRestore();
+  });
+  it('shows articulated aquarium art for every species and keeps a still state available', () => {
+    useFlowStore.setState({ pomodoro: { ...useFlowStore.getState().pomodoro, isActive: false } });
+    for (const id of FISH_IDS) {
+      const fishing = createFishingAccount();
+      fishing.progress.counts[id] = 1;
+      fishing.preferences.displayed = [id];
+      const { container, unmount } = render(<AquariumScene fishing={fishing} />);
+      const art = container.querySelector('[data-motion="on"]');
+      expect(art).toBeInTheDocument();
+      expect(art?.querySelector('svg[aria-hidden="true"] image')).toHaveAttribute('href', `/rewards/fish/${id}.png`);
+      unmount();
+    }
+    const fishing = createFishingAccount();
+    fishing.progress.counts.goldfish = 1;
+    fishing.preferences.displayed = ['goldfish'];
+    fishing.preferences.motion = false;
+    const { container } = render(<AquariumScene fishing={fishing} />);
+    expect(container.querySelector('[data-motion="off"]')).toBeInTheDocument();
+    expect(container.querySelector('img[src="/rewards/fish/goldfish.png"]')).toBeInTheDocument();
   });
   it('drags a fish, saves its position and suppresses selection after moving', () => {
     const fishing = createFishingAccount(); fishing.progress.counts.goldfish = 1; fishing.preferences.displayed = ['goldfish'];

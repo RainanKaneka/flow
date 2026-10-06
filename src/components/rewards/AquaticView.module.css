@@ -22,6 +22,20 @@
 .root button.sceneFish:active { cursor: grabbing; }
 .swimmerArt { display: block; width: 100%; transform-origin: center; image-rendering: pixelated; }
 .sceneFish .sprite { display: block; image-rendering: pixelated; }
+.fishStatic { display: none; width: 100%; }
+.animatedFish { display: block; width: 100%; height: auto; overflow: visible; image-rendering: pixelated; }
+.swimmerArt[data-motion="off"] .fishStatic, .swimmerArt[data-hidden="true"] .fishStatic { display: block; }
+.swimmerArt[data-motion="off"] .animatedFish, .swimmerArt[data-hidden="true"] .animatedFish { display: none; }
+.tailSegment, .dorsalSegment, .ventralSegment { transform-box: view-box; }
+.tailSegment { animation: fishTail .44s ease-in-out infinite alternate; }
+.dorsalSegment { animation: fishDorsal 1.15s ease-in-out infinite alternate; }
+.ventralSegment { animation: fishVentral .74s ease-in-out infinite alternate; }
+.blinkSegment { opacity: 0; animation: fishBlink 9.6s linear infinite; }
+@keyframes fishTail { from { transform: scaleX(.72) skewY(-2deg); } to { transform: scaleX(1.04) skewY(2deg); } }
+@keyframes fishDorsal { from { transform: skewX(-11deg); } to { transform: skewX(10deg); } }
+@keyframes fishVentral { from { transform: skewX(15deg); } to { transform: skewX(-15deg); } }
+@keyframes fishBlink { 0%, 18% { opacity: 0; } 18.2%, 19.6% { opacity: 1; } 19.8%, 68% { opacity: 0; } 68.2%, 69.6% { opacity: 1; } 69.8%, 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .fishStatic { display: block; } .animatedFish { display: none; } }
 .swimmerHint { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
 .sceneEmpty { position: absolute; left: 16px; right: 16px; top: 40%; display: flex; flex-direction: column; align-items: center; gap: 7px; color: #fff; text-shadow: 0 1px 4px #053855; font-size: 13px; text-align: center; }
 .sceneEmpty strong { font-size: 17px; }

@@ -1,10 +1,21 @@
-import type { GoalPeriod, RewardAccount, RewardDay, RewardEvent, RewardGoal, RewardItemId, RewardReceipt, RewardSlot, RewardWallet, RewardWeek } from '../../types/rewards';
+import type { GoalPeriod, RewardAccount, RewardAppearanceId, RewardDay, RewardEvent, RewardGoal, RewardItemId, RewardReceipt, RewardSlot, RewardWallet, RewardWeek } from '../../types/rewards';
 
 export const DAY_MS = 86_400_000;
-export const REWARD_ITEMS: { id: RewardItemId; slot: RewardSlot; name: string; price: number; description: string }[] = [
-  { id: 'accent.sage.v1', slot: 'accent', name: 'Sálvia', price: 15, description: 'Um verde suave para os detalhes do Flow.' },
-  { id: 'theme.forest.v1', slot: 'theme', name: 'Bosque', price: 80, description: 'Cores da floresta, em modo claro e escuro.' },
-  { id: 'frame.horizon.v1', slot: 'frame', name: 'Horizonte', price: 120, description: 'Uma moldura para acompanhar seu perfil.' },
+export const REWARD_APPEARANCES: { id: RewardAppearanceId; name: string; description: string }[] = [
+  { id: 'moss', name: 'Musgo', description: 'Verdes calmos, superfícies de floresta e um contorno dourado.' },
+  { id: 'kawaii', name: 'Kawaii', description: 'Rosa, branco e detalhes suaves para um Flow mais delicado.' },
+  { id: 'space', name: 'Espaço', description: 'Tons de nebulosa, azul profundo e uma moldura orbital.' },
+];
+export const REWARD_ITEMS: { id: RewardItemId; appearance: RewardAppearanceId; slot: RewardSlot; name: string; price: number; description: string }[] = [
+  { id: 'accent.sage.v1', appearance: 'moss', slot: 'accent', name: 'Sálvia', price: 15, description: 'Um verde suave para os detalhes do Flow.' },
+  { id: 'theme.forest.v1', appearance: 'moss', slot: 'theme', name: 'Bosque', price: 80, description: 'Cores da floresta, em modo claro e escuro.' },
+  { id: 'frame.horizon.v1', appearance: 'moss', slot: 'frame', name: 'Horizonte', price: 120, description: 'Uma moldura para acompanhar seu perfil.' },
+  { id: 'accent.blush.v1', appearance: 'kawaii', slot: 'accent', name: 'Rosa Chá', price: 15, description: 'Um rosa acolhedor para botões e detalhes.' },
+  { id: 'theme.kawaii.v1', appearance: 'kawaii', slot: 'theme', name: 'Algodão', price: 80, description: 'Brancos cremosos e rosa suave, em claro e escuro.' },
+  { id: 'frame.heart.v1', appearance: 'kawaii', slot: 'frame', name: 'Carinho', price: 120, description: 'Um contorno rosa e branco para seu avatar.' },
+  { id: 'accent.nebula.v1', appearance: 'space', slot: 'accent', name: 'Nebulosa', price: 15, description: 'Violeta estrelado para os detalhes do Flow.' },
+  { id: 'theme.space.v1', appearance: 'space', slot: 'theme', name: 'Cosmos', price: 80, description: 'Superfícies de névoa e noite espacial.' },
+  { id: 'frame.orbit.v1', appearance: 'space', slot: 'frame', name: 'Órbita', price: 120, description: 'Anéis celestes para destacar seu perfil.' },
 ];
 export const ACHIEVEMENT_IDS = ['first_step', 'pomodoro_hero', 'task_streak_3', 'task_streak_7', 'routine_master', 'time_warrior'];
 export const localDay = (now = Date.now(), offset = -new Date(now).getTimezoneOffset()) => Math.floor((now + offset * 60_000) / DAY_MS);

@@ -1,6 +1,10 @@
 import type { AquariumPreferences, FishCapture, FishingAccount } from './fishing';
 import type { AquaticItemId, AquaticStyle } from './aquatic';
-export type RewardItemId = 'accent.sage.v1' | 'theme.forest.v1' | 'frame.horizon.v1';
+export type RewardItemId =
+  | 'accent.sage.v1' | 'theme.forest.v1' | 'frame.horizon.v1'
+  | 'accent.blush.v1' | 'theme.kawaii.v1' | 'frame.heart.v1'
+  | 'accent.nebula.v1' | 'theme.space.v1' | 'frame.orbit.v1';
+export type RewardAppearanceId = 'moss' | 'kawaii' | 'space';
 export type RewardSlot = 'accent' | 'theme' | 'frame';
 export type RewardGoal = 1 | 2 | 3;
 export type RewardTab = 'aquarium' | 'fishing' | 'collection' | 'refuge' | 'catalog' | 'rules';

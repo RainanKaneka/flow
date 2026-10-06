@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { applyLocalEvent, createRewardAccount, DAY_MS, earnReward, goalForDay, localDay, mergeGuestProgress, nextGoal, purchaseReward, rewardAchievements, rewardEventId, rewardLevel, streakContinues, weekStart } from '../engine';
+import { applyLocalEvent, createRewardAccount, DAY_MS, earnReward, goalForDay, localDay, mergeGuestProgress, nextGoal, purchaseReward, REWARD_APPEARANCES, REWARD_ITEMS, rewardAchievements, rewardEventId, rewardLevel, streakContinues, weekStart } from '../engine';
 import type { RewardAccount, RewardEvent } from '../../../types/rewards';
 
 const now = Date.now();
@@ -40,6 +40,19 @@ describe('reward economy and permanent progress', () => {
     expect(bought.wallet.coins).toBe(0); expect(bought.wallet.xp).toBe(75);
     expect(() => purchaseReward(bought.wallet, 'accent.sage.v1')).toThrow('já');
     expect(() => purchaseReward(bought.wallet, 'theme.forest.v1')).toThrow('Faltam');
+  });
+  it('groups nine distinct cosmetics into complete appearances and preserves each purchase', () => {
+    expect(new Set(REWARD_ITEMS.map((item) => item.id)).size).toBe(9);
+    for (const appearance of REWARD_APPEARANCES) {
+      const items = REWARD_ITEMS.filter((item) => item.appearance === appearance.id);
+      expect(items.map((item) => item.slot)).toEqual(['accent', 'theme', 'frame']);
+      expect(items.map((item) => item.price)).toEqual([15, 80, 120]);
+    }
+    let wallet = createRewardAccount().wallet;
+    wallet.coins = 700;
+    for (const item of REWARD_ITEMS) wallet = purchaseReward(wallet, item.id).wallet;
+    expect(wallet.owned).toEqual(REWARD_ITEMS.map((item) => item.id));
+    expect(wallet.coins).toBe(55);
   });
   it('applies goal changes tomorrow and replaces multiple changes for the same date', () => {
     const account = createRewardAccount();

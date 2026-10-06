@@ -2,8 +2,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Check, CheckCircle2, Coins, Leaf, RefreshCw, Ticket, Timer, X } from 'lucide-react';
 import { useFlowStore } from '../store/useFlowStore';
-import type { RewardAccount, RewardGoal, RewardItemId } from '../types/rewards';
-import { dayLabel, goalForDay, localDay, REWARD_ITEMS, rewardLevel, weekStart } from '../services/rewards/engine';
+import type { RewardAccount, RewardAppearanceId, RewardGoal, RewardItemId } from '../types/rewards';
+import { dayLabel, goalForDay, localDay, REWARD_APPEARANCES, REWARD_ITEMS, rewardLevel, weekStart } from '../services/rewards/engine';
 import { getGuestImportPreview } from '../services/rewards/runtime';
 import { RewardDailyProgress } from './rewards/RewardDailyProgress';
 import { AquaticView } from './rewards/AquaticView';
@@ -40,6 +40,8 @@ function RewardsViewContent() {
   const [guest, setGuest] = useState<RewardAccount | null>(null);
   const [importPreview, setImportPreview] = useState(false);
   const [clock, setClock] = useState(() => Date.now());
+  const [catalogSection, setCatalogSection] = useState<'aquarium' | 'profile'>('aquarium');
+  const [appearance, setAppearance] = useState<RewardAppearanceId>('moss');
   const dialog = useRef<HTMLDivElement>(null);
   const wallet = rewards?.wallet;
   useEffect(() => {
@@ -118,20 +120,28 @@ function RewardsViewContent() {
       <label className={styles.visibility}><input type="checkbox" checked={rewards.preferences.visible} onChange={(event) => void operation(() => setVisible(event.target.checked), 'Preferência salva.')} /> Mostrar progresso de recompensas na rotina</label>
     </>}
     {tab === 'catalog' && <>
-      {rewards.fishing && <AquaticCustomization />}
-      <div className={styles.sectionHeading}><div><h2>Aparências do aplicativo e perfil</h2><p>Desbloqueie com as moedas da sua rotina. Seus itens são permanentes.</p></div><button onClick={openProfile}>Ver meu perfil</button></div>
-      <div className={styles.catalog}>{REWARD_ITEMS.map((item) => {
+      <div className={styles.catalogSections} role="group" aria-label="Tipo de aparência">
+        <button aria-pressed={catalogSection === 'aquarium'} onClick={() => setCatalogSection('aquarium')}>Aquário</button>
+        <button aria-pressed={catalogSection === 'profile'} onClick={() => setCatalogSection('profile')}>Aplicativo e perfil</button>
+      </div>
+      {catalogSection === 'aquarium' && rewards.fishing && <AquaticCustomization />}
+      {catalogSection === 'profile' && <section className={styles.profileCatalog} data-appearance={appearance}>
+      <div className={styles.sectionHeading}><div><h2>Aparências do aplicativo e perfil</h2><p>Escolha uma coleção. Cada cor, tema e moldura é desbloqueado e usado separadamente.</p></div><button onClick={openProfile}>Ver meu perfil</button></div>
+      <div className={styles.appearanceChoices} role="group" aria-label="Coleções de aparência">{REWARD_APPEARANCES.map((set) => <button key={set.id} aria-pressed={appearance === set.id} onClick={() => setAppearance(set.id)}><span className={`${styles.appearanceSwatch} ${styles[set.id]}`} aria-hidden="true" /><span><strong>{set.name}</strong><small>{set.description}</small></span></button>)}</div>
+      <div className={styles.appearanceIntro}><div><p className={styles.eyebrow}>COLEÇÃO {REWARD_APPEARANCES.find((set) => set.id === appearance)?.name.toUpperCase()}</p><h3>Três detalhes para combinar do seu jeito</h3></div><span>{REWARD_ITEMS.filter((item) => item.appearance === appearance && wallet.owned.includes(item.id)).length} de 3 desbloqueados</span></div>
+      <div className={styles.catalog}>{REWARD_ITEMS.filter((item) => item.appearance === appearance).map((item) => {
         const owned = wallet.owned.includes(item.id);
         const active = rewards.preferences.equipped[item.slot] === item.id;
         const affordable = wallet.coins >= item.price;
         return <article key={item.id} className={styles.item}>
-          <div className={`${styles.preview} ${styles[item.slot]}`} aria-label={`Prévia de ${item.name}`}>{item.slot === 'frame' ? <span className="reward-profile-avatar">R</span> : item.slot === 'accent' ? <span><Check size={20} /> Uma tarefa por vez</span> : <div><i /><i /><i /></div>}</div>
+          <div className={`${styles.preview} ${styles[item.slot]}`} role="img" aria-label={`Prévia de ${item.name}`}>{item.slot === 'frame' ? <span>R</span> : item.slot === 'accent' ? <span><Check size={20} /> Uma tarefa por vez</span> : <div><i /><i /><i /></div>}</div>
           <div className={styles.itemBody}><p className={styles.eyebrow}>{item.slot === 'accent' ? 'COR DE DESTAQUE' : item.slot === 'theme' ? 'TEMA' : 'MOLDURA DE PERFIL'}</p><h3>{item.name}</h3><p>{item.description}</p>
             {owned ? <button disabled={busy} onClick={() => void operation(() => equip(active ? null : item.id, item.slot), active ? 'Aparência padrão restaurada.' : `${item.name} equipado.`)}>{active ? <><Check size={15} /> Usando · remover</> : 'Usar item'}</button>
               : <><button disabled={busy || !affordable || !readyCloud} onClick={() => setConfirm(item.id)}><Coins size={15} /> Desbloquear · {item.price}</button><small>{!readyCloud ? 'Confirme o saldo para desbloquear.' : !affordable ? `Faltam ${item.price - wallet.coins} moedas.` : 'Disponível com seu saldo.'}</small></>}
           </div>
         </article>;
-      })}</div><p className={styles.catalogNote}>Os modos claro e escuro continuam disponíveis nas configurações. Sálvia altera a cor de destaque; Bosque altera as superfícies.</p>
+      })}</div><p className={styles.catalogNote}>Cor, tema e moldura podem ser misturados entre coleções. Claro e escuro continuam disponíveis nas configurações.</p>
+      </section>}
     </>}
     {tab === 'rules' && <div className={styles.rules}>
       <h2>Faça sua rotina. O progresso vem junto.</h2>

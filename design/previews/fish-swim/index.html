@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Prévia de nado · Douradinho · Flow</title>
+  <style>
+    :root { color-scheme: dark; font-family: 'Segoe UI', system-ui, sans-serif; background: #0d111a; color: #f1f3fb; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 32px 18px; }
+    main { width: min(100%, 1080px); }
+    .heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; margin: 0 0 22px; }
+    .eyebrow { margin: 0 0 7px; color: #aab4ee; font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+    h1 { margin: 0; font-size: clamp(24px, 4vw, 38px); letter-spacing: -.035em; }
+    .description { margin: 8px 0 0; color: #adb8ce; font-size: 15px; line-height: 1.55; }
+    button { min-height: 42px; padding: 0 18px; border: 1px solid #7582af; border-radius: 10px; background: #20263a; color: #fff; font: inherit; font-weight: 650; cursor: pointer; }
+    button:hover { background: #303954; }
+    button:focus-visible { outline: 3px solid #a0aaff; outline-offset: 3px; }
+    .scene { position: relative; width: 100%; aspect-ratio: 5 / 3; overflow: hidden; border: 1px solid #56769b; border-radius: 20px; background: #09537f; isolation: isolate; }
+    .environment { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: fill; image-rendering: pixelated; }
+    .swim-track { position: absolute; inset: 0; width: 100%; height: 100%; overflow: hidden; }
+    .swimmer { position: absolute; left: 0; top: 0; width: 20%; aspect-ratio: 1; animation: travel 12s linear infinite; will-change: transform; }
+    .direction { width: 100%; height: 100%; animation: turn 12s ease-in-out infinite; }
+    .bob { position: relative; width: 100%; height: 100%; animation: bob .9s ease-in-out infinite alternate; }
+    .body, .tail, .fin { position: absolute; inset: 0; width: 100%; height: 100%; display: block; object-fit: contain; image-rendering: pixelated; user-select: none; pointer-events: none; }
+    .body { clip-path: polygon(36% 33%, 68% 33%, 68% 0, 100% 0, 100% 100%, 68% 100%, 68% 76%, 44% 76%, 44% 100%, 36% 100%); }
+    .tail-wrap { position: absolute; inset: 0; transform-origin: 42% 50%; animation: tail .4s ease-in-out infinite alternate; }
+    .tail { clip-path: inset(0 54% 0 0); }
+    .dorsal-wrap, .ventral-wrap { position: absolute; inset: 0; }
+    .dorsal-wrap { transform-origin: 54% 33%; animation: dorsal 1.15s ease-in-out -.25s infinite alternate; }
+    .ventral-wrap { transform-origin: 54% 74%; animation: ventral .72s ease-in-out -.4s infinite alternate; }
+    .dorsal { clip-path: polygon(40% 15%, 68% 15%, 68% 36%, 40% 36%); }
+    .ventral { clip-path: polygon(44% 70%, 69% 70%, 69% 84%, 44% 84%); }
+    .blink { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; image-rendering: pixelated; pointer-events: none; animation: blink 9.6s linear infinite; }
+    .note { margin: 15px 0 0; color: #a5b1c6; font-size: 13px; line-height: 1.5; }
+    @keyframes travel {
+      0% { transform: translate(3%, 104%); }
+      23% { transform: translate(158%, 91%); }
+      45%, 55% { transform: translate(390%, 110%); }
+      77% { transform: translate(205%, 89%); }
+      100% { transform: translate(3%, 104%); }
+    }
+    @keyframes turn { 0%, 45% { transform: scaleX(1); } 50%, 95% { transform: scaleX(-1); } 100% { transform: scaleX(1); } }
+    @keyframes bob { from { transform: translateY(-2%); } to { transform: translateY(2%); } }
+    @keyframes tail { from { transform: scaleX(.67) skewY(-3deg); } to { transform: scaleX(1.05) skewY(3deg); } }
+    @keyframes dorsal { from { transform: skewX(-13deg); } to { transform: skewX(11deg); } }
+    @keyframes ventral { from { transform: skewX(17deg); } to { transform: skewX(-17deg); } }
+    @keyframes blink {
+      0%, 18% { opacity: 0; } 18.2%, 19.6% { opacity: 1; } 19.8%, 68% { opacity: 0; }
+      68.2%, 69.6% { opacity: 1; } 69.8%, 100% { opacity: 0; }
+    }
+    .paused * { animation-play-state: paused !important; }
+    @keyframes travel-small {
+      0% { transform: translate(3%, 104%); }
+      23% { transform: translate(120%, 91%); }
+      45%, 55% { transform: translate(300%, 110%); }
+      77% { transform: translate(155%, 89%); }
+      100% { transform: translate(3%, 104%); }
+    }
+    @media (max-width: 650px) { .heading { align-items: flex-start; flex-direction: column; } .scene { border-radius: 14px; } .swimmer { width: 25%; animation-name: travel-small; } }
+    @media (prefers-reduced-motion: reduce) { .scene * { animation-duration: .001ms !important; animation-iteration-count: 1 !important; } }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="heading">
+      <div><p class="eyebrow">Estudo de movimento · fora do aplicativo</p><h1>Douradinho nadando</h1><p class="description">Nado de 12 segundos com cauda, barbatanas independentes, piscadas ocasionais e virada nas bordas.</p></div>
+      <button id="toggle" type="button" aria-pressed="false">Pausar animação</button>
+    </div>
+    <div class="scene" aria-label="Prévia animada do douradinho nadando no aquário">
+      <img class="environment" src="../../../public/rewards/environments/aquarium.png" width="480" height="288" alt="">
+      <div class="swim-track" aria-hidden="true">
+        <div class="swimmer"><div class="direction"><div class="bob">
+          <div class="tail-wrap"><img class="tail" src="../../../public/rewards/fish/goldfish.png" width="96" height="96" alt=""></div>
+          <div class="dorsal-wrap"><img class="fin dorsal" src="../../../public/rewards/fish/goldfish.png" width="96" height="96" alt=""></div>
+          <div class="ventral-wrap"><img class="fin ventral" src="../../../public/rewards/fish/goldfish.png" width="96" height="96" alt=""></div>
+          <img class="body" src="../../../public/rewards/fish/goldfish.png" width="96" height="96" alt="">
+          <svg class="blink" viewBox="0 0 96 96" aria-hidden="true"><rect x="77" y="44" width="8" height="10" fill="#fbd35c"/><rect x="78" y="49" width="6" height="2" fill="#8f370b"/><rect x="78" y="44" width="6" height="1" fill="#ffe988"/></svg>
+        </div></div></div>
+      </div>
+    </div>
+    <p class="note">Prévia para aprovação: o nado articulado ainda não está no Flow. O movimento respeita a preferência de redução de animações do sistema.</p>
+  </main>
+  <script>
+    const toggle = document.querySelector('#toggle');
+    const scene = document.querySelector('.scene');
+    toggle.addEventListener('click', () => {
+      const paused = scene.classList.toggle('paused');
+      toggle.textContent = paused ? 'Reproduzir animação' : 'Pausar animação';
+      toggle.setAttribute('aria-pressed', String(paused));
+    });
+  </script>
+</body>
+</html>

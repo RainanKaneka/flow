@@ -46,7 +46,10 @@ function rewardWalletPath(uid) { return /databases/$(database)/documents/users/$
 function rewardReceiptPath(uid, id) { return /databases/$(database)/documents/users/$(uid)/rewardReceipts/$(id); }
 function rewardDayPath(uid, day) { return /databases/$(database)/documents/users/$(uid)/rewardDays/$(string(day)); }
 function rewardWeekPath(uid, day) { return /databases/$(database)/documents/users/$(uid)/rewardWeeks/$(string(day - ((day + 3) % 7))); }
-function rewardItems() { return ['accent.sage.v1', 'theme.forest.v1', 'frame.horizon.v1']; }
+function rewardAccents() { return ['accent.sage.v1', 'accent.blush.v1', 'accent.nebula.v1']; }
+function rewardThemes() { return ['theme.forest.v1', 'theme.kawaii.v1', 'theme.space.v1']; }
+function rewardFrames() { return ['frame.horizon.v1', 'frame.heart.v1', 'frame.orbit.v1']; }
+function rewardItems() { return ['accent.sage.v1', 'theme.forest.v1', 'frame.horizon.v1', 'accent.blush.v1', 'theme.kawaii.v1', 'frame.heart.v1', 'accent.nebula.v1', 'theme.space.v1', 'frame.orbit.v1']; }
 function rewardAchievements() { return ['first_step', 'pomodoro_hero', 'task_streak_3', 'task_streak_7', 'routine_master', 'time_warrior']; }
 function boundedInt(n, max) { return n is int && n >= 0 && n <= max; }
 function smaller(a,b) { return a < b ? a : b; }
@@ -71,7 +74,7 @@ function isValidRewardWallet(w,initial) {
     && boundedInt(w.coins,1000000000) && boundedInt(w.tickets,1000000000)
     && boundedInt(w.taskCount,1000000000) && boundedInt(w.focusCount,1000000000)
     && boundedInt(w.streak,100000) && boundedInt(w.bestStreak,100000) && w.lastActiveDay is int && w.lastActiveDay >= -1 && w.lastActiveDay <= 100000
-    && w.owned is list && w.owned.size() <= 3 && w.owned.toSet().size() == w.owned.size() && w.owned.hasOnly(rewardItems())
+    && w.owned is list && w.owned.size() <= 9 && w.owned.toSet().size() == w.owned.size() && w.owned.hasOnly(rewardItems())
     && w.legacyAchievements is list && w.legacyAchievements.size() <= 6 && w.legacyAchievements.toSet().size() == w.legacyAchievements.size() && w.legacyAchievements.hasOnly(rewardAchievements())
     && w.timezone is string && w.timezone.size() > 0 && w.timezone.size() <= 64
     // Older goal entries are validated when first inserted; transitions preserve their exact values.
@@ -174,7 +177,7 @@ function rewardEarnValid(uid,old,w,e) {
     && w.streak == streak && w.bestStreak == larger(old.bestStreak,streak) && w.lastActiveDay == (f.task ? larger(old.lastActiveDay,e.day) : old.lastActiveDay)
     && w.diff(old).affectedKeys().hasOnly(['xp','coins','tickets','taskCount','focusCount','streak','bestStreak','lastActiveDay','revision','lastEvent']);
 }
-function rewardPrice(id) { return id == 'accent.sage.v1' ? 15 : id == 'theme.forest.v1' ? 80 : 120; }
+function rewardPrice(id) { return id in rewardAccents() ? 15 : id in rewardThemes() ? 80 : 120; }
 function rewardPurchaseValid(old,w,e) {
   return e.kind == 'purchase' && e.sourceId in rewardItems() && e.id == 'purchase_'+e.sourceId
     && !(e.sourceId in old.owned) && w.owned == old.owned.concat([e.sourceId])
@@ -194,7 +197,7 @@ function rewardMigrationValid(old,w,e) {
   return e.kind == 'migration' && e.id == 'migration_v1' && e.sourceId == e.id && !e.weeklyBonus
     && e.coins == 15 && e.tickets == 0 && w.coins == old.coins+15
     && boundedInt(w.legacyXp,1000000000) && w.legacyXp >= old.legacyXp && w.xp == larger(old.xp,w.legacyXp) && e.xp == w.xp-old.xp
-    && w.owned is list && w.owned.size() <= 3 && w.owned.toSet().size() == w.owned.size() && w.owned.hasOnly(rewardItems()) && w.owned.hasAll(old.owned)
+    && w.owned is list && w.owned.size() <= 9 && w.owned.toSet().size() == w.owned.size() && w.owned.hasOnly(rewardItems()) && w.owned.hasAll(old.owned)
     && w.legacyAchievements is list && w.legacyAchievements.size() <= 6 && w.legacyAchievements.toSet().size() == w.legacyAchievements.size() && w.legacyAchievements.hasOnly(rewardAchievements()) && w.legacyAchievements.hasAll(old.legacyAchievements)
     && w.diff(old).affectedKeys().hasOnly(['xp','legacyXp','coins','owned','legacyAchievements','revision','lastEvent']);
 }
@@ -226,9 +229,9 @@ function isValidRewardPreferences(p,uid) {
   let owned = get(rewardWalletPath(uid)).data.owned;
   return p.keys().hasAll(['visible','equipped']) && p.keys().hasOnly(['visible','equipped']) && p.visible is bool
     && p.equipped is map && p.equipped.keys().hasOnly(['accent','theme','frame'])
-    && (!('accent' in p.equipped) || (p.equipped.accent == 'accent.sage.v1' && p.equipped.accent in owned))
-    && (!('theme' in p.equipped) || (p.equipped.theme == 'theme.forest.v1' && p.equipped.theme in owned))
-    && (!('frame' in p.equipped) || (p.equipped.frame == 'frame.horizon.v1' && p.equipped.frame in owned));
+    && (!('accent' in p.equipped) || (p.equipped.accent in rewardAccents() && p.equipped.accent in owned))
+    && (!('theme' in p.equipped) || (p.equipped.theme in rewardThemes() && p.equipped.theme in owned))
+    && (!('frame' in p.equipped) || (p.equipped.frame in rewardFrames() && p.equipped.frame in owned));
 }
 // Personal fish collection: client RNG; immutable captures and atomic ticket charges.
  function fishIds() { return ['goldfish','koi','neon','clownfish','catfish','guppy','angelfish','pufferfish','betta','mandarin','discus']; }

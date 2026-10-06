@@ -44,13 +44,19 @@ O [plano e roadmap atualizados](docs/plano-recompensas.md) definem as etapas seg
 - Som começa desligado. Movimento reduzido, preferência estática e Pomodoro
   interrompem animações. O nado contínuo usa atualizações por quadro, limites
   da cena, variação de rota e virada nas bordas; a maestria 5 permite ritmo
-  mais vivo. Sprites permanecem estáticos e nítidos, sem rotação ou escala
-  fracionária durante o deslocamento.
+  mais vivo. O deslocamento preserva pixels nítidos; dentro do aquário, cauda e
+  pontas das barbatanas se flexionam e os peixes piscam ocasionalmente. A base de
+  cada barbatana permanece sob o corpo para não abrir uma fenda. Coleção e perfil
+  mantêm a arte estática. Movimento reduzido, aba oculta, preferência estática e
+  Pomodoro ativo mostram o sprite original sem animação.
 - Placas ficam abaixo dos peixes: bronze em três exemplares, prata em cinco e
   ouro em dez. A ficha apresenta quantidade, próximo marco e confirmação.
-- Aparências começa pelo aquário, seus controles e a loja aquática. Aparências
-  antigas permanecem abaixo. Compra tem preço em moedas e confirmação explícita;
-  itens adquiridos oferecem equipar/retirar. Recompensas de marco não têm preço.
+- Aparências separa Aquário de Aplicativo e perfil. A primeira reúne controles e
+  loja aquática; a segunda organiza cor, tema e moldura nas coleções Musgo,
+  Kawaii e Espaço. Musgo preserva os itens Sálvia, Bosque e Horizonte e as
+  compras antigas. Cada peça é comprada/equipada separadamente, podendo misturar
+  coleções. Compra tem preço em moedas e confirmação explícita; itens adquiridos
+  oferecem equipar/retirar. Recompensas de marco não têm preço.
 - Três decorações transparentes de 96×96 e dois fundos de 480×288 preservam a
   direção pixel art; origens e prompts em [aquatic-assets-v1.json](design/aquatic-assets-v1.json).
   Fundos e decorações são arte; placas, formulários e títulos são elementos reais.
@@ -87,8 +93,8 @@ interativo no executável Tauri e a avaliação com pessoas permanecem para a et
   exige ação explícita e a confirmação habitual em Salvar Alterações.
 - Nado desativado por preferência, `prefers-reduced-motion` ou Pomodoro ativo.
   A etapa 4 acrescentou som opcional e fisgada. O refinamento posterior trocou
-  os passos CSS por nado contínuo; sprites com quadros próprios de animação
-  continuam fora desta entrega.
+  os passos CSS por nado contínuo; a articulação usa recortes dos sprites atuais,
+  sem alterar os arquivos originais de pixel art.
 - Estados de primeira visita, falta de bilhete, captura pendente, revelação salva,
   repetido, coleção completa, conexão e importação têm ações e mensagens claras.
   Revelação leva foco ao título; formulários têm rótulos e controles foco-visível.

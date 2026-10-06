@@ -102,6 +102,22 @@ describe('Firestore rewards: real transactions and hostile writes', () => {
     await expect(setDoc(doc(alice.db, 'users', alice.uid, 'rewardsPreferences', 'main'), { visible: true, equipped: { theme: 'theme.forest.v1' } })).rejects.toMatchObject({ code: 'permission-denied' });
     await setDoc(doc(alice.db, 'users', alice.uid, 'rewardsPreferences', 'main'), { visible: true, equipped: { accent: 'accent.sage.v1' } });
   });
+  it('keeps the old appearance and allows six new cosmetics with exact prices and owned slots', async () => {
+    const collector = await client();
+    context.db = collector.db; context.auth = collector.auth;
+    try {
+      const initial = await initializeCloudRewards(collector.uid);
+      await seedCanonicalWallet(collector.uid, { ...initial, coins: 500, owned: ['accent.sage.v1', 'theme.forest.v1', 'frame.horizon.v1'] });
+      for (const id of ['accent.blush.v1', 'theme.kawaii.v1', 'frame.heart.v1', 'accent.nebula.v1', 'theme.space.v1', 'frame.orbit.v1'] as const) await buyCloudReward(collector.uid, id);
+      const saved = (await getDoc(doc(collector.db, 'users', collector.uid, 'rewardsWallet', 'main'))).data() as RewardWallet;
+      expect(saved.owned).toHaveLength(9);
+      expect(saved.coins).toBe(70);
+      const preferences = doc(collector.db, 'users', collector.uid, 'rewardsPreferences', 'main');
+      await setDoc(preferences, { visible: true, equipped: { accent: 'accent.blush.v1', theme: 'theme.kawaii.v1', frame: 'frame.heart.v1' } });
+      await setDoc(preferences, { visible: true, equipped: { accent: 'accent.nebula.v1', theme: 'theme.space.v1', frame: 'frame.orbit.v1' } });
+      await expect(setDoc(preferences, { visible: true, equipped: { accent: 'frame.orbit.v1' } })).rejects.toMatchObject({ code: 'permission-denied' });
+    } finally { context.db = alice.db; context.auth = alice.auth; }
+  });
   it('changes goals only for tomorrow, preserving today and the seven-day history', async () => {
     const result = await configureCloudGoal(alice.uid, 1, [1, 2, 3, 4, 5]);
     wallet = result.wallet;

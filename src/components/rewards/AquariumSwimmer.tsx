@@ -2,7 +2,7 @@
 import React, { useEffect, useId, useRef } from 'react';
 import type { FishId } from '../../types/fishing';
 import { fishById } from '../../services/rewards/fishCatalog';
-import { FishSprite } from './FishSprite';
+import { ArticulatedFish } from './ArticulatedFish';
 import { advanceSwimmer, clampFish, type SwimBounds, type SwimMotion, type SwimPosition } from './swimMotion';
 import styles from './AquaticView.module.css';
 
@@ -71,6 +71,7 @@ export function AquariumSwimmer({ id, initial, saved, name, plate, motion, quick
     const schedule = () => {
       cancelAnimationFrame(frame);
       previous = 0;
+      if (art.current) art.current.dataset.hidden = String(document.hidden);
       if (motion && !document.hidden && !reduced?.matches) frame = requestAnimationFrame(tick);
     };
     measure();
@@ -116,6 +117,6 @@ export function AquariumSwimmer({ id, initial, saved, name, plate, motion, quick
     keyboardMoved.current = true; paint();
   };
   return <button ref={button} type="button" aria-label={onSelect ? `Selecionar ${name}` : `Mover ${name}`} aria-describedby={onMove ? hintId : undefined} tabIndex={onSelect || onMove ? undefined : -1} aria-hidden={!onSelect && !onMove || undefined} className={styles.sceneFish} style={{ width: `${fishById(id).size}px`, pointerEvents: onSelect || onMove ? undefined : 'none' }} onClick={(event) => { if (suppressClick.current) { suppressClick.current = false; event.preventDefault(); return; } onSelect?.(id); }} onPointerDown={startDrag} onPointerMove={moveDrag} onPointerUp={endDrag} onPointerCancel={endDrag} onKeyDown={nudge} onKeyUp={(event) => { if (event.key.startsWith('Arrow') && keyboardMoved.current) { keyboardMoved.current = false; store(); } }} onBlur={() => { if (keyboardMoved.current) { keyboardMoved.current = false; store(); } }}>
-    <span className={styles.swimmerArt} ref={art}><FishSprite id={id} decorative /></span>{plate}<span className={styles.swimmerHint} id={hintId}>Arraste para mover ou use as setas do teclado.</span>
+    <span className={styles.swimmerArt} ref={art} data-motion={motion ? 'on' : 'off'}><ArticulatedFish id={id} /></span>{plate}<span className={styles.swimmerHint} id={hintId}>Arraste para mover ou use as setas do teclado.</span>
   </button>;
 }
