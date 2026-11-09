@@ -68,24 +68,22 @@ describe('backupService', () => {
       (window as any).__TAURI__ = true;
       const today = getTodayDateString();
       const expectedFileName = `flow_backup_${today}.db`;
-      const backupFolder = expectedFileName.replace(/\.db$/, '.flowbackup');
       const fakeBackup = {
-        filePath: `C:\\Backups\\${backupFolder}`,
-        fileName: backupFolder,
+        filePath: `C:\\Backups\\${expectedFileName}`,
+        fileName: expectedFileName,
         fileSizeBytes: 61440,
         createdAt: new Date().toISOString(),
-        includesRewards: true,
       };
       mockInvoke.mockResolvedValueOnce(fakeBackup);
 
       const res = await backupService.createBackup({ isManual: false });
       expect(res.success).toBe(true);
-      expect(res.backup?.fileName).toBe(backupFolder);
+      expect(res.backup?.fileName).toBe(expectedFileName);
 
       const state = useFlowStore.getState().backupSettings;
       expect(state.lastBackupStatus).toBe('success');
       expect(state.lastBackupDate).toBe(today);
-      expect(state.lastBackupFileName).toBe(backupFolder);
+      expect(state.lastBackupFileName).toBe(expectedFileName);
       expect(mockInvoke).toHaveBeenCalledWith('create_database_backup', expect.objectContaining({ fileName: expectedFileName }));
 
       delete (window as any).__TAURI__;

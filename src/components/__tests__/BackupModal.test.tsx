@@ -15,20 +15,18 @@ vi.mock('../../services/backupService', () => ({
     createBackup: vi.fn().mockResolvedValue({
       success: true,
       backup: {
-        filePath: 'C:\\Users\\Test\\Documents\\FlowBackups\\flow_backup_2026-09-23.flowbackup',
-        fileName: 'flow_backup_2026-09-23.flowbackup',
+        filePath: 'C:\\Users\\Test\\Documents\\FlowBackups\\flow_backup_2026-09-23.db',
+        fileName: 'flow_backup_2026-09-23.db',
         fileSizeBytes: 61440,
         createdAt: '2026-09-23T14:00:00Z',
-        includesRewards: true,
       },
     }),
     listBackups: vi.fn().mockResolvedValue([
       {
-        filePath: 'C:\\Users\\Test\\Documents\\FlowBackups\\flow_backup_2026-09-23.flowbackup',
-        fileName: 'flow_backup_2026-09-23.flowbackup',
+        filePath: 'C:\\Users\\Test\\Documents\\FlowBackups\\flow_backup_2026-09-23.db',
+        fileName: 'flow_backup_2026-09-23.db',
         fileSizeBytes: 61440,
         createdAt: '2026-09-23T14:00:00Z',
-        includesRewards: true,
       },
     ]),
     openBackupFolder: vi.fn().mockResolvedValue(undefined),
@@ -125,7 +123,7 @@ describe('BackupModal Component', () => {
     });
 
     expect(
-      await screen.findByText(/backup gerado com sucesso: flow_backup_2026-09-23\.flowbackup/i)
+      await screen.findByText(/backup gerado com sucesso: flow_backup_2026-09-23\.db/i)
     ).toBeInTheDocument();
   });
 

@@ -1139,7 +1139,6 @@ version = "5.2.0"
 dependencies = [
  "serde",
  "serde_json",
- "sqlx",
  "tauri",
  "tauri-build",
  "tauri-plugin-notification",

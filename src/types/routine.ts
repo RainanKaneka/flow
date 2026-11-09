@@ -1,5 +1,4 @@
-import type { RewardsActions, RewardsState } from './rewards';
-export type AppView = 'routine' | 'timeline' | 'calendar' | 'dashboard' | 'backlog' | 'pomodoro' | 'notes' | 'ai' | 'rewards';
+export type AppView = 'routine' | 'timeline' | 'calendar' | 'dashboard' | 'backlog' | 'pomodoro' | 'notes' | 'ai';
 
 export interface GoogleUserProfile {
   id: string;
@@ -143,7 +142,6 @@ export interface BackupInfo {
   fileName: string;
   fileSizeBytes: number;
   createdAt: string;
-  includesRewards?: boolean;
 }
 
 export interface BackupSettings {
@@ -220,10 +218,6 @@ export interface ImportExecutionResult {
 export type PomodoroMode = 'focus' | 'shortBreak' | 'longBreak';
 
 export interface PomodoroState {
-  rewardSessionId?: string | null;
-  observedFocusSeconds?: number;
-  rewardTickAt?: number | null;
-  rewardOwnerAtStart?: string | null;
   isActive: boolean;
   timeLeftSeconds: number;
   totalDurationSeconds: number;
@@ -321,7 +315,7 @@ export interface OnboardingData {
   soundEnabled: boolean;
 }
 
-export interface FlowState extends RewardsState {
+export interface FlowState {
   activeView: AppView;
   routineViewMode?: 'stream' | 'timeline';
   selectedDate: string; // YYYY-MM-DD
@@ -405,7 +399,7 @@ export interface FlowState extends RewardsState {
   isAuthSyncModalOpen: boolean;
 }
 
-export interface FlowActions extends RewardsActions {
+export interface FlowActions {
   setActiveView: (view: AppView) => void;
   setRoutineViewMode?: (mode: 'stream' | 'timeline') => void;
   setDate: (date: string) => void;

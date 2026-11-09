@@ -6,7 +6,6 @@ import { useFlowStore } from '../store/useFlowStore';
 import { firebaseAuthService } from '../services/firebaseAuthService';
 import { restoreFirebaseAccount } from '../services/firebaseSessionService';
 import accountStyles from './UserProfileAccount.module.css';
-import { FishCompanion } from './rewards/FishCompanion';
 import {
   X,
   User,
@@ -61,7 +60,6 @@ export const UserProfileModal: React.FC = () => {
   const tasks = useFlowStore((s) => s.tasks);
   const logs = useFlowStore((s) => s.logs);
   const categories = useFlowStore((s) => s.categories);
-  const rewardWallet = useFlowStore((s) => s.rewards?.wallet);
 
   const firebaseUser = useFlowStore((s) => s.firebaseUser);
   const googleUser = useFlowStore((s) => s.googleUser);
@@ -111,8 +109,8 @@ export const UserProfileModal: React.FC = () => {
 
   // Estatísticas calculadas dinamicamente
   const stats = useMemo(() => {
-    return calculateProfileStats(tasks, logs, pomodoro, categories, rewardWallet);
-  }, [tasks, logs, pomodoro, categories, rewardWallet]);
+    return calculateProfileStats(tasks, logs, pomodoro, categories);
+  }, [tasks, logs, pomodoro, categories]);
 
   if (!isProfileModalOpen) return null;
 
@@ -309,7 +307,6 @@ export const UserProfileModal: React.FC = () => {
           <div style={{ display: 'flex', alignItems: 'center', gap: '18px', flexWrap: 'wrap' }}>
             {/* Avatar em Destaque */}
             <div
-              className="reward-profile-avatar"
               style={{
                 width: '68px',
                 height: '68px',
@@ -551,7 +548,6 @@ export const UserProfileModal: React.FC = () => {
                   </p>
                 )}
               </section>
-              <FishCompanion currentAvatar={avatarUrl} onUseAvatar={(url) => { setAvatarUrl(url); sounds.playHapticClick(); }} />
               {/* Seção 1: Seleção de Avatar */}
               <div>
                 <label

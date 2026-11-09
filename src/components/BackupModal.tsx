@@ -630,7 +630,7 @@ export const BackupModal: React.FC = () => {
                 >
                   <HardDrive size={15} color="#10B981" />
                   <span>
-                    Dados locais: <strong>rotina e Refúgio</strong>
+                    Banco de Dados: <strong>SQLite (flow.db)</strong>
                   </span>
                 </div>
                 <span
@@ -764,7 +764,7 @@ export const BackupModal: React.FC = () => {
                   <div
                     style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}
                   >
-                    Pasta que guarda as cópias completas <code>.flowbackup</code>
+                    Pasta onde os arquivos <code>flow_backup_*.db</code> serão salvos diariamente
                   </div>
                 </div>
 
@@ -1002,9 +1002,6 @@ export const BackupModal: React.FC = () => {
                           >
                             {b.fileName}
                           </span>
-                          <span style={{ color: 'var(--text-muted)', fontSize: '10px' }}>
-                            {b.includesRewards ? 'Rotina + Refúgio' : 'Somente rotina'}
-                          </span>
                         </div>
                         <span style={{ color: 'var(--text-muted)' }}>
                           {formatBytes(b.fileSizeBytes)}
@@ -1015,8 +1012,7 @@ export const BackupModal: React.FC = () => {
                 </div>
               )}
               <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '11px', lineHeight: 1.5 }}>
-                Guarde a pasta .flowbackup inteira. Para recuperar os dois bancos, feche o Flow antes
-                de restaurá-los; a importação de JSON nesta tela recupera somente a rotina.
+                Os arquivos .db salvos contêm a cópia binária exata do SQLite local. Você pode copiá-los para um pendrive, nuvem ou restaurá-los se reinstalar o app.
               </p>
             </div>
           )}
